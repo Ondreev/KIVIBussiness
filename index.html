@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Загрузка данных из Google Sheets</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
+</head>
+<body>
+  <h1>Данные из Google Sheets</h1>
+  <pre id="output"></pre>
+
+  <script>
+    var publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1tTpD8d0U7P7BDjWNUritaGcuottV-cFg8mLPltaWrFI/edit?usp=sharing';
+
+    function showInfo(data, tabletop) {
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+      console.log(data);
+    }
+
+    window.onload = function() {
+      Tabletop.init({
+        key: publicSpreadsheetUrl,
+        callback: showInfo,
+        simpleSheet: true
+      });
+    };
+  </script>
+</body>
+</html>
