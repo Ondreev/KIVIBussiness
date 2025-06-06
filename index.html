@@ -2,28 +2,141 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Загрузка данных из Google Sheets</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabletop.js/1.5.1/tabletop.min.js"></script>
+  <title>Выручка - график последних 14 дней</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 10px;
+    }
+    h1 {
+      text-align: center;
+    }
+    #chart-container {
+      position: relative;
+      height: 400px;
+      width: 100%;
+    }
+    #showAllBtn {
+      display: block;
+      margin: 15px auto;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h1>Данные из Google Sheets</h1>
-  <pre id="output"></pre>
+  <h1>Выручка за последние дни</h1>
+  <div id="chart-container">
+    <canvas id="revenueChart"></canvas>
+  </div>
+  <button id="showAllBtn">Показать все</button>
 
   <script>
-    var publicSpreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pubhtml';
+    // Ссылка на Google Sheets
+    const spreadsheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/gviz/tq?sheet=Данные';
 
-    function showInfo(data, tabletop) {
-      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-      console.log(data);
+    // Глобальные переменные для данных и графика
+    let allData = [];
+    let chart = null;
+    let showingAll = false;
+
+    // Загрузка Google Charts API (нужно для запроса данных)
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(fetchData);
+
+    function fetchData() {
+      const query = new google.visualization.Query(spreadsheetUrl);
+      query.send(handleQueryResponse);
     }
 
-    window.onload = function() {
-      Tabletop.init({
-        key: publicSpreadsheetUrl,
-        callback: showInfo,
-        simpleSheet: true
+    function handleQueryResponse(response) {
+      if (response.isError()) {
+        alert('Ошибка загрузки данных: ' + response.getMessage());
+        return;
+      }
+      const dataTable = response.getDataTable();
+
+      // Преобразуем данные в массив объектов
+      allData = [];
+      for (let i = 0; i < dataTable.getNumberOfRows(); i++) {
+        allData.push({
+          date: dataTable.getValue(i, 0), // Дата (предполагается, что в 1-м столбце)
+          revenue: dataTable.getValue(i, 2) // Выручка (3-й столбец, индекс 2)
+        });
+      }
+
+      // Отсортируем по дате (на всякий случай)
+      allData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      drawChart();
+    }
+
+    function drawChart() {
+      const ctx = document.getElementById('revenueChart').getContext('2d');
+
+      // Выбираем данные для отображения
+      let displayData = allData;
+      if (!showingAll) {
+        displayData = allData.slice(-14); // последние 14 дней
+      }
+
+      // Формируем массивы для графика
+      const labels = displayData.map(d => {
+        const dt = new Date(d.date);
+        return dt.getDate() + '.' + (dt.getMonth() + 1);
       });
-    };
+      const revenues = displayData.map(d => d.revenue);
+
+      // Если график уже есть — обновляем, иначе создаем
+      if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = revenues;
+        chart.update();
+      } else {
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Выручка',
+              data: revenues,
+              backgroundColor: 'rgba(255, 99, 132, 0.6)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Кнопка "Показать все"
+    document.getElementById('showAllBtn').addEventListener('click', () => {
+      showingAll = !showingAll;
+      document.getElementById('showAllBtn').textContent = showingAll ? 'Показать последние 14 дней' : 'Показать все';
+      drawChart();
+    });
   </script>
 </body>
 </html>
