@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Google Sheets</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+  <h2>Тест загрузки данных из Google Sheets</h2>
+  <pre id="output">Загрузка...</pre>
+
+  <script>
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(testQuery);
+
+    function testQuery() {
+      const query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/gviz/tq?sheet=\u0414\u0430\u043d\u043d\u044b\u0435');
+      query.send(function(response) {
+        const output = document.getElementById('output');
+
+        if (response.isError()) {
+          output.textContent = 'Ошибка: ' + response.getMessage() + '\n' + response.getDetailedMessage();
+          return;
+        }
+
+        const dataTable = response.getDataTable();
+        let result = [];
+        for (let i = 0; i < dataTable.getNumberOfRows(); i++) {
+          let row = [];
+          for (let j = 0; j < dataTable.getNumberOfColumns(); j++) {
+            row.push(dataTable.getValue(i, j));
+          }
+          result.push(row.join(' | '));
+        }
+        output.textContent = result.join('\n');
+      });
+    }
+  </script>
+</body>
+</html>
