@@ -25,14 +25,33 @@
     #chartContainer {
       background-color: rgba(255, 255, 255, 0.15);
       border-radius: 16px;
-      padding: 20px;
+      padding: 20px 10px 10px;
       width: 95%;
       max-width: 400px;
       box-sizing: border-box;
     }
     canvas {
       width: 100% !important;
-      height: auto !important;
+      height: 250px !important;
+    }
+    .custom-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+    .label-item {
+      text-align: center;
+      width: 14%;
+    }
+    .revenue {
+      font-size: 15px;
+      font-weight: bold;
+      color: #000;
+    }
+    .date {
+      font-size: 13px;
+      font-weight: 400;
+      color: #000;
     }
   </style>
 </head>
@@ -40,6 +59,7 @@
   <h1>КИВИ <span style="font-weight: 400">Business</span></h1>
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
+    <div id="customLabels" class="custom-labels"></div>
   </div>
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
@@ -55,7 +75,7 @@
           const date = new Date(row["Дата"]);
           const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
           const day = date.getDate();
-          return `${weekday} ${day}`;
+          return `${day} ${weekday}`;
         });
 
         const revenues = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
@@ -70,8 +90,8 @@
               data: revenues,
               backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
               borderRadius: 12,
-              barPercentage: 0.8,
-              categoryPercentage: 0.8
+              barPercentage: 0.6,
+              categoryPercentage: 0.6
             }]
           },
           options: {
@@ -81,66 +101,27 @@
               legend: { display: false },
               tooltip: { enabled: false },
               datalabels: {
-                anchor: 'end',
-                align: 'end',
-                color: '#000',
-                font: {
-                  weight: 'bold',
-                  size: 14
-                },
-                formatter: function(value) {
-                  return '';
-                }
+                display: false
               }
             },
             scales: {
-              y: {
-                display: false
-              },
+              y: { display: false },
               x: {
-                ticks: {
-                  callback: function(val, index) {
-                    return `${revenues[index].toLocaleString('ru-RU')}`;
-                  },
-                  font: {
-                    weight: 'bold',
-                    size: 15
-                  },
-                  color: '#000'
-                },
-                grid: { display: false },
-                afterBuildTicks: function(axis) {
-                  axis.ticks = axis.ticks.map((tick, index) => {
-                    return {
-                      ...tick,
-                      label: `${revenues[index].toLocaleString('ru-RU')}`
-                    };
-                  });
-                }
+                ticks: { display: false },
+                grid: { display: false }
               }
             }
           },
           plugins: [ChartDataLabels]
         });
 
-        // Добавление пользовательских подписей под графиком вручную
-        const canvas = document.getElementById("salesChart");
-        const container = document.getElementById("chartContainer");
-        const labelDiv = document.createElement("div");
-        labelDiv.style.display = 'flex';
-        labelDiv.style.justifyContent = 'space-around';
-        labelDiv.style.marginTop = '8px';
-        labelDiv.style.fontSize = '13px';
-        labelDiv.style.fontWeight = 'bold';
-        labels.forEach((label, index) => {
+        const labelContainer = document.getElementById("customLabels");
+        labels.forEach((label, i) => {
           const div = document.createElement("div");
-          div.style.textAlign = 'center';
-          div.innerHTML = `<div style='font-size:15px;'>${revenues[index].toLocaleString('ru-RU')}</div><div style='font-weight:400;'>${label}</div>`;
-          div.style.width = '14%';
-          labelDiv.appendChild(div);
+          div.className = "label-item";
+          div.innerHTML = `<div class='revenue'>${revenues[i].toLocaleString('ru-RU')}</div><div class='date'>${label}</div>`;
+          labelContainer.appendChild(div);
         });
-        container.appendChild(labelDiv);
-
       })
       .catch(err => {
         alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
