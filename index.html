@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>KIWI Business CSV</title>
+  <title>KIWI Business — Выручка</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -20,56 +20,42 @@
       max-width: 800px;
       margin-top: 20px;
     }
-    h1 {
-      font-size: 24px;
-    }
   </style>
 </head>
 <body>
-  <h1>KIWI Business — CSV-график</h1>
+  <h1>KIWI Business — Выручка</h1>
   <canvas id="revenueChart"></canvas>
 
   <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
 
     fetch(csvUrl)
-      .then(response => response.arrayBuffer())
+      .then(res => res.arrayBuffer())
       .then(buffer => {
         const decoder = new TextDecoder('windows-1251');
-        const text = decoder.decode(buffer);
-        const data = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
-
-        console.log("🔍 Пример строки:", data[0]);
+        const csvText = decoder.decode(buffer);
+        const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
 
         const labels = [];
         const revenue = [];
 
         data.forEach(row => {
-          const rawDate = row['Дата'];
-          const rawRevenue = row['ТО'];
-
-          if (rawDate && rawRevenue) {
-            labels.push(rawDate);
-            const value = parseFloat(
-              String(rawRevenue).replace(/\s/g, '').replace(',', '.')
-            );
-            revenue.push(isNaN(value) ? 0 : value);
+          const date = row['Дата'];
+          const value = parseFloat(String(row['ТО']).replace(/\s/g, '').replace(',', '.'));
+          if (date && !isNaN(value)) {
+            labels.push(date);
+            revenue.push(value);
           }
         });
-
-        if (labels.length === 0 || revenue.length === 0) {
-          alert('Не удалось загрузить данные. Проверьте заголовки и формат CSV-файла.');
-          return;
-        }
 
         const ctx = document.getElementById('revenueChart').getContext('2d');
         new Chart(ctx, {
           type: 'bar',
           data: {
-            labels,
+            labels: labels.slice(-14),
             datasets: [{
               label: 'Выручка',
-              data: revenue,
+              data: revenue.slice(-14),
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               borderColor: '#fff',
               borderWidth: 1
@@ -77,23 +63,19 @@
           },
           options: {
             scales: {
-              y: {
-                beginAtZero: true
-              }
+              y: { beginAtZero: true }
             },
             plugins: {
               legend: {
-                labels: {
-                  color: '#ff4081'
-                }
+                labels: { color: '#ff4081' }
               }
             }
           }
         });
       })
-      .catch(error => {
-        console.error('Ошибка загрузки CSV:', error);
-        alert('Ошибка загрузки CSV: ' + error.message);
+      .catch(err => {
+        console.error('Ошибка загрузки данных:', err);
+        alert('Ошибка загрузки данных: ' + err.message);
       });
   </script>
 </body>
