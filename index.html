@@ -18,26 +18,27 @@
       align-items: center;
     }
     h1 {
+      margin: 20px;
+      font-size: 26px;
       font-weight: 900;
-      font-size: 28px;
-      margin: 20px 0 10px;
+      color: #fff;
     }
     #chartContainer {
-      background-color: #f8f8f8;
-      border-radius: 14px;
-      padding: 16px;
-      width: 100%;
-      max-width: 400px;
-      box-sizing: border-box;
+      background-color: #f5f5f5;
+      border-radius: 10px;
+      margin: 10px;
+      padding: 10px;
+      color: #333;
+      width: 95%;
+      max-width: 600px;
     }
     canvas {
-      width: 100% !important;
-      height: auto !important;
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
-  <h1>КИВИ <span style="color: #ffe">Business</span></h1>
+  <h1>КИВИ <span style="color: #ffe0f0">Business</span></h1>
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
   </div>
@@ -49,33 +50,30 @@
       .then(response => response.text())
       .then(csvText => {
         const parsed = Papa.parse(csvText, { header: true });
-        const data = parsed.data.filter(row => row["Дата"] && row["ТО"]);
+        const data = parsed.data.filter(row => row["\u0414\u0430\u0442\u0430"] && row["\u0422\u041e"]);
         const last10 = data.slice(-10);
 
+        const sales = last10.map(row => parseFloat(row["\u0422\u041e"].replace(/\s/g, '').replace(',', '.')));
+
         const labels = last10.map(row => {
-          const date = new Date(row["Дата"]);
+          const date = new Date(row["\u0414\u0430\u0442\u0430"]);
           const day = date.toLocaleDateString("ru-RU", { weekday: 'short' });
-          const num = date.toLocaleDateString("ru-RU", { day: 'numeric', month: 'short' });
-          return `${day}, ${num}`;
+          const dayNum = date.getDate();
+          const revenue = parseFloat(row["\u0422\u041e"].replace(/\s/g, '').replace(',', '.')).toLocaleString("ru-RU");
+          return `${day}, ${dayNum}\n${revenue} \u20BD`;
         });
-
-        const sales = last10.map(row => {
-          const cleaned = row["ТО"].replace(/\s/g, '').replace(',', '.');
-          return parseFloat(cleaned);
-        });
-
-        const formattedSales = sales.map(s => s.toLocaleString('ru-RU') + ' ₽');
 
         new Chart(document.getElementById("salesChart"), {
           type: "bar",
           data: {
             labels: labels,
             datasets: [{
-              label: "Выручка",
+              label: "\u0412\u044b\u0440\u0443\u0447\u043a\u0430",
               data: sales,
               backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#e91e63' : '#ff80ab'),
-              borderRadius: 6,
-              barThickness: 24
+              borderRadius: 5,
+              barPercentage: 0.6,
+              categoryPercentage: 0.6
             }]
           },
           options: {
@@ -84,22 +82,18 @@
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} ₽`
+                  label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} \u20BD`
                 }
-              },
-              datalabels: false
-            },
-            layout: {
-              padding: {
-                top: 20
               }
             },
             scales: {
               x: {
                 ticks: {
                   color: '#000',
-                  font: {
-                    size: 12
+                  font: { size: 12 },
+                  callback: val => {
+                    const parts = this.getLabelForValue(val).split("\n");
+                    return parts;
                   }
                 }
               },
@@ -108,34 +102,14 @@
                   color: '#000',
                   callback: val => val.toLocaleString("ru-RU")
                 },
-                grid: {
-                  drawTicks: false
-                }
-              }
-            },
-            animation: {
-              onComplete: () => {
-                const chart = Chart.getChart("salesChart");
-                const ctx = chart.ctx;
-                chart.data.datasets[0].data.forEach((val, idx) => {
-                  const meta = chart.getDatasetMeta(0);
-                  const bar = meta.data[idx];
-                  const y = bar.y - 10;
-                  const x = bar.x;
-                  ctx.save();
-                  ctx.font = "bold 13px Segoe UI";
-                  ctx.fillStyle = "#000";
-                  ctx.textAlign = "center";
-                  ctx.fillText(formattedSales[idx], x, y);
-                  ctx.restore();
-                });
+                beginAtZero: true
               }
             }
           }
         });
       })
       .catch(err => {
-        alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
+        alert("\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0434\u0430\u043d\u043d\u044b\u0445. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0441\u0441\u044b\u043b\u043a\u0443 \u043d\u0430 \u0442\u0430\u0431\u043b\u0438\u0446\u0443.");
         console.error(err);
       });
   </script>
