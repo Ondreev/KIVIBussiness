@@ -22,6 +22,23 @@
       font-weight: 900;
       margin: 20px 0 10px;
     }
+    .summary {
+      width: 95%;
+      max-width: 400px;
+      background-color: rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      color: white;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .summary strong {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
     #chartContainer {
       background-color: rgba(255, 255, 255, 0.15);
       border-radius: 16px;
@@ -57,95 +74,140 @@
 </head>
 <body>
   <h1>КИВИ <span style="font-weight: 400">Business</span></h1>
+  <div class="summary" id="summaryBlock"></div>
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
     <div id="customLabels" class="custom-labels"></div>
   </div>
   <script>
-    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
+    const mainDataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
+    const plansUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+    const recordsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
 
-    fetch(csvUrl)
-      .then(res => res.text())
-      .then(text => {
-        const parsed = Papa.parse(text, { header: true });
-        const rows = parsed.data.filter(r => r["Дата"] && r["ТО"]);
-        const last7 = rows.slice(-7);
+    Promise.all([
+      fetch(mainDataUrl).then(res => res.text()),
+      fetch(plansUrl).then(res => res.text()),
+      fetch(recordsUrl).then(res => res.text())
+    ])
+    .then(([mainText, planText, recordText]) => {
+      const mainData = Papa.parse(mainText, { header: true }).data.filter(r => r["Дата"] && r["ТО"]);
+      const plansData = Papa.parse(planText, { header: true }).data.filter(r => r["Дата"]);
+      const recordsData = Papa.parse(recordText, { header: true }).data;
 
-        const labels = last7.map(row => {
-          const date = new Date(row["Дата"]);
-          const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
-          const day = date.getDate();
-          return `${day} ${weekday}`;
-        });
+      const last7 = mainData.slice(-7);
 
-        const revenues = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
-        const highlight = last7.map(row => row["Выполнение плана (Да/Нет)"]?.trim().toLowerCase() === "да");
-        const maxValue = Math.max(...revenues);
-        const yMax = Math.ceil(maxValue / 10000) * 10000;
+      const labels = last7.map(row => {
+        const date = new Date(row["Дата"]);
+        const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
+        const day = date.getDate();
+        return `${day} ${weekday}`;
+      });
 
-        const ctx = document.getElementById("salesChart").getContext("2d");
-        new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: labels,
-            datasets: [{
-              data: revenues,
-              backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
-              borderRadius: 10,
-              barPercentage: 0.8,
-              categoryPercentage: 0.8
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { enabled: false },
-              datalabels: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                display: true,
-                min: 0,
-                max: yMax,
-                grid: {
-                  drawTicks: false,
-                  drawBorder: false,
-                  color: function(context) {
-                    return context.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.5)' : 'transparent';
-                  },
-                  lineWidth: 1
-                },
-                ticks: {
-                  display: false,
-                  stepSize: 10000
-                }
-              },
-              x: {
-                ticks: { display: false },
-                grid: { display: false }
-              }
+      const revenues = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
+      const highlight = last7.map(row => row["Выполнение плана (Да/Нет)"].trim().toLowerCase() === "да");
+      const maxValue = Math.max(...revenues);
+      const yMax = Math.ceil(maxValue / 10000) * 10000;
+
+      const ctx = document.getElementById("salesChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: revenues,
+            backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
+            borderRadius: 10,
+            barPercentage: 0.8,
+            categoryPercentage: 0.8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false },
+            datalabels: {
+              display: false
             }
           },
-          plugins: [ChartDataLabels]
-        });
-
-        const labelContainer = document.getElementById("customLabels");
-        labelContainer.innerHTML = "";
-        labels.forEach((label, i) => {
-          const div = document.createElement("div");
-          div.className = "label-item";
-          div.innerHTML = `<div class='revenue'>${revenues[i].toLocaleString('ru-RU')}</div><div class='date'>${label}</div>`;
-          labelContainer.appendChild(div);
-        });
-      })
-      .catch(err => {
-        alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
-        console.error(err);
+          scales: {
+            y: {
+              display: true,
+              min: 0,
+              max: yMax,
+              grid: {
+                drawTicks: false,
+                drawBorder: false,
+                color: function(context) {
+                  return context.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.5)' : 'transparent';
+                },
+                lineWidth: 1
+              },
+              ticks: {
+                display: false,
+                stepSize: 10000
+              }
+            },
+            x: {
+              ticks: { display: false },
+              grid: { display: false }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
       });
+
+      const labelContainer = document.getElementById("customLabels");
+      labelContainer.innerHTML = "";
+      labels.forEach((label, i) => {
+        const div = document.createElement("div");
+        div.className = "label-item";
+        div.innerHTML = `<div class='revenue'>${revenues[i].toLocaleString('ru-RU')}</div><div class='date'>${label}</div>`;
+        labelContainer.appendChild(div);
+      });
+
+      // Верхний блок расчёта
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      const thisMonthPlans = plansData.filter(row => {
+        const d = new Date(row["Дата"]);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
+
+      const accumulatedPlan = thisMonthPlans.reduce((sum, row) => {
+        const value = parseFloat(row["План ТО"]?.replace(/\s/g, '').replace(',', '.') || 0);
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0);
+
+      const accumulatedRevenue = mainData.reduce((sum, row) => {
+        const value = parseFloat(row["ТО"]?.replace(/\s/g, '').replace(',', '.') || 0);
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0);
+
+      const progress = (accumulatedRevenue / accumulatedPlan) * 100;
+
+      const last7Traffic = last7.map(row => parseFloat(row["ТР"].replace(/\s/g, '').replace(',', '.')));
+      const totalTraffic = last7Traffic.reduce((a, b) => a + b, 0);
+      const avgCheck = totalRevenue / totalTraffic;
+
+      const maxRevenue = recordsData[0]?.["Рекорд ТО"] || "—";
+      const maxTraffic = recordsData[0]?.["Рекорд ТР"] || "—";
+
+      document.getElementById("summaryBlock").innerHTML = `
+        <strong>План месяца: ${accumulatedPlan.toLocaleString('ru-RU')}₽</strong>
+        Выполнено: ${progress.toFixed(1)}%<br>
+        Трафик (7 дн): ${totalTraffic.toLocaleString('ru-RU')} чел.<br>
+        СР. чек: ${avgCheck.toFixed(0).toLocaleString('ru-RU')}₽<br>
+        Рекорд ТО: ${maxRevenue}<br>
+        Рекорд ТР: ${maxTraffic}
+      `;
+    })
+    .catch(err => {
+      alert("Ошибка загрузки данных. Проверьте ссылки на таблицы.");
+      console.error(err);
+    });
   </script>
 </body>
 </html>
