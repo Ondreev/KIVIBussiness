@@ -28,16 +28,28 @@
       background-color: rgba(255, 255, 255, 0.15);
       border-radius: 16px;
       color: white;
-      padding: 12px;
+      padding: 16px;
       margin-bottom: 12px;
       font-size: 14px;
       box-sizing: border-box;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      text-align: center;
     }
-    .summary strong {
-      display: block;
+    .summary-item {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      border-radius: 12px;
+    }
+    .summary-item .value {
       font-size: 18px;
       font-weight: 700;
       margin-bottom: 4px;
+    }
+    .summary-item .label {
+      font-size: 12px;
+      opacity: 0.9;
     }
     #chartContainer {
       background-color: rgba(255, 255, 255, 0.15);
@@ -194,13 +206,30 @@
       const maxTraffic = recordsData.find(r => r["Показатель"].includes("трафик"))?.["Значение"] || "—";
 
       document.getElementById("summaryBlock").innerHTML = `
-        <strong>План месяца: ${planTotal.toLocaleString('ru-RU')}₽</strong>
-        Выполнено: ${progress.toFixed(1)}%<br>
-        Трафик (7 дн): ${totalTraffic.toLocaleString('ru-RU')} чел.<br>
-        СР. чек: ${avgCheck.toFixed(0).toLocaleString('ru-RU')}₽<br>
-        Рекорд ТО: ${maxRevenue}<br>
-        Рекорд ТР: ${maxTraffic}
-      `;
+        <div class="summary-item">
+          <div class="value">${planTotal.toLocaleString('ru-RU')}₽</div>
+          <div class="label">План месяца</div>
+        </div>
+        <div class="summary-item">
+          <div class="value">${progress.toFixed(1)}%</div>
+          <div class="label">Выполнено</div>
+        </div>
+        <div class="summary-item">
+          <div class="value">${totalTraffic.toLocaleString('ru-RU')}</div>
+          <div class="label">Трафик (7 дн)</div>
+        </div>
+        <div class="summary-item">
+          <div class="value">${avgCheck.toFixed(0).toLocaleString('ru-RU')}₽</div>
+          <div class="label">СР. чек</div>
+        </div>
+        <div class="summary-item">
+          <div class="value">${maxRevenue}</div>
+          <div class="label">Рекорд ТО</div>
+        </div>
+        <div class="summary-item">
+          <div class="value">${maxTraffic}</div>
+          <div class="label">Рекорд ТР</div>
+        </div>`;
     })
     .catch(err => {
       alert("Ошибка загрузки данных. Проверьте ссылки на таблицы.");
