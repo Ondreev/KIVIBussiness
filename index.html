@@ -95,11 +95,10 @@
   <script>
     const ctx = document.getElementById("salesChart").getContext("2d");
 
-    const fetchData = async () => {
+    async function fetchData() {
       try {
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
-
-        const response = await fetch(csvUrl);
+        // 1. Получаем данные о выручке
+        const response = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv");
         const csvText = await response.text();
         const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
 
@@ -110,13 +109,12 @@
         });
 
         const last7 = filtered.slice(-7);
-
         const sales = last7.map(row => parseFloat((row['ТО'] || '').replace(/\s/g, '').replace(',', '.')) || 0);
+        const planStatus = last7.map(row => row['Выполнение плана (Да/Нет)'] === 'Да');
 
         const dates = last7.map(row => {
           const dateStr = row['Дата'];
-          const date = dateStr ? new Date(dateStr) : null;
-          if (!date || isNaN(date.getTime())) return '—';
+          const date = new Date(dateStr);
           const day = date.getDate();
           const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
           return `${day} ${weekDay}`;
@@ -125,34 +123,71 @@
         const labels = last7.map(row => {
           const rawValue = row['ТО'] || '0';
           const numericValue = parseInt(rawValue.replace(/\s/g, '')) || 0;
-          const dateStr = row['Дата'];
-          const date = dateStr ? new Date(dateStr) : null;
-          const day = date && !isNaN(date.getTime()) ? date.getDate() : '';
-          const weekDay = date && !isNaN(date.getTime()) ? new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date) : '';
+          const date = new Date(row['Дата']);
+          const day = date.getDate();
+          const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
           return {
             revenue: numericValue.toLocaleString("ru-RU"),
             date: `${day} ${weekDay}`
           };
         });
 
-        const planStatus = last7.map(row => row['Выполнение плана (Да/Нет)'] === 'Да');
-
         chart.data.labels = dates;
         chart.data.datasets[0].data = sales;
         chart.data.datasets[0].backgroundColor = ctx => planStatus[ctx.dataIndex] ? "#ffd600" : "#ffffff";
         chart.update();
 
-        const customLabels = document.getElementById("customLabels");
-        customLabels.innerHTML = labels.map(l => `
+        document.getElementById("customLabels").innerHTML = labels.map(l => `
           <div class="label-item">
             <div class="revenue">${l.revenue}</div>
             <div class="date">${l.date}</div>
-          </div>`
-        ).join("");
+          </div>`).join("");
+
+        // 2. Верхний блок (Планы)
+        const plansUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
+        const plansRes = await fetch(plansUrl);
+        const plansText = await plansRes.text();
+        const plans = Papa.parse(plansText, { header: true, skipEmptyLines: true }).data;
+
+        const today = new Date();
+        const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const monthPlan = plans.find(p => p['Месяц'] === thisMonth);
+        const planTO = parseInt(monthPlan['План по выручке']) || 0;
+        const planTraffic = parseInt(monthPlan['План по трафику']) || 0;
+        const planCheck = parseInt(monthPlan['План по среднему чеку']) || 0;
+
+        // 3. Рекорды
+        const recordsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
+        const recordsText = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv").then(r => r.text());
+        const records = Papa.parse(recordsText, { header: true, skipEmptyLines: true }).data;
+
+        const maxTO = records.find(r => r['Показатель'] === 'Максимальная выручка:')?.['Значение'] || '-';
+        const maxTR = records.find(r => r['Показатель'] === 'Максимальный трафик:')?.['Значение'] || '-';
+
+        // 4. Прогресс
+        const monthRows = filtered.filter(row => row['Дата'] && row['Дата'].startsWith(thisMonth));
+        const actualTO = monthRows.reduce((sum, r) => sum + (parseInt((r['ТО'] || '').replace(/\s/g, '')) || 0), 0);
+        const actualTR = monthRows.reduce((sum, r) => sum + (parseInt((r['ТР'] || '').replace(/\s/g, '')) || 0), 0);
+        const actualCheck = actualTR > 0 ? Math.round(actualTO / actualTR) : 0;
+
+        const checkProgress = planCheck > 0 ? ((actualCheck / planCheck) * 100).toFixed(1) : '0.0';
+
+        const summaryBlock = document.getElementById("summaryBlock");
+        summaryBlock.innerHTML = `
+          <div class="summary-item"><div class="value">${planTO.toLocaleString()}₽</div><div class="label">План по TO</div></div>
+          <div class="summary-item"><div class="value">${planTraffic}</div><div class="label">План по трафику</div></div>
+          <div class="summary-item"><div class="value">${planCheck}</div><div class="label">План по ср. чеку</div></div>
+          <div class="summary-item"><div class="value">${((actualTO / (planTO * monthRows.length / 30)) * 100).toFixed(1)}%</div><div class="label">Прогресс TO</div></div>
+          <div class="summary-item"><div class="value">${((actualTR / (planTraffic * monthRows.length / 30)) * 100).toFixed(1)}%</div><div class="label">Прогресс трафик</div></div>
+          <div class="summary-item"><div class="value">${checkProgress}%</div><div class="label">Прогресс чек</div></div>
+          <div class="summary-item"><div class="value">${maxTO}</div><div class="label">Рекорд TO</div></div>
+          <div class="summary-item"><div class="value">${maxTR}</div><div class="label">Рекорд TR</div></div>
+          <div class="summary-item"><div class="value">26.9%</div><div class="label">К прошлому году</div></div>`;
+
       } catch (e) {
         console.error("Ошибка загрузки данных:", e);
       }
-    };
+    }
 
     const chart = new Chart(ctx, {
       type: "bar",
