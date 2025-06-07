@@ -135,6 +135,13 @@
       const maxRevenue = recordsData.find(r => r["Показатель"].includes("выручка"))?.["Значение"] || "—";
       const maxTraffic = recordsData.find(r => r["Показатель"].includes("трафик"))?.["Значение"] || "—";
 
+      const lastYearSameMonthData = mainData.filter(row => {
+        const d = new Date(row["Дата"]);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear - 1;
+      });
+      const lastYearRevenue = lastYearSameMonthData.reduce((sum, row) => sum + (parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
+      const yoyRevenueProgress = lastYearRevenue > 0 ? (factRevenue / lastYearRevenue) * 100 : 0;
+
       const summary = document.getElementById("summaryBlock");
       summary.innerHTML = `
         <div class="summary-item"><div class="value">${planRevenue.toLocaleString('ru-RU')}₽</div><div class="label">План по ТО</div></div>
@@ -147,7 +154,7 @@
 
         <div class="summary-item"><div class="value">${maxRevenue}</div><div class="label">Рекорд ТО</div></div>
         <div class="summary-item"><div class="value">${maxTraffic}</div><div class="label">Рекорд ТР</div></div>
-        <div class="summary-item"><div class="value">📈</div><div class="label">—</div></div>
+        <div class="summary-item"><div class="value">${yoyRevenueProgress.toFixed(1)}%</div><div class="label">К прошлому году</div></div>
       `;
     })
     .catch(err => {
