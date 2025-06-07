@@ -91,75 +91,61 @@
     <canvas id="salesChart"></canvas>
     <div id="customLabels" class="custom-labels"></div>
   </div>
+
   <script>
-    const mainDataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
-    const plansUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
-    const recordsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
+    const ctx = document.getElementById("salesChart").getContext("2d");
+    const sales = [44189, 36764, 20694, 44014, 15291, 36340, 39905];
+    const labels = [
+      { revenue: "44 189", date: "31 сб" },
+      { revenue: "36 764", date: "1 вс" },
+      { revenue: "20 694", date: "2 пн" },
+      { revenue: "44 014", date: "3 вт" },
+      { revenue: "15 291", date: "4 ср" },
+      { revenue: "36 340", date: "5 чт" },
+      { revenue: "39 905", date: "6 пт" }
+    ];
+    const planStatus = [true, true, false, true, false, true, true];
 
-    Promise.all([
-      fetch(mainDataUrl).then(res => res.text()),
-      fetch(plansUrl).then(res => res.text()),
-      fetch(recordsUrl).then(res => res.text())
-    ])
-    .then(([mainText, planText, recordText]) => {
-      const mainData = Papa.parse(mainText, { header: true }).data.filter(r => r["Дата"] && r["ТО"]);
-      const plansData = Papa.parse(planText, { header: true }).data.filter(r => r["Месяц"]);
-      const recordsData = Papa.parse(recordText, { header: true }).data;
-
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-
-      const filteredMain = mainData.filter(row => {
-        const d = new Date(row["Дата"]);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      });
-
-      const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-      const thisMonthPlans = plansData.find(row => row["Месяц"] === currentMonthStr) || {"План по выручке": 0, "План по трафику": 0, "План по среднему чеку": 0};
-
-      const planRevenue = parseFloat(String(thisMonthPlans["План по выручке"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
-      const planTraffic = parseFloat(String(thisMonthPlans["План по трафику"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
-      const avgCheckKey = Object.keys(thisMonthPlans).find(k => k.toLowerCase().includes("чек"));
-      const planAvgCheck = parseFloat(String(thisMonthPlans[avgCheckKey] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
-
-      const factRevenue = filteredMain.reduce((sum, row) => sum + (parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
-      const factTraffic = filteredMain.reduce((sum, row) => sum + (parseFloat(row["ТР"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
-      const factAvgCheck = factTraffic > 0 ? factRevenue / factTraffic : 0;
-
-      const progressRevenue = planRevenue * filteredMain.length > 0 ? (factRevenue / (planRevenue * filteredMain.length)) * 100 : 0;
-      const progressTraffic = planTraffic * filteredMain.length > 0 ? (factTraffic / (planTraffic * filteredMain.length)) * 100 : 0;
-      const progressAvgCheck = planAvgCheck > 0 ? (factAvgCheck / planAvgCheck) * 100 : 0;
-
-      const maxRevenue = recordsData.find(r => r["Показатель"].includes("выручка"))?.["Значение"] || "—";
-      const maxTraffic = recordsData.find(r => r["Показатель"].includes("трафик"))?.["Значение"] || "—";
-
-      const lastYearSameMonthData = mainData.filter(row => {
-        const d = new Date(row["Дата"]);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear - 1;
-      });
-      const lastYearRevenue = lastYearSameMonthData.reduce((sum, row) => sum + (parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
-      const yoyRevenueProgress = lastYearRevenue > 0 ? (factRevenue / lastYearRevenue) * 100 : 0;
-
-      const summary = document.getElementById("summaryBlock");
-      summary.innerHTML = `
-        <div class="summary-item"><div class="value">${planRevenue.toLocaleString('ru-RU')}₽</div><div class="label">План по ТО</div></div>
-        <div class="summary-item"><div class="value">${planTraffic}</div><div class="label">План по трафику</div></div>
-        <div class="summary-item"><div class="value">${planAvgCheck}</div><div class="label">План по ср. чеку</div></div>
-
-        <div class="summary-item"><div class="value">${progressRevenue.toFixed(1)}%</div><div class="label">Прогресс ТО</div></div>
-        <div class="summary-item"><div class="value">${progressTraffic.toFixed(1)}%</div><div class="label">Прогресс трафик</div></div>
-        <div class="summary-item"><div class="value">${progressAvgCheck.toFixed(1)}%</div><div class="label">Прогресс чек</div></div>
-
-        <div class="summary-item"><div class="value">${maxRevenue}</div><div class="label">Рекорд ТО</div></div>
-        <div class="summary-item"><div class="value">${maxTraffic}</div><div class="label">Рекорд ТР</div></div>
-        <div class="summary-item"><div class="value">${yoyRevenueProgress.toFixed(1)}%</div><div class="label">К прошлому году</div></div>
-      `;
-    })
-    .catch(err => {
-      alert("Ошибка загрузки данных. Проверьте ссылки на таблицы.");
-      console.error(err);
+    const chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels.map(l => l.date),
+        datasets: [{
+          data: sales,
+          backgroundColor: (ctx) => planStatus[ctx.dataIndex] ? "#ffd600" : "#ffffff",
+          borderRadius: 10,
+          barThickness: 28
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          datalabels: { display: false }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { display: false }, ticks: { display: false } },
+          y: {
+            grid: {
+              drawTicks: false,
+              color: (ctx) => ctx.tick.value % 10000 === 0 ? "rgba(255,255,255,0.2)" : "transparent"
+            },
+            ticks: { display: false },
+            beginAtZero: true
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
     });
+
+    const customLabels = document.getElementById("customLabels");
+    customLabels.innerHTML = labels.map(l => `
+      <div class="label-item">
+        <div class="revenue">${l.revenue} ₽</div>
+        <div class="date">${l.date}</div>
+      </div>`
+    ).join("");
   </script>
 </body>
 </html>
