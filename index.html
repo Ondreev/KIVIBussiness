@@ -91,7 +91,7 @@
     ])
     .then(([mainText, planText, recordText]) => {
       const mainData = Papa.parse(mainText, { header: true }).data.filter(r => r["Дата"] && r["ТО"]);
-      const plansData = Papa.parse(planText, { header: true }).data.filter(r => r["Дата"]);
+      const plansData = Papa.parse(planText, { header: true }).data.filter(r => r["Месяц"]);
       const recordsData = Papa.parse(recordText, { header: true }).data;
 
       const last7 = mainData.slice(-7);
@@ -127,9 +127,7 @@
           plugins: {
             legend: { display: false },
             tooltip: { enabled: false },
-            datalabels: {
-              display: false
-            }
+            datalabels: { display: false }
           },
           scales: {
             y: {
@@ -139,15 +137,10 @@
               grid: {
                 drawTicks: false,
                 drawBorder: false,
-                color: function(context) {
-                  return context.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.5)' : 'transparent';
-                },
+                color: context => context.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.5)' : 'transparent',
                 lineWidth: 1
               },
-              ticks: {
-                display: false,
-                stepSize: 10000
-              }
+              ticks: { display: false, stepSize: 10000 }
             },
             x: {
               ticks: { display: false },
@@ -167,36 +160,41 @@
         labelContainer.appendChild(div);
       });
 
-      // Верхний блок расчёта
+      // Верхний блок
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
-      const thisMonthPlans = plansData.filter(row => {
+
+      const filteredMain = mainData.filter(row => {
         const d = new Date(row["Дата"]);
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       });
 
-      const accumulatedPlan = thisMonthPlans.reduce((sum, row) => {
-        const value = parseFloat(row["План ТО"]?.replace(/\s/g, '').replace(',', '.') || 0);
-        return sum + (isNaN(value) ? 0 : value);
-      }, 0);
+      const thisMonthPlans = plansData.filter(row => {
+        const [year, month] = row["Месяц"].split("-");
+        return parseInt(month) === currentMonth + 1 && parseInt(year) === currentYear;
+      });
 
-      const accumulatedRevenue = mainData.reduce((sum, row) => {
+      const dailyPlan = thisMonthPlans[0]?.["План по выручке"] || "0";
+      const planPerDay = parseFloat(dailyPlan.replace(/\s/g, '').replace(',', '.')) || 0;
+      const planTotal = planPerDay * filteredMain.length;
+
+      const accumulatedRevenue = filteredMain.reduce((sum, row) => {
         const value = parseFloat(row["ТО"]?.replace(/\s/g, '').replace(',', '.') || 0);
         return sum + (isNaN(value) ? 0 : value);
       }, 0);
 
-      const progress = (accumulatedRevenue / accumulatedPlan) * 100;
+      const progress = planTotal === 0 ? 0 : (accumulatedRevenue / planTotal) * 100;
 
       const last7Traffic = last7.map(row => parseFloat(row["ТР"].replace(/\s/g, '').replace(',', '.')));
       const totalTraffic = last7Traffic.reduce((a, b) => a + b, 0);
-      const avgCheck = accumulatedRevenue / totalTraffic;
+      const avgCheck = totalTraffic === 0 ? 0 : accumulatedRevenue / totalTraffic;
 
       const maxRevenue = recordsData[0]?.["Рекорд ТО"] || "—";
       const maxTraffic = recordsData[0]?.["Рекорд ТР"] || "—";
 
       document.getElementById("summaryBlock").innerHTML = `
-        <strong>План месяца: ${accumulatedPlan.toLocaleString('ru-RU')}₽</strong>
+        <strong>План месяца: ${planTotal.toLocaleString('ru-RU')}₽</strong>
         Выполнено: ${progress.toFixed(1)}%<br>
         Трафик (7 дн): ${totalTraffic.toLocaleString('ru-RU')} чел.<br>
         СР. чек: ${avgCheck.toFixed(0).toLocaleString('ru-RU')}₽<br>
