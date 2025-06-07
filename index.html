@@ -118,9 +118,9 @@
       const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
       const thisMonthPlans = plansData.find(row => row["Месяц"] === currentMonthStr) || {"План по выручке": 0, "План по трафику": 0, "План по среднему чеку": 0};
 
-      const planRevenue = parseFloat((thisMonthPlans["План по выручке"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
-const planTraffic = parseFloat((thisMonthPlans["План по трафику"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
-const planAvgCheck = parseFloat((thisMonthPlans["План по среднему чеку"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
+      const planRevenue = parseFloat(String(thisMonthPlans["План по выручке"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
+      const planTraffic = parseFloat(String(thisMonthPlans["План по трафику"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
+      const planAvgCheck = parseFloat(String(thisMonthPlans["План по среднему чеку"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
 
       const factRevenue = filteredMain.reduce((sum, row) => sum + (parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
       const factTraffic = filteredMain.reduce((sum, row) => sum + (parseFloat(row["ТР"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
