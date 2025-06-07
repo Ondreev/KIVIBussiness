@@ -30,19 +30,23 @@
   <canvas id="revenueChart"></canvas>
 
   <script>
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?output=csv';
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
 
     fetch(csvUrl)
-      .then(response => response.text())
-      .then(text => {
+      .then(response => response.arrayBuffer())
+      .then(buffer => {
+        const decoder = new TextDecoder('windows-1251');
+        const text = decoder.decode(buffer);
         const data = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+
+        console.log("🔍 Пример строки:", data[0]);
 
         const labels = [];
         const revenue = [];
 
         data.forEach(row => {
           const rawDate = row['Дата'];
-          const rawRevenue = row['TO'];
+          const rawRevenue = row['ТО'];
 
           if (rawDate && rawRevenue) {
             labels.push(rawDate);
@@ -55,6 +59,7 @@
 
         if (labels.length === 0 || revenue.length === 0) {
           alert('Не удалось загрузить данные. Проверьте заголовки и формат CSV-файла.');
+          return;
         }
 
         const ctx = document.getElementById('revenueChart').getContext('2d');
@@ -85,6 +90,10 @@
             }
           }
         });
+      })
+      .catch(error => {
+        console.error('Ошибка загрузки CSV:', error);
+        alert('Ошибка загрузки CSV: ' + error.message);
       });
   </script>
 </body>
