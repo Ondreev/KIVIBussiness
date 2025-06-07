@@ -190,7 +190,7 @@
 
       const last7Traffic = last7.map(row => parseFloat(row["ТР"].replace(/\s/g, '').replace(',', '.')));
       const totalTraffic = last7Traffic.reduce((a, b) => a + b, 0);
-      const avgCheck = totalRevenue / totalTraffic;
+      const avgCheck = accumulatedRevenue / totalTraffic;
 
       const maxRevenue = recordsData[0]?.["Рекорд ТО"] || "—";
       const maxTraffic = recordsData[0]?.["Рекорд ТР"] || "—";
