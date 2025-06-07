@@ -35,27 +35,27 @@
     fetch(csvUrl)
       .then(response => response.text())
       .then(text => {
-        const data = Papa.parse(text, { header: true }).data;
+        const data = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
 
         const labels = [];
         const revenue = [];
 
         data.forEach(row => {
           const rawDate = row['Дата'];
-          const rawRevenue = row['ТО'];
+          const rawRevenue = row['TO'];
 
           if (rawDate && rawRevenue) {
             labels.push(rawDate);
             const value = parseFloat(
-              String(rawRevenue).replaceAll(' ', '').replace(',', '.')
+              String(rawRevenue).replace(/\s/g, '').replace(',', '.')
             );
-            if (!isNaN(value)) {
-              revenue.push(value);
-            } else {
-              revenue.push(0);
-            }
+            revenue.push(isNaN(value) ? 0 : value);
           }
         });
+
+        if (labels.length === 0 || revenue.length === 0) {
+          alert('Не удалось загрузить данные. Проверьте заголовки и формат CSV-файла.');
+        }
 
         const ctx = document.getElementById('revenueChart').getContext('2d');
         new Chart(ctx, {
