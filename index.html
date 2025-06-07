@@ -51,7 +51,7 @@
           const options = { day: 'numeric', month: 'short', weekday: 'short' };
           const formattedDate = date.toLocaleDateString("ru-RU", options);
           const revenue = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
-          return `${revenue.toLocaleString('ru-RU')} ₽\n${formattedDate}`;
+          return [`${revenue.toLocaleString('ru-RU')} ₽`, formattedDate];
         });
 
         const sales = last10.map(row => {
@@ -67,6 +67,9 @@
               label: "Выручка",
               data: sales,
               backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#e91e63' : '#ff80ab'),
+              barPercentage: 0.4,
+              categoryPercentage: 0.5,
+              borderRadius: 6
             }]
           },
           options: {
@@ -83,16 +86,12 @@
               x: {
                 ticks: {
                   color: '#000',
-                  font: function(context) {
-                    const index = context.index;
-                    return {
-                      size: 10,
-                      family: 'Arial',
-                      weight: index !== undefined && context.chart.data.labels[index].includes('\n') ? 'bold' : 'normal'
-                    };
+                  font: {
+                    size: 14,
+                    family: 'Arial'
                   },
-                  callback: function(value, index) {
-                    const parts = this.getLabelForValue(value).split('\n');
+                  callback: function(value) {
+                    const parts = this.getLabelForValue(value);
                     return parts;
                   }
                 }
