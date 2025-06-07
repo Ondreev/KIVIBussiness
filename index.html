@@ -190,8 +190,8 @@
       const totalTraffic = last7Traffic.reduce((a, b) => a + b, 0);
       const avgCheck = totalTraffic === 0 ? 0 : accumulatedRevenue / totalTraffic;
 
-      const maxRevenue = recordsData[0]?.["Рекорд ТО"] || "—";
-      const maxTraffic = recordsData[0]?.["Рекорд ТР"] || "—";
+      const maxRevenue = recordsData.find(r => r["Показатель"].includes("выручка"))?.["Значение"] || "—";
+      const maxTraffic = recordsData.find(r => r["Показатель"].includes("трафик"))?.["Значение"] || "—";
 
       document.getElementById("summaryBlock").innerHTML = `
         <strong>План месяца: ${planTotal.toLocaleString('ru-RU')}₽</strong>
