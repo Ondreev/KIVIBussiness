@@ -106,8 +106,11 @@
         const last7 = data.slice(-7);
 
         const sales = last7.map(row => parseFloat((row['ТО'] || '').replace(/\s/g, '').replace(',', '.')) || 0);
+
         const dates = last7.map(row => {
-          const date = new Date(row['Дата']);
+          const dateStr = row['Дата'];
+          const date = dateStr ? new Date(dateStr) : null;
+          if (!date || isNaN(date.getTime())) return '—';
           const day = date.getDate();
           const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
           return `${day} ${weekDay}`;
@@ -116,9 +119,10 @@
         const labels = last7.map(row => {
           const rawValue = row['ТО'] || '0';
           const numericValue = parseInt(rawValue.replace(/\s/g, '')) || 0;
-          const date = new Date(row['Дата']);
-          const day = date.getDate();
-          const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
+          const dateStr = row['Дата'];
+          const date = dateStr ? new Date(dateStr) : null;
+          const day = date && !isNaN(date.getTime()) ? date.getDate() : '';
+          const weekDay = date && !isNaN(date.getTime()) ? new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date) : '';
           return {
             revenue: numericValue.toLocaleString("ru-RU"),
             date: `${day} ${weekDay}`
