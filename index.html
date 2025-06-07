@@ -1,82 +1,61 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>KIWI Business — Выручка</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      background-color: #ff4081;
-      font-family: sans-serif;
-      color: #fff;
-      padding: 20px;
-    }
-    canvas {
-      background: #fff;
-      border-radius: 10px;
-      padding: 10px;
-      width: 100%;
-      max-width: 800px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h1>KIWI Business — Выручка</h1>
-  <canvas id="revenueChart"></canvas>
+<script>
+  const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
 
-  <script>
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
+  fetch(csvUrl)
+    .then(res => res.arrayBuffer())
+    .then(buffer => {
+      const decoder = new TextDecoder('utf-8'); // <--- не windows-1251
+      let csvText = decoder.decode(buffer);
 
-    fetch(csvUrl)
-      .then(res => res.arrayBuffer())
-      .then(buffer => {
-        const decoder = new TextDecoder('windows-1251');
-        const csvText = decoder.decode(buffer);
-        const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+      // Удалим BOM, если есть
+      if (csvText.charCodeAt(0) === 0xFEFF) {
+        csvText = csvText.slice(1);
+      }
 
-        const labels = [];
-        const revenue = [];
+      const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
 
-        data.forEach(row => {
-          const date = row['Дата'];
-          const value = parseFloat(String(row['ТО']).replace(/\s/g, '').replace(',', '.'));
-          if (date && !isNaN(value)) {
+      console.log("📦 Первый объект:", data[0]);
+
+      const labels = [];
+      const revenue = [];
+
+      data.forEach(row => {
+        const date = row['Дата'];
+        const raw = row['ТО'];
+        if (date && raw) {
+          const value = parseFloat(String(raw).replace(/\s/g, '').replace(',', '.'));
+          if (!isNaN(value)) {
             labels.push(date);
             revenue.push(value);
           }
-        });
+        }
+      });
 
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labels.slice(-14),
-            datasets: [{
-              label: 'Выручка',
-              data: revenue.slice(-14),
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderColor: '#fff',
-              borderWidth: 1
-            }]
-          },
-          options: {
-            scales: {
-              y: { beginAtZero: true }
-            },
-            plugins: {
-              legend: {
-                labels: { color: '#ff4081' }
-              }
+      const ctx = document.getElementById('revenueChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.slice(-14),
+          datasets: [{
+            label: 'Выручка',
+            data: revenue.slice(-14),
+            backgroundColor: 'rgba(255,255,255,0.8)',
+            borderColor: '#fff',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: { y: { beginAtZero: true } },
+          plugins: {
+            legend: {
+              labels: { color: '#ff4081' }
             }
           }
-        });
-      })
-      .catch(err => {
-        console.error('Ошибка загрузки данных:', err);
-        alert('Ошибка загрузки данных: ' + err.message);
+        }
       });
-  </script>
-</body>
-</html>
+    })
+    .catch(err => {
+      console.error('Ошибка загрузки CSV:', err);
+      alert('Ошибка загрузки CSV: ' + err.message);
+    });
+</script>
