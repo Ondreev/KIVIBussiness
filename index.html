@@ -120,7 +120,8 @@
 
       const planRevenue = parseFloat(String(thisMonthPlans["План по выручке"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
       const planTraffic = parseFloat(String(thisMonthPlans["План по трафику"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
-      const planAvgCheck = parseFloat(String(thisMonthPlans["План по среднему чеку"] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
+      const avgCheckKey = Object.keys(thisMonthPlans).find(k => k.toLowerCase().includes("чек"));
+      const planAvgCheck = parseFloat(String(thisMonthPlans[avgCheckKey] || "0").replace(/\s/g, '').replace(',', '.')) || 0;
 
       const factRevenue = filteredMain.reduce((sum, row) => sum + (parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
       const factTraffic = filteredMain.reduce((sum, row) => sum + (parseFloat(row["ТР"].replace(/\s/g, '').replace(',', '.')) || 0), 0);
