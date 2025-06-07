@@ -2,143 +2,90 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>КИВИ Business</title>
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <title>KIWI Business CSV</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       background-color: #ff4081;
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       color: #fff;
       padding: 20px;
+    }
+    canvas {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 20px;
     }
     h1 {
       font-size: 24px;
     }
-    .kpi {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .kpi-block {
-      background-color: white;
-      color: #ff4081;
-      padding: 20px;
-      border-radius: 12px;
-      flex: 1 1 200px;
-      text-align: center;
-    }
-    .kpi-block h2 {
-      margin: 0;
-      font-size: 18px;
-    }
-    .kpi-block p {
-      font-size: 24px;
-      margin: 10px 0 0;
-    }
-    #chart_div {
-      width: 100%;
-      height: 400px;
-      background: white;
-      margin: 20px 0;
-    }
-    button {
-      background: white;
-      color: #ff4081;
-      border: none;
-      padding: 10px 20px;
-      cursor: pointer;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
-  <h1>КИВИ Business — успешно выполняем План</h1>
-
-  <div class="kpi">
-    <div class="kpi-block">
-      <h2>План на месяц</h2>
-      <p id="kpi-plan">—</p>
-    </div>
-    <div class="kpi-block">
-      <h2>Трафик</h2>
-      <p id="kpi-traffic">—</p>
-    </div>
-    <div class="kpi-block">
-      <h2>Средний чек</h2>
-      <p id="kpi-average">—</p>
-    </div>
-  </div>
-
-  <div id="chart_div"></div>
-  <button onclick="toggleChart()">Показать все</button>
+  <h1>KIWI Business — CSV-график</h1>
+  <canvas id="revenueChart"></canvas>
 
   <script>
-    google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(drawChart);
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
 
-    let showAll = false;
-    let fullData = [];
+    fetch(csvUrl)
+      .then(response => response.text())
+      .then(text => {
+        const data = Papa.parse(text, { header: true }).data;
 
-    function drawChart() {
-      const query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/gviz/tq?sheet=\u0414\u0430\u043d\u043d\u044b\u0435');
-      query.send(handleQueryResponse);
-    }
+        const labels = [];
+        const revenue = [];
 
-    function handleQueryResponse(response) {
-      if (response.isError()) {
-        document.getElementById('chart_div').innerText = 'Ошибка загрузки данных';
-        return;
-      }
+        data.forEach(row => {
+          const rawDate = row['Дата'];
+          const rawRevenue = row['ТО'];
 
-      const data = response.getDataTable();
-      fullData = data;
+          if (rawDate && rawRevenue) {
+            labels.push(rawDate);
+            const value = parseFloat(
+              String(rawRevenue).replaceAll(' ', '').replace(',', '.')
+            );
+            if (!isNaN(value)) {
+              revenue.push(value);
+            } else {
+              revenue.push(0);
+            }
+          }
+        });
 
-      // KPI из всех строк
-      const rowCount = data.getNumberOfRows();
-      let totalRevenue = 0, totalTraffic = 0;
-
-      for (let i = 0; i < rowCount; i++) {
-        totalRevenue += data.getValue(i, 2);
-        totalTraffic += data.getValue(i, 3);
-      }
-
-      const avgCheck = totalTraffic > 0 ? totalRevenue / totalTraffic : 0;
-
-      document.getElementById('kpi-plan').innerText = Math.round(totalRevenue) + ' ₽';
-      document.getElementById('kpi-traffic').innerText = totalTraffic;
-      document.getElementById('kpi-average').innerText = Math.round(avgCheck) + ' ₽';
-
-      let shortData = new google.visualization.DataTable();
-      shortData.addColumn('string', 'Дата');
-      shortData.addColumn('number', 'Выручка');
-
-      const start = Math.max(0, rowCount - 14);
-      for (let i = start; i < rowCount; i++) {
-        shortData.addRow([data.getValue(i, 0), data.getValue(i, 2)]);
-      }
-
-      const chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
-      chart.draw(shortData, {title: 'Выручка за последние 14 дней'});
-    }
-
-    function toggleChart() {
-      showAll = !showAll;
-      const data = fullData;
-      let visibleData = new google.visualization.DataTable();
-      visibleData.addColumn('string', 'Дата');
-      visibleData.addColumn('number', 'Выручка');
-
-      const rowCount = data.getNumberOfRows();
-      const start = showAll ? 0 : Math.max(0, rowCount - 14);
-
-      for (let i = start; i < rowCount; i++) {
-        visibleData.addRow([data.getValue(i, 0), data.getValue(i, 2)]);
-      }
-
-      const chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
-      chart.draw(visibleData, {title: showAll ? 'Выручка за месяц' : 'Выручка за последние 14 дней'});
-    }
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Выручка',
+              data: revenue,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              borderColor: '#fff',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#ff4081'
+                }
+              }
+            }
+          }
+        });
+      });
   </script>
 </body>
 </html>
