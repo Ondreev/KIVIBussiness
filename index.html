@@ -11,34 +11,34 @@
       font-family: sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #ff4081;
-      color: #fff;
+      background-color: #f63576;
       display: flex;
       flex-direction: column;
       align-items: center;
+      color: #fff;
     }
     h1 {
       font-size: 28px;
       font-weight: 900;
-      margin: 20px 10px;
+      margin: 20px 10px 10px;
     }
-    #chartWrapper {
-      background-color: #f4f4f4;
-      border-radius: 20px;
-      padding: 20px;
-      width: 95%;
-      max-width: 480px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    #chartContainer {
+      background-color: #f5f5f5;
+      border-radius: 12px;
+      padding: 16px;
+      width: 95vw;
+      max-width: 600px;
+      box-sizing: border-box;
+      color: #000;
     }
     canvas {
-      width: 100% !important;
-      height: auto !important;
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
-  <h1>КИВИ <span style="color:#ccc; font-weight: 700;">Business</span></h1>
-  <div id="chartWrapper">
+  <h1>КИВИ <span style="font-weight: normal; opacity: 0.9">Business</span></h1>
+  <div id="chartContainer">
     <canvas id="salesChart"></canvas>
   </div>
 
@@ -47,69 +47,93 @@
 
     fetch(csvUrl)
       .then(response => response.text())
-      .then(csv => {
-        const parsed = Papa.parse(csv, { header: true });
-        const rows = parsed.data.filter(row => row["Дата"] && row["ТО"]);
-        const last10 = rows.slice(-10);
+      .then(csvText => {
+        const parsed = Papa.parse(csvText, { header: true });
+        const data = parsed.data.filter(row => row["Дата"] && row["ТО"]);
+        const last7 = data.slice(-7);
 
-        const labels = last10.map(row => {
+        const labels = last7.map(row => {
           const date = new Date(row["Дата"]);
-          const weekday = date.toLocaleDateString("ru-RU", { weekday: "short" });
-          const day = date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-          return `${weekday}, ${day}`;
+          const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
+          const day = date.getDate();
+          const month = date.toLocaleDateString("ru-RU", { month: 'short' });
+          return `${weekday}, ${day} ${month}`;
         });
 
-        const sales = last10.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
+        const sales = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
 
         new Chart(document.getElementById("salesChart"), {
           type: "bar",
           data: {
             labels: labels,
             datasets: [{
-              label: "Выручка",
               data: sales,
-              backgroundColor: sales.map((v, i, arr) => i === arr.length - 1 ? '#d50060' : '#ff80ab'),
-              borderRadius: 6,
-              barThickness: 30,
+              backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#e91e63' : '#ff80ab'),
+              borderRadius: 6
             }]
           },
           options: {
+            responsive: true,
             plugins: {
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  title: ctx => `${ctx[0].label}`,
-                  label: ctx => `${ctx.parsed.y.toLocaleString('ru-RU')} ₽`
+                  label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} ₽`
                 }
               },
               datalabels: {
-                display: true
+                anchor: 'end',
+                align: 'end'
               }
             },
-            responsive: true,
+            layout: {
+              padding: {
+                top: 20
+              }
+            },
             scales: {
               x: {
                 ticks: {
-                  callback: function(val, index) {
-                    const value = this.getLabelForValue(index);
-                    return [sales[index].toLocaleString('ru-RU') + ' ₽', value];
-                  },
                   color: '#000',
+                  callback: (val, index) => {
+                    const [weekday, date] = labels[index].split(', ');
+                    return [`${date}`, `${weekday}`];
+                  },
                   font: {
-                    weight: 'bold'
+                    size: 10
                   }
                 }
               },
               y: {
-                display: false
+                ticks: {
+                  color: '#000',
+                  callback: val => val.toLocaleString("ru-RU")
+                },
+                beginAtZero: true
               }
             }
-          }
+          },
+          plugins: [
+            {
+              id: 'customLabels',
+              afterDatasetsDraw(chart) {
+                const {ctx, data} = chart;
+                ctx.save();
+                chart.getDatasetMeta(0).data.forEach((bar, i) => {
+                  const value = data.datasets[0].data[i];
+                  ctx.font = 'bold 12px sans-serif';
+                  ctx.fillStyle = '#000';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(`${value.toLocaleString('ru-RU')} ₽`, bar.x, bar.y - 8);
+                });
+              }
+            }
+          ]
         });
       })
-      .catch(error => {
+      .catch(err => {
         alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
-        console.error(error);
+        console.error(err);
       });
   </script>
 </body>
