@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>КИВИ Business</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -16,23 +16,25 @@
     }
     h1 {
       margin: 20px;
-      font-size: 24px;
+      font-size: 32px;
+      font-weight: 900;
+      text-align: center;
     }
     #chartContainer {
       background-color: #f5f5f5;
       border-radius: 10px;
-      margin: 20px;
+      margin: 10px;
       padding: 10px;
       color: #333;
-      height: 360px;
     }
     canvas {
       max-width: 100%;
+      height: 300px !important;
     }
   </style>
 </head>
 <body>
-  <h1>KIWI Business — Выручка</h1>
+  <h1>КИВИ Business</h1>
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
   </div>
@@ -49,26 +51,26 @@
 
         const labels = last10.map(row => {
           const date = new Date(row["Дата"]);
-          const options = { day: 'numeric', month: 'short' };
-          const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
-          return `${weekday}\n${date.toLocaleDateString("ru-RU", options)}`;
+          const options = { day: 'numeric', month: 'short', weekday: 'short' };
+          const formattedDate = date.toLocaleDateString("ru-RU", options);
+          return formattedDate;
         });
 
-        const revenues = last10.map(row => {
+        const sales = last10.map(row => {
           const cleaned = row["ТО"].replace(/\s/g, '').replace(',', '.');
           return parseFloat(cleaned);
         });
 
-        const formattedRevenues = revenues.map(val => `${val.toLocaleString('ru-RU')} ₽`);
+        const salesFormatted = sales.map(s => s.toLocaleString('ru-RU') + ' ₽');
 
-        const ctx = document.getElementById("salesChart").getContext("2d");
-        new Chart(ctx, {
+        new Chart(document.getElementById("salesChart"), {
           type: "bar",
           data: {
             labels: labels,
             datasets: [{
-              data: revenues,
-              backgroundColor: revenues.map((v, i, arr) => i === arr.length - 1 ? '#e91e63' : '#ff80ab'),
+              label: "Выручка",
+              data: sales,
+              backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#e91e63' : '#ff80ab'),
             }]
           },
           options: {
@@ -83,30 +85,25 @@
               datalabels: {
                 anchor: 'end',
                 align: 'start',
-                formatter: (value, ctx) => formattedRevenues[ctx.dataIndex],
+                color: '#000',
                 font: {
-                  weight: 'bold',
-                  size: 14
+                  weight: 'bold'
                 },
-                color: '#000'
+                formatter: (value, ctx) => salesFormatted[ctx.dataIndex]
               }
             },
             scales: {
               x: {
                 ticks: {
                   color: '#000',
-                  font: {
-                    size: 12
-                  }
-                },
-                grid: { display: false },
+                  font: { size: 10 }
+                }
               },
               y: {
                 ticks: {
                   color: '#000',
                   callback: val => val.toLocaleString("ru-RU")
-                },
-                grid: { display: true, color: '#ccc' }
+                }
               }
             }
           },
