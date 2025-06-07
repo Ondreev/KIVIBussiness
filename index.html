@@ -1,94 +1,99 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KIWI Business — Выручка</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
-      background-color: #ff4081;
       font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #ff4081;
       color: #fff;
-      padding: 20px;
-    }
-    canvas {
-      background: #fff;
-      border-radius: 10px;
-      padding: 10px;
-      width: 100%;
-      max-width: 800px;
-      margin-top: 20px;
     }
     h1 {
+      margin: 20px;
       font-size: 24px;
+    }
+    #chartContainer {
+      background-color: #f5f5f5;
+      border-radius: 10px;
+      margin: 20px;
+      padding: 20px;
+      color: #333;
+    }
+    canvas {
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
   <h1>KIWI Business — Выручка</h1>
-  <canvas id="revenueChart"></canvas>
+  <div id="chartContainer">
+    <canvas id="salesChart"></canvas>
+  </div>
 
   <script>
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
 
     fetch(csvUrl)
       .then(response => response.text())
-      .then(text => {
-        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-        const data = parsed.data;
+      .then(csvText => {
+        const parsed = Papa.parse(csvText, { header: true });
+        const data = parsed.data.filter(row => row["Дата"] && row["ТО"]);
+        const last14 = data.slice(-14);
 
-        const labels = [];
-        const revenue = [];
-
-        data.forEach(row => {
-          const date = row['Дата'];
-          const rawRevenue = row['ТО'];
-
-          if (date && rawRevenue) {
-            labels.push(date);
-            const value = parseFloat(
-              String(rawRevenue)
-                .replace(/[\s\u00A0\u202F]/g, '')
-                .replace(',', '.')
-            );
-            revenue.push(isNaN(value) ? 0 : value);
-          }
+        const labels = last14.map(row => {
+          const date = new Date(row["Дата"]);
+          const options = { day: 'numeric', month: 'short', weekday: 'short' };
+          return date.toLocaleDateString("ru-RU", options);
         });
 
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-        new Chart(ctx, {
-          type: 'bar',
+        const sales = last14.map(row => {
+          const cleaned = row["ТО"].replace(/\s/g, '').replace(',', '.');
+          return parseFloat(cleaned);
+        });
+
+        new Chart(document.getElementById("salesChart"), {
+          type: "bar",
           data: {
-            labels,
+            labels: labels,
             datasets: [{
-              label: 'Выручка',
-              data: revenue,
-              backgroundColor: 'rgba(255, 200, 0, 0.85)',  // ярко-жёлтый
-              borderColor: '#ff4081',                       // насыщенно-розовый
-              borderWidth: 2
+              label: "Выручка",
+              data: sales,
+              backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#00a651' : '#66cdaa'),
             }]
           },
           options: {
             responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} ₽`
+                }
               }
             },
-            plugins: {
-              legend: {
-                labels: {
-                  color: '#ff4081'
+            scales: {
+              x: {
+                ticks: { color: '#000' }
+              },
+              y: {
+                ticks: {
+                  color: '#000',
+                  callback: val => val.toLocaleString("ru-RU")
                 }
               }
             }
           }
         });
       })
-      .catch(error => {
-        console.error('Ошибка загрузки CSV:', error);
-        alert('Ошибка загрузки CSV: ' + error.message);
+      .catch(err => {
+        alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
+        console.error(err);
       });
   </script>
 </body>
