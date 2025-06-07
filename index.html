@@ -94,25 +94,58 @@
 
   <script>
     const ctx = document.getElementById("salesChart").getContext("2d");
-    const sales = [44189, 36764, 20694, 44014, 15291, 36340, 39905];
-    const labels = [
-      { revenue: "44 189", date: "31 сб" },
-      { revenue: "36 764", date: "1 вс" },
-      { revenue: "20 694", date: "2 пн" },
-      { revenue: "44 014", date: "3 вт" },
-      { revenue: "15 291", date: "4 ср" },
-      { revenue: "36 340", date: "5 чт" },
-      { revenue: "39 905", date: "6 пт" }
-    ];
-    const planStatus = [true, true, false, true, false, true, true];
+
+    const fetchData = async () => {
+      const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+
+      const response = await fetch(csvUrl);
+      const csvText = await response.text();
+      const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+
+      const last7 = data.slice(-7);
+
+      const sales = last7.map(row => parseInt(row['ТО'].replace(/\s/g, '').replace(',', '.')));
+      const dates = last7.map(row => {
+        const date = new Date(row['Дата']);
+        const day = date.getDate();
+        const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
+        return `${day} ${weekDay}`;
+      });
+
+      const labels = last7.map(row => {
+        const value = parseInt(row['ТО'].replace(/\s/g, ''));
+        const date = new Date(row['Дата']);
+        const day = date.getDate();
+        const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
+        return {
+          revenue: value.toLocaleString("ru-RU"),
+          date: `${day} ${weekDay}`
+        };
+      });
+
+      const planStatus = last7.map(row => row['Выполнение плана (Да/Нет)'] === 'Да');
+
+      chart.data.labels = dates;
+      chart.data.datasets[0].data = sales;
+      chart.data.datasets[0].backgroundColor = ctx => planStatus[ctx.dataIndex] ? "#ffd600" : "#ffffff";
+      chart.update();
+
+      const customLabels = document.getElementById("customLabels");
+      customLabels.innerHTML = labels.map(l => `
+        <div class="label-item">
+          <div class="revenue">${l.revenue}</div>
+          <div class="date">${l.date}</div>
+        </div>`
+      ).join("");
+    };
 
     const chart = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: labels.map(l => l.date),
+        labels: [],
         datasets: [{
-          data: sales,
-          backgroundColor: (ctx) => planStatus[ctx.dataIndex] ? "#ffd600" : "#ffffff",
+          data: [],
+          backgroundColor: "#ffffff",
           borderRadius: 10,
           barThickness: 28
         }]
@@ -139,13 +172,7 @@
       plugins: [ChartDataLabels]
     });
 
-    const customLabels = document.getElementById("customLabels");
-    customLabels.innerHTML = labels.map(l => `
-      <div class="label-item">
-        <div class="revenue">${l.revenue}</div>
-        <div class="date">${l.date}</div>
-      </div>`
-    ).join("");
+    fetchData();
   </script>
 </body>
 </html>
