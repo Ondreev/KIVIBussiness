@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KIWI Business — Выручка</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>КИВИ Business</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
@@ -22,13 +22,12 @@
       background-color: #f5f5f5;
       border-radius: 10px;
       margin: 20px;
-      padding: 10px 10px 0;
+      padding: 10px;
       color: #333;
-      height: 300px;
+      height: 360px;
     }
     canvas {
       max-width: 100%;
-      height: 100% !important;
     }
   </style>
 </head>
@@ -50,39 +49,46 @@
 
         const labels = last10.map(row => {
           const date = new Date(row["Дата"]);
-          const options = { day: 'numeric', month: 'short', weekday: 'short' };
-          const formattedDate = date.toLocaleDateString("ru-RU", options);
-          const revenue = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
-          return `${revenue.toLocaleString('ru-RU')} ₽\n${formattedDate}`;
+          const options = { day: 'numeric', month: 'short' };
+          const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
+          return `${weekday}\n${date.toLocaleDateString("ru-RU", options)}`;
         });
 
-        const sales = last10.map(row => {
+        const revenues = last10.map(row => {
           const cleaned = row["ТО"].replace(/\s/g, '').replace(',', '.');
           return parseFloat(cleaned);
         });
 
-        new Chart(document.getElementById("salesChart"), {
+        const formattedRevenues = revenues.map(val => `${val.toLocaleString('ru-RU')} ₽`);
+
+        const ctx = document.getElementById("salesChart").getContext("2d");
+        new Chart(ctx, {
           type: "bar",
           data: {
             labels: labels,
             datasets: [{
-              label: "Выручка",
-              data: sales,
-              backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#e91e63' : '#ff80ab'),
-              borderRadius: 4,
-              barThickness: 26,
-              maxBarThickness: 28
+              data: revenues,
+              backgroundColor: revenues.map((v, i, arr) => i === arr.length - 1 ? '#e91e63' : '#ff80ab'),
             }]
           },
           options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: {
               legend: { display: false },
               tooltip: {
                 callbacks: {
                   label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} ₽`
                 }
+              },
+              datalabels: {
+                anchor: 'end',
+                align: 'start',
+                formatter: (value, ctx) => formattedRevenues[ctx.dataIndex],
+                font: {
+                  weight: 'bold',
+                  size: 14
+                },
+                color: '#000'
               }
             },
             scales: {
@@ -90,19 +96,21 @@
                 ticks: {
                   color: '#000',
                   font: {
-                    size: 12,
-                    weight: 'bold'
+                    size: 12
                   }
-                }
+                },
+                grid: { display: false },
               },
               y: {
                 ticks: {
                   color: '#000',
                   callback: val => val.toLocaleString("ru-RU")
-                }
+                },
+                grid: { display: true, color: '#ccc' }
               }
             }
-          }
+          },
+          plugins: [ChartDataLabels]
         });
       })
       .catch(err => {
@@ -110,5 +118,6 @@
         console.error(err);
       });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </body>
 </html>
