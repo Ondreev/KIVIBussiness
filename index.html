@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>КИВИ Business</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
@@ -11,78 +12,30 @@
       font-family: sans-serif;
       background-color: #ff4081;
       color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
+      text-align: center;
     }
     h1 {
       font-size: 28px;
+      margin: 20px 0;
       font-weight: 900;
-      margin-bottom: 20px;
-    }
-    h1 span {
-      font-weight: normal;
     }
     #chartContainer {
-      display: flex;
-      flex-direction: column;
-      background: rgba(255 255 255 / 0.1);
+      background-color: #f5f5f5;
       border-radius: 16px;
-      padding: 16px;
-      max-width: 700px;
-      width: 100%;
-      user-select: none;
+      margin: 0 auto;
+      padding: 20px;
+      max-width: 95%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    /* Контейнер для столбцов */
-    #bars {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      align-items: flex-end;
-      height: 150px;
-    }
-    .bar {
-      width: 40px;
-      background: white;
-      border-radius: 8px 8px 0 0;
-      transition: background-color 0.3s ease;
-      position: relative;
-    }
-    .bar.highlight {
-      background: #ffeb3b; /* желтый */
-    }
-    /* Контейнер для подписей под столбцами */
-    #labels {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-top: 8px;
-    }
-    .label {
-      width: 40px;
-      color: white;
-      text-align: center;
-      font-weight: 600;
-      font-size: 12px;
-      line-height: 1.2;
-      user-select: none;
-    }
-    .revenue {
-      font-weight: 900;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-    .date-info {
-      font-weight: 600;
+    canvas {
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
-  <h1>КИВИ <span>Business</span></h1>
+  <h1><span style="color: white; font-weight: 900">КИВИ</span> <span style="font-weight: 300">Business</span></h1>
   <div id="chartContainer">
-    <div id="bars"></div>
-    <div id="labels"></div>
+    <canvas id="salesChart"></canvas>
   </div>
 
   <script>
@@ -93,57 +46,71 @@
       .then(csvText => {
         const parsed = Papa.parse(csvText, { header: true });
         const data = parsed.data.filter(row => row["Дата"] && row["ТО"]);
-
-        // Берём последние 7 дней
         const last7 = data.slice(-7);
 
-        const barsContainer = document.getElementById("bars");
-        const labelsContainer = document.getElementById("labels");
-        barsContainer.innerHTML = "";
-        labelsContainer.innerHTML = "";
-
-        // Найдём максимальную выручку для нормализации высоты столбцов
-        const maxRevenue = Math.max(...last7.map(r => parseFloat(r["ТО"].replace(/\s/g, '').replace(',', '.'))));
-
-        last7.forEach(row => {
-          const revenue = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
-          const planMet = (row["Выполнение плана (Да/Нет)"] || "").trim().toLowerCase() === "да";
-
-          // Высота столбца пропорциональна выручке (макс 150px)
-          const height = (revenue / maxRevenue) * 150;
-
-          // Создаём столбец
-          const bar = document.createElement("div");
-          bar.className = "bar" + (planMet ? " highlight" : "");
-          bar.style.height = height + "px";
-          barsContainer.appendChild(bar);
-
-          // Создаём подпись под столбцом
-          const label = document.createElement("div");
-          label.className = "label";
-
-          // Выручка жирным сверху
-          const revEl = document.createElement("div");
-          revEl.className = "revenue";
-          revEl.textContent = `${revenue.toLocaleString('ru-RU')} ₽`;
-
-          // День недели и число под выручкой
+        const sales = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
+        const labels = last7.map(row => {
           const date = new Date(row["Дата"]);
-          const weekday = row["День недели"] || date.toLocaleDateString("ru-RU", { weekday: 'short' });
           const day = date.getDate();
+          const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
+          return `${day} ${weekday}`;
+        });
 
-          const dateEl = document.createElement("div");
-          dateEl.className = "date-info";
-          dateEl.innerHTML = `${weekday}<br>${day}`;
+        const formattedValues = sales.map(v => v.toLocaleString('ru-RU') + ' ₽');
 
-          label.appendChild(revEl);
-          label.appendChild(dateEl);
-          labelsContainer.appendChild(label);
+        new Chart(document.getElementById("salesChart"), {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              data: sales,
+              backgroundColor: sales.map((_, i) => i === sales.length - 1 ? '#d50057' : '#ff80ab'),
+              borderRadius: 6,
+              barPercentage: 0.6
+            }]
+          },
+          options: {
+            indexAxis: 'x',
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: ctx => ctx.raw.toLocaleString('ru-RU') + ' ₽'
+                }
+              },
+              datalabels: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                display: false
+              },
+              x: {
+                ticks: {
+                  callback: function(value, index) {
+                    return `${formattedValues[index]}\n${this.getLabelForValue(index)}`;
+                  },
+                  color: '#000',
+                  font: {
+                    weight: 'bold',
+                    size: 12
+                  },
+                  maxRotation: 0,
+                  minRotation: 0
+                },
+                grid: {
+                  display: false
+                }
+              }
+            }
+          }
         });
       })
-      .catch(error => {
-        alert("Ошибка загрузки. Проверьте ссылку на таблицу.");
-        console.error(error);
+      .catch(err => {
+        alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
+        console.error(err);
       });
   </script>
 </body>
