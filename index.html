@@ -115,10 +115,8 @@
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
       });
 
-      const thisMonthPlans = plansData.find(row => {
-        const [year, month] = row["Месяц"].split("-");
-        return parseInt(month) === currentMonth + 1 && parseInt(year) === currentYear;
-      }) || {"План по выручке": 0, "План по трафику": 0, "План по среднему чеку": 0};
+      const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+      const thisMonthPlans = plansData.find(row => row["Месяц"] === currentMonthStr) || {"План по выручке": 0, "План по трафику": 0, "План по среднему чеку": 0};
 
       const planRevenue = parseFloat(thisMonthPlans["План по выручке"].replace(/\s/g, '').replace(',', '.')) || 0;
       const planTraffic = parseFloat(thisMonthPlans["План по трафику"].replace(/\s/g, '').replace(',', '.')) || 0;
