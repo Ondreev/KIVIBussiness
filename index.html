@@ -16,20 +16,17 @@
       text-align: center;
     }
     h1 {
-      margin: 20px 0;
+      margin: 20px 0 10px;
       font-size: 28px;
       font-weight: 900;
-      color: #fff;
     }
-    #chartWrapper {
+    #chartContainer {
       background-color: #f5f5f5;
-      border-radius: 20px;
-      margin: 10px;
-      padding: 10px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+      border-radius: 16px;
+      margin: 0 auto;
+      padding: 30px 10px 50px;
+      width: 95%;
+      max-width: 900px;
     }
     canvas {
       max-width: 100%;
@@ -37,8 +34,8 @@
   </style>
 </head>
 <body>
-  <h1><span style="font-weight: 900">КИВИ</span> <span style="font-weight: 300">Business</span></h1>
-  <div id="chartWrapper">
+  <h1><span style="color: white; font-weight: 900;">КИВИ</span> <span style="color: white; font-weight: 400;">Business</span></h1>
+  <div id="chartContainer">
     <canvas id="salesChart"></canvas>
   </div>
 
@@ -56,68 +53,90 @@
           const date = new Date(row["Дата"]);
           const day = date.getDate();
           const weekday = date.toLocaleDateString("ru-RU", { weekday: "short" });
-          const revenue = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
-          return {
-            revenue: revenue,
-            topLabel: `${revenue.toLocaleString('ru-RU')} ₽`,
-            bottomLabel: `${day} ${weekday}`
-          };
+          return `${day} ${weekday}`;
         });
 
-        const ctx = document.getElementById("salesChart").getContext("2d");
-        new Chart(ctx, {
+        const sales = last7.map(row => {
+          const cleaned = row["ТО"].replace(/\s/g, '').replace(',', '.');
+          return parseFloat(cleaned);
+        });
+
+        const formattedSales = sales.map(val => val.toLocaleString("ru-RU") + " ₽");
+
+        new Chart(document.getElementById("salesChart"), {
           type: "bar",
           data: {
-            labels: labels.map(l => l.bottomLabel),
+            labels: labels,
             datasets: [{
-              data: labels.map(l => l.revenue),
+              label: "Выручка",
+              data: sales,
               backgroundColor: (ctx) => {
-                const i = ctx.dataIndex;
-                return i === labels.length - 1 ? '#d5004e' : '#ff80ab';
+                return ctx.dataIndex === sales.length - 1 ? '#d50057' : '#ff80ab';
               },
               borderRadius: 6,
-              barPercentage: 0.5,
-              categoryPercentage: 0.8
+              barThickness: 30,
             }]
           },
           options: {
+            indexAxis: 'x',
+            responsive: true,
             plugins: {
               legend: { display: false },
-              tooltip: { enabled: false },
-              datalabels: {
-                display: true,
-                color: '#000',
-                font: {
-                  weight: 'bold',
-                  size: 14
-                },
-                anchor: 'end',
-                align: 'end',
-                formatter: (_, ctx) => labels[ctx.dataIndex].topLabel
-              }
+              tooltip: {
+                callbacks: {
+                  label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} ₽`
+                }
+              },
+              datalabels: false
             },
             scales: {
-              y: { display: false },
+              y: {
+                display: false
+              },
               x: {
                 ticks: {
-                  color: '#000',
                   font: {
-                    size: 12
+                    weight: 'bold'
                   }
                 }
               }
             },
-            responsive: true,
-            maintainAspectRatio: false
+            layout: {
+              padding: {
+                top: 30
+              }
+            },
+            plugins: {
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+              }
+            },
+            animation: false,
+            onHover: null
           },
-          plugins: [ChartDataLabels]
+          plugins: [{
+            id: 'customLabels',
+            afterDatasetsDraw(chart) {
+              const { ctx, chartArea: { top }, data } = chart;
+              chart.data.datasets[0].data.forEach((value, index) => {
+                const meta = chart.getDatasetMeta(0).data[index];
+                const x = meta.x;
+                const y = meta.y + 20;
+                ctx.font = "bold 14px sans-serif";
+                ctx.fillStyle = "black";
+                ctx.textAlign = "center";
+                ctx.fillText(formattedSales[index], x, chart.chartArea.bottom + 25);
+              });
+            }
+          }]
         });
+
       })
       .catch(err => {
         alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
         console.error(err);
       });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </body>
 </html>
