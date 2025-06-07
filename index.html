@@ -38,8 +38,6 @@
         const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
         const data = parsed.data;
 
-        console.log("Пример строки:", data[0]);
-
         const labels = [];
         const revenue = [];
 
@@ -51,17 +49,12 @@
             labels.push(date);
             const value = parseFloat(
               String(rawRevenue)
-                .replace(/\s|\u00A0/g, '') // убираем все пробелы
-                .replace(',', '.')        // заменяем запятую на точку
+                .replace(/[\s\u00A0\u202F]/g, '')
+                .replace(',', '.')
             );
             revenue.push(isNaN(value) ? 0 : value);
           }
         });
-
-        if (labels.length === 0 || revenue.length === 0) {
-          alert('Не удалось загрузить данные. Проверьте заголовки и формат CSV-файла.');
-          return;
-        }
 
         const ctx = document.getElementById('revenueChart').getContext('2d');
         new Chart(ctx, {
@@ -71,9 +64,9 @@
             datasets: [{
               label: 'Выручка',
               data: revenue,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderColor: '#fff',
-              borderWidth: 1
+              backgroundColor: 'rgba(255, 200, 0, 0.85)',  // ярко-жёлтый
+              borderColor: '#ff4081',                       // насыщенно-розовый
+              borderWidth: 2
             }]
           },
           options: {
