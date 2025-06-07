@@ -2,39 +2,76 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Debug Google Sheets</title>
-  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <title>KIWI Business CSV</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background-color: #ff4081;
+      font-family: sans-serif;
+      color: #fff;
+      padding: 20px;
+    }
+    canvas {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      width: 100%;
+      max-width: 800px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Тест загрузки данных из Google Sheets</h2>
-  <pre id="output">Загрузка...</pre>
+  <h1>KIWI Business — CSV-график</h1>
+  <canvas id="revenueChart"></canvas>
 
   <script>
-    google.charts.load('current', {'packages':['corechart']});
-    google.charts.setOnLoadCallback(testQuery);
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
 
-    function testQuery() {
-      const query = new google.visualization.Query('https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/gviz/tq?sheet=\u0414\u0430\u043d\u043d\u044b\u0435');
-      query.send(function(response) {
-        const output = document.getElementById('output');
+    fetch(csvUrl)
+      .then(response => response.text())
+      .then(text => {
+        const data = Papa.parse(text, { header: true }).data;
 
-        if (response.isError()) {
-          output.textContent = 'Ошибка: ' + response.getMessage() + '\n' + response.getDetailedMessage();
-          return;
-        }
+        const labels = [];
+        const revenue = [];
 
-        const dataTable = response.getDataTable();
-        let result = [];
-        for (let i = 0; i < dataTable.getNumberOfRows(); i++) {
-          let row = [];
-          for (let j = 0; j < dataTable.getNumberOfColumns(); j++) {
-            row.push(dataTable.getValue(i, j));
+        data.forEach(row => {
+          if (row['Дата'] && row['ТО']) {
+            labels.push(row['Дата']);
+            revenue.push(parseFloat(row['ТО'].replace(',', '.')));
           }
-          result.push(row.join(' | '));
-        }
-        output.textContent = result.join('\n');
+        });
+
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Выручка',
+              data: revenue,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              borderColor: '#fff',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#fff'
+                }
+              }
+            }
+          }
+        });
       });
-    }
   </script>
 </body>
 </html>
