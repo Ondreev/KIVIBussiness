@@ -32,7 +32,7 @@
     }
     canvas {
       width: 100% !important;
-      height: 250px !important;
+      height: 80px !important; /* уменьшена высота */
     }
     .custom-labels {
       display: flex;
@@ -90,8 +90,8 @@
               data: revenues,
               backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
               borderRadius: 10,
-              barPercentage: 0.8,
-              categoryPercentage: 0.8
+              barPercentage: 0.9,
+              categoryPercentage: 0.9
             }]
           },
           options: {
@@ -100,12 +100,25 @@
             plugins: {
               legend: { display: false },
               tooltip: { enabled: false },
-              datalabels: {
-                display: false
-              }
+              datalabels: { display: false }
             },
             scales: {
-              y: { display: false },
+              y: {
+                display: false,
+                grid: {
+                  display: true,
+                  drawBorder: false,
+                  color: function(context) {
+                    if (context.tick.value % 10000 === 0) {
+                      return 'rgba(255,255,255,0.1)';
+                    }
+                    return 'transparent';
+                  }
+                },
+                ticks: {
+                  stepSize: 10000
+                }
+              },
               x: {
                 ticks: { display: false },
                 grid: { display: false }
