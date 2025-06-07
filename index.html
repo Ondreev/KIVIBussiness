@@ -26,49 +26,64 @@
     }
     #chartContainer {
       display: flex;
+      flex-direction: column;
       background: rgba(255 255 255 / 0.1);
       border-radius: 16px;
       padding: 16px;
-      gap: 12px;
       max-width: 700px;
       width: 100%;
-      justify-content: center;
-    }
-    .column {
-      background: rgba(255 255 255 / 0.9);
-      color: #000;
-      border-radius: 12px;
-      width: 70px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 8px 4px;
-      box-sizing: border-box;
       user-select: none;
-      cursor: default;
-      transition: background-color 0.3s ease;
     }
-    .column.highlight {
+    /* Контейнер для столбцов */
+    #bars {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      align-items: flex-end;
+      height: 150px;
+    }
+    .bar {
+      width: 40px;
+      background: white;
+      border-radius: 8px 8px 0 0;
+      transition: background-color 0.3s ease;
+      position: relative;
+    }
+    .bar.highlight {
       background: #ffeb3b; /* желтый */
-      color: #000;
-      font-weight: 700;
+    }
+    /* Контейнер для подписей под столбцами */
+    #labels {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .label {
+      width: 40px;
+      color: white;
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+      line-height: 1.2;
+      user-select: none;
     }
     .revenue {
       font-weight: 900;
-      font-size: 16px;
-      margin-bottom: 6px;
+      font-size: 14px;
+      margin-bottom: 4px;
     }
     .date-info {
       font-weight: 600;
-      font-size: 12px;
-      text-align: center;
-      line-height: 1.2;
     }
   </style>
 </head>
 <body>
   <h1>КИВИ <span>Business</span></h1>
-  <div id="chartContainer"></div>
+  <div id="chartContainer">
+    <div id="bars"></div>
+    <div id="labels"></div>
+  </div>
 
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
@@ -77,37 +92,53 @@
       .then(response => response.text())
       .then(csvText => {
         const parsed = Papa.parse(csvText, { header: true });
-        // Фильтруем строки с датой и выручкой
         const data = parsed.data.filter(row => row["Дата"] && row["ТО"]);
 
         // Берём последние 7 дней
         const last7 = data.slice(-7);
 
-        const container = document.getElementById("chartContainer");
-        container.innerHTML = "";
+        const barsContainer = document.getElementById("bars");
+        const labelsContainer = document.getElementById("labels");
+        barsContainer.innerHTML = "";
+        labelsContainer.innerHTML = "";
+
+        // Найдём максимальную выручку для нормализации высоты столбцов
+        const maxRevenue = Math.max(...last7.map(r => parseFloat(r["ТО"].replace(/\s/g, '').replace(',', '.'))));
 
         last7.forEach(row => {
-          const date = new Date(row["Дата"]);
-          const day = date.getDate();
-          const weekday = row["День недели"] || date.toLocaleDateString("ru-RU", { weekday: 'short' });
           const revenue = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
           const planMet = (row["Выполнение плана (Да/Нет)"] || "").trim().toLowerCase() === "да";
 
-          const col = document.createElement("div");
-          col.className = "column" + (planMet ? " highlight" : "");
-          col.title = `Выручка: ${revenue.toLocaleString('ru-RU')} ₽\nПлан выполнен: ${planMet ? "Да" : "Нет"}`;
+          // Высота столбца пропорциональна выручке (макс 150px)
+          const height = (revenue / maxRevenue) * 150;
 
+          // Создаём столбец
+          const bar = document.createElement("div");
+          bar.className = "bar" + (planMet ? " highlight" : "");
+          bar.style.height = height + "px";
+          barsContainer.appendChild(bar);
+
+          // Создаём подпись под столбцом
+          const label = document.createElement("div");
+          label.className = "label";
+
+          // Выручка жирным сверху
           const revEl = document.createElement("div");
           revEl.className = "revenue";
           revEl.textContent = `${revenue.toLocaleString('ru-RU')} ₽`;
+
+          // День недели и число под выручкой
+          const date = new Date(row["Дата"]);
+          const weekday = row["День недели"] || date.toLocaleDateString("ru-RU", { weekday: 'short' });
+          const day = date.getDate();
 
           const dateEl = document.createElement("div");
           dateEl.className = "date-info";
           dateEl.innerHTML = `${weekday}<br>${day}`;
 
-          col.appendChild(revEl);
-          col.appendChild(dateEl);
-          container.appendChild(col);
+          label.appendChild(revEl);
+          label.appendChild(dateEl);
+          labelsContainer.appendChild(label);
         });
       })
       .catch(error => {
