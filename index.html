@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>КИВИ Business</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
@@ -16,17 +17,18 @@
       align-items: center;
     }
     h1 {
-      font-size: 24px;
+      font-size: 26px;
       color: white;
       font-weight: 900;
-      margin: 20px 0;
+      margin: 20px 0 10px;
     }
     #chartContainer {
       background-color: rgba(255, 255, 255, 0.15);
       border-radius: 16px;
-      padding: 20px 10px;
+      padding: 20px;
       width: 95%;
-      max-width: 420px;
+      max-width: 400px;
+      box-sizing: border-box;
     }
     canvas {
       width: 100% !important;
@@ -39,7 +41,6 @@
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
   </div>
-
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
 
@@ -68,9 +69,9 @@
             datasets: [{
               data: revenues,
               backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
-              borderRadius: 10,
-              barPercentage: 0.6,
-              categoryPercentage: 0.7
+              borderRadius: 12,
+              barPercentage: 0.8,
+              categoryPercentage: 0.8
             }]
           },
           options: {
@@ -87,7 +88,9 @@
                   weight: 'bold',
                   size: 14
                 },
-                formatter: (value, ctx) => `${value.toLocaleString('ru-RU')}`
+                formatter: function(value) {
+                  return '';
+                }
               }
             },
             scales: {
@@ -96,27 +99,53 @@
               },
               x: {
                 ticks: {
-                  callback: (val, index) => {
-                    return `${revenues[index].toLocaleString('ru-RU')}\n${labels[index]}`;
+                  callback: function(val, index) {
+                    return `${revenues[index].toLocaleString('ru-RU')}`;
                   },
-                  color: '#000',
                   font: {
                     weight: 'bold',
-                    size: 13
-                  }
+                    size: 15
+                  },
+                  color: '#000'
                 },
-                grid: { display: false }
+                grid: { display: false },
+                afterBuildTicks: function(axis) {
+                  axis.ticks = axis.ticks.map((tick, index) => {
+                    return {
+                      ...tick,
+                      label: `${revenues[index].toLocaleString('ru-RU')}`
+                    };
+                  });
+                }
               }
             }
           },
           plugins: [ChartDataLabels]
         });
+
+        // Добавление пользовательских подписей под графиком вручную
+        const canvas = document.getElementById("salesChart");
+        const container = document.getElementById("chartContainer");
+        const labelDiv = document.createElement("div");
+        labelDiv.style.display = 'flex';
+        labelDiv.style.justifyContent = 'space-around';
+        labelDiv.style.marginTop = '8px';
+        labelDiv.style.fontSize = '13px';
+        labelDiv.style.fontWeight = 'bold';
+        labels.forEach((label, index) => {
+          const div = document.createElement("div");
+          div.style.textAlign = 'center';
+          div.innerHTML = `<div style='font-size:15px;'>${revenues[index].toLocaleString('ru-RU')}</div><div style='font-weight:400;'>${label}</div>`;
+          div.style.width = '14%';
+          labelDiv.appendChild(div);
+        });
+        container.appendChild(labelDiv);
+
       })
       .catch(err => {
         alert("Ошибка загрузки данных. Проверьте ссылку на таблицу.");
         console.error(err);
       });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </body>
 </html>
