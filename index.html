@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>KIWI Business — Выручка</title>
-
-  <!-- Подключаем библиотеки -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     body {
       background-color: #ff4081;
@@ -38,24 +35,24 @@
     fetch(csvUrl)
       .then(response => response.text())
       .then(text => {
-        const data = Papa.parse(text, {
-          header: true,
-          skipEmptyLines: true
-        }).data;
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const data = parsed.data;
 
-        console.log("🔍 Пример строки:", data[0]);
+        console.log("Пример строки:", data[0]);
 
         const labels = [];
         const revenue = [];
 
         data.forEach(row => {
-          const rawDate = row['Дата'];
+          const date = row['Дата'];
           const rawRevenue = row['ТО'];
 
-          if (rawDate && rawRevenue) {
-            labels.push(rawDate);
+          if (date && rawRevenue) {
+            labels.push(date);
             const value = parseFloat(
-              String(rawRevenue).replace(/\s/g, '').replace(',', '.')
+              String(rawRevenue)
+                .replace(/\s|\u00A0/g, '') // убираем все пробелы
+                .replace(',', '.')        // заменяем запятую на точку
             );
             revenue.push(isNaN(value) ? 0 : value);
           }
@@ -80,6 +77,7 @@
             }]
           },
           options: {
+            responsive: true,
             scales: {
               y: {
                 beginAtZero: true
