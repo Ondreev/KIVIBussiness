@@ -105,7 +105,7 @@
 
         const last7 = data.slice(-7);
 
-        const sales = last7.map(row => parseFloat(row['ТО'].replace(/\s/g, '').replace(',', '.')) || 0);
+        const sales = last7.map(row => parseFloat((row['ТО'] || '').replace(/\s/g, '').replace(',', '.')) || 0);
         const dates = last7.map(row => {
           const date = new Date(row['Дата']);
           const day = date.getDate();
@@ -114,12 +114,13 @@
         });
 
         const labels = last7.map(row => {
-          const value = parseInt(row['ТО'].replace(/\s/g, ''));
+          const rawValue = row['ТО'] || '0';
+          const numericValue = parseInt(rawValue.replace(/\s/g, '')) || 0;
           const date = new Date(row['Дата']);
           const day = date.getDate();
           const weekDay = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date);
           return {
-            revenue: value.toLocaleString("ru-RU"),
+            revenue: numericValue.toLocaleString("ru-RU"),
             date: `${day} ${weekDay}`
           };
         });
