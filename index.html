@@ -4,32 +4,45 @@
   fetch(csvUrl)
     .then(res => res.arrayBuffer())
     .then(buffer => {
-      const decoder = new TextDecoder('utf-8'); // <--- не windows-1251
-      let csvText = decoder.decode(buffer);
+      const decoder = new TextDecoder('utf-8');
+      let text = decoder.decode(buffer);
 
-      // Удалим BOM, если есть
-      if (csvText.charCodeAt(0) === 0xFEFF) {
-        csvText = csvText.slice(1);
+      // Удаляем BOM, если есть
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1);
       }
 
-      const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+      const parsed = Papa.parse(text, { skipEmptyLines: true });
+      const rows = parsed.data;
 
-      console.log("📦 Первый объект:", data[0]);
+      const headers = rows[0];
+      const indexDate = headers.findIndex(h => h.includes('Дата'));
+      const indexRevenue = headers.findIndex(h => h.includes('ТО'));
+
+      if (indexDate === -1 || indexRevenue === -1) {
+        alert('Не найдены нужные колонки (Дата, ТО).');
+        return;
+      }
 
       const labels = [];
       const revenue = [];
 
-      data.forEach(row => {
-        const date = row['Дата'];
-        const raw = row['ТО'];
-        if (date && raw) {
-          const value = parseFloat(String(raw).replace(/\s/g, '').replace(',', '.'));
-          if (!isNaN(value)) {
+      rows.slice(1).forEach(row => {
+        const date = row[indexDate];
+        const rawRevenue = row[indexRevenue];
+        if (date && rawRevenue) {
+          const num = parseFloat(String(rawRevenue).replace(/\s/g, '').replace(',', '.'));
+          if (!isNaN(num)) {
             labels.push(date);
-            revenue.push(value);
+            revenue.push(num);
           }
         }
       });
+
+      if (labels.length === 0) {
+        alert('Нет данных для отображения.');
+        return;
+      }
 
       const ctx = document.getElementById('revenueChart').getContext('2d');
       new Chart(ctx, {
@@ -55,7 +68,7 @@
       });
     })
     .catch(err => {
-      console.error('Ошибка загрузки CSV:', err);
+      console.error('Ошибка:', err);
       alert('Ошибка загрузки CSV: ' + err.message);
     });
 </script>
