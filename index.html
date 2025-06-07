@@ -139,14 +139,19 @@
 
         const labels = last7.map(row => {
           const date = new Date(row['Дата']);
-          const revenue = parseInt((row['ТО'] || '0').replace(/\s/g, '')) || 0;
+          const revenueRaw = row['ТО'] || '0';
+          const revenue = parseInt(String(revenueRaw).replace(/\s/g, '').replace(',', '.')) || 0;
           return {
             revenue: revenue.toLocaleString("ru-RU"),
             date: `${date.getDate()} ${date.toLocaleDateString('ru-RU', { weekday: 'short' })}`
           };
         });
 
-        const sales = last7.map(row => parseFloat((row['ТО'] || '0').replace(/\s/g, '').replace(',', '.')) || 0);
+        const sales = last7.map(row => {
+          const val = row['ТО'] || '0';
+          return parseFloat(String(val).replace(/\s/g, '').replace(',', '.')) || 0;
+        });
+
         const planStatus = last7.map(row => row['Выполнение плана (Да/Нет)'] === 'Да');
 
         chart.data.labels = labels.map(l => l.date);
