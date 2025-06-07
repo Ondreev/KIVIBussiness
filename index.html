@@ -32,7 +32,7 @@
     }
     canvas {
       width: 100% !important;
-      height: 80px !important; /* уменьшена высота */
+      height: 125px !important;
     }
     .custom-labels {
       display: flex;
@@ -90,8 +90,8 @@
               data: revenues,
               backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
               borderRadius: 10,
-              barPercentage: 0.9,
-              categoryPercentage: 0.9
+              barPercentage: 0.8,
+              categoryPercentage: 0.8
             }]
           },
           options: {
@@ -100,20 +100,22 @@
             plugins: {
               legend: { display: false },
               tooltip: { enabled: false },
-              datalabels: { display: false }
+              datalabels: {
+                display: false
+              }
             },
             scales: {
               y: {
                 display: false,
+                min: 0,
+                max: Math.max(...revenues) + 10000,
                 grid: {
                   display: true,
                   drawBorder: false,
                   color: function(context) {
-                    if (context.tick.value % 10000 === 0) {
-                      return 'rgba(255,255,255,0.1)';
-                    }
-                    return 'transparent';
-                  }
+                    return context.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.1)' : 'transparent';
+                  },
+                  lineWidth: 1
                 },
                 ticks: {
                   stepSize: 10000
@@ -129,6 +131,7 @@
         });
 
         const labelContainer = document.getElementById("customLabels");
+        labelContainer.innerHTML = "";
         labels.forEach((label, i) => {
           const div = document.createElement("div");
           div.className = "label-item";
