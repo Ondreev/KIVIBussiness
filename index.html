@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>КИВИ Business</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
@@ -15,31 +14,61 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 20px;
     }
     h1 {
       font-size: 28px;
       font-weight: 900;
-      margin: 20px 0 10px;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      font-weight: normal;
     }
     #chartContainer {
-      width: 100%;
-      max-width: 400px;
-      background: #f5f5f5;
+      display: flex;
+      background: rgba(255 255 255 / 0.1);
       border-radius: 16px;
-      padding: 12px 8px 0;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 16px;
+      gap: 12px;
+      max-width: 700px;
+      width: 100%;
+      justify-content: center;
     }
-    canvas {
-      width: 100% !important;
-      height: auto !important;
+    .column {
+      background: rgba(255 255 255 / 0.9);
+      color: #000;
+      border-radius: 12px;
+      width: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      box-sizing: border-box;
+      user-select: none;
+      cursor: default;
+      transition: background-color 0.3s ease;
+    }
+    .column.highlight {
+      background: #ffeb3b; /* желтый */
+      color: #000;
+      font-weight: 700;
+    }
+    .revenue {
+      font-weight: 900;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .date-info {
+      font-weight: 600;
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.2;
     }
   </style>
 </head>
 <body>
-  <h1>КИВИ <span style="font-weight: normal">Business</span></h1>
-  <div id="chartContainer">
-    <canvas id="salesChart"></canvas>
-  </div>
+  <h1>КИВИ <span>Business</span></h1>
+  <div id="chartContainer"></div>
 
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
@@ -48,75 +77,37 @@
       .then(response => response.text())
       .then(csvText => {
         const parsed = Papa.parse(csvText, { header: true });
+        // Фильтруем строки с датой и выручкой
         const data = parsed.data.filter(row => row["Дата"] && row["ТО"]);
+
+        // Берём последние 7 дней
         const last7 = data.slice(-7);
 
-        const labels = last7.map(row => {
+        const container = document.getElementById("chartContainer");
+        container.innerHTML = "";
+
+        last7.forEach(row => {
           const date = new Date(row["Дата"]);
           const day = date.getDate();
-          const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
-          return `${day} ${weekday}`;
-        });
+          const weekday = row["День недели"] || date.toLocaleDateString("ru-RU", { weekday: 'short' });
+          const revenue = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
+          const planMet = (row["Выполнение плана (Да/Нет)"] || "").trim().toLowerCase() === "да";
 
-        const sales = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
+          const col = document.createElement("div");
+          col.className = "column" + (planMet ? " highlight" : "");
+          col.title = `Выручка: ${revenue.toLocaleString('ru-RU')} ₽\nПлан выполнен: ${planMet ? "Да" : "Нет"}`;
 
-        const ctx = document.getElementById("salesChart").getContext("2d");
+          const revEl = document.createElement("div");
+          revEl.className = "revenue";
+          revEl.textContent = `${revenue.toLocaleString('ru-RU')} ₽`;
 
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              data: sales,
-              backgroundColor: sales.map((val, i) => i === sales.length - 1 ? '#d5004c' : '#ff80ab'),
-              borderRadius: 6,
-              barThickness: 24
-            }]
-          },
-          options: {
-            indexAxis: 'x',
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-              padding: {
-                top: 20,
-                bottom: 50
-              }
-            },
-            plugins: {
-              legend: { display: false },
-              tooltip: { enabled: false },
-              datalabels: {
-                anchor: 'end',
-                align: 'start'
-              }
-            },
-            scales: {
-              x: {
-                ticks: {
-                  font: { size: 12 },
-                  color: '#000'
-                },
-                grid: { display: false }
-              },
-              y: { display: false }
-            },
-            animation: {
-              onComplete: () => {
-                const chart = ctx.chart;
-                const meta = chart.getDatasetMeta(0);
-                chart.data.datasets[0].data.forEach((value, index) => {
-                  const { x, y, width } = meta.data[index];
-                  ctx.save();
-                  ctx.font = 'bold 14px sans-serif';
-                  ctx.fillStyle = '#000';
-                  ctx.textAlign = 'center';
-                  ctx.fillText(`${value.toLocaleString('ru-RU')} ₽`, x, chart.height - 20);
-                  ctx.restore();
-                });
-              }
-            }
-          }
+          const dateEl = document.createElement("div");
+          dateEl.className = "date-info";
+          dateEl.innerHTML = `${weekday}<br>${day}`;
+
+          col.appendChild(revEl);
+          col.appendChild(dateEl);
+          container.appendChild(col);
         });
       })
       .catch(error => {
