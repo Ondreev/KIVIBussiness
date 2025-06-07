@@ -103,7 +103,13 @@
         const csvText = await response.text();
         const data = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
 
-        const last7 = data.slice(-7);
+        const filtered = data.filter(row => {
+          const dateStr = row['Дата'];
+          const date = dateStr ? new Date(dateStr) : null;
+          return date && !isNaN(date.getTime());
+        });
+
+        const last7 = filtered.slice(-7);
 
         const sales = last7.map(row => parseFloat((row['ТО'] || '').replace(/\s/g, '').replace(',', '.')) || 0);
 
