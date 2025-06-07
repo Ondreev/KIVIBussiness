@@ -8,33 +8,36 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
       background-color: #ff4081;
       color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     h1 {
-      margin: 20px;
-      font-size: 32px;
       font-weight: 900;
-      text-align: center;
+      font-size: 28px;
+      margin: 20px 0 10px;
     }
     #chartContainer {
-      background-color: #f5f5f5;
-      border-radius: 10px;
-      margin: 10px;
-      padding: 10px;
-      color: #333;
+      background-color: #f8f8f8;
+      border-radius: 14px;
+      padding: 16px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
     }
     canvas {
-      max-width: 100%;
-      height: 300px !important;
+      width: 100% !important;
+      height: auto !important;
     }
   </style>
 </head>
 <body>
-  <h1>КИВИ Business</h1>
+  <h1>КИВИ <span style="color: #ffe">Business</span></h1>
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
   </div>
@@ -51,9 +54,9 @@
 
         const labels = last10.map(row => {
           const date = new Date(row["Дата"]);
-          const options = { day: 'numeric', month: 'short', weekday: 'short' };
-          const formattedDate = date.toLocaleDateString("ru-RU", options);
-          return formattedDate;
+          const day = date.toLocaleDateString("ru-RU", { weekday: 'short' });
+          const num = date.toLocaleDateString("ru-RU", { day: 'numeric', month: 'short' });
+          return `${day}, ${num}`;
         });
 
         const sales = last10.map(row => {
@@ -61,7 +64,7 @@
           return parseFloat(cleaned);
         });
 
-        const salesFormatted = sales.map(s => s.toLocaleString('ru-RU') + ' ₽');
+        const formattedSales = sales.map(s => s.toLocaleString('ru-RU') + ' ₽');
 
         new Chart(document.getElementById("salesChart"), {
           type: "bar",
@@ -71,6 +74,8 @@
               label: "Выручка",
               data: sales,
               backgroundColor: sales.map((val, idx) => idx === sales.length - 1 ? '#e91e63' : '#ff80ab'),
+              borderRadius: 6,
+              barThickness: 24
             }]
           },
           options: {
@@ -82,32 +87,51 @@
                   label: ctx => `${ctx.parsed.y.toLocaleString("ru-RU")} ₽`
                 }
               },
-              datalabels: {
-                anchor: 'end',
-                align: 'start',
-                color: '#000',
-                font: {
-                  weight: 'bold'
-                },
-                formatter: (value, ctx) => salesFormatted[ctx.dataIndex]
+              datalabels: false
+            },
+            layout: {
+              padding: {
+                top: 20
               }
             },
             scales: {
               x: {
                 ticks: {
                   color: '#000',
-                  font: { size: 10 }
+                  font: {
+                    size: 12
+                  }
                 }
               },
               y: {
                 ticks: {
                   color: '#000',
                   callback: val => val.toLocaleString("ru-RU")
+                },
+                grid: {
+                  drawTicks: false
                 }
               }
+            },
+            animation: {
+              onComplete: () => {
+                const chart = Chart.getChart("salesChart");
+                const ctx = chart.ctx;
+                chart.data.datasets[0].data.forEach((val, idx) => {
+                  const meta = chart.getDatasetMeta(0);
+                  const bar = meta.data[idx];
+                  const y = bar.y - 10;
+                  const x = bar.x;
+                  ctx.save();
+                  ctx.font = "bold 13px Segoe UI";
+                  ctx.fillStyle = "#000";
+                  ctx.textAlign = "center";
+                  ctx.fillText(formattedSales[idx], x, y);
+                  ctx.restore();
+                });
+              }
             }
-          },
-          plugins: [ChartDataLabels]
+          }
         });
       })
       .catch(err => {
@@ -115,6 +139,5 @@
         console.error(err);
       });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 </body>
 </html>
