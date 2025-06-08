@@ -105,15 +105,69 @@
 
   <script>
     async function fetchPlanAndRecordData() {
-      const summary = document.getElementById('summaryBlock');
-      if (summary) summary.classList.add('loading');
-      // Реализация будет позже
+      // Реализуем позже: план по ТО, трафику, чеку + рекорды + прогресс и сравнение
+      document.getElementById("planRevenue").textContent = '23 000₽';
+      document.getElementById("planTraffic").textContent = '36';
+      document.getElementById("planCheck").textContent = '639₽';
+      document.getElementById("factRevenue").textContent = '145.8%';
+      document.getElementById("factTraffic").textContent = '124.6%';
+      document.getElementById("factCheck").textContent = '117.0%';
+      document.getElementById("recordRevenue").textContent = '73 659₽';
+      document.getElementById("recordRevenueLabel").textContent = '2023-12-29';
+      document.getElementById("recordTraffic").textContent = '87';
+      document.getElementById("recordTrafficLabel").textContent = '2023-02-22';
+      document.getElementById("lastYearCompare").textContent = '26.9%';
     }
 
     async function fetchData() {
-      const chartContainer = document.getElementById('chartContainer');
-      if (chartContainer) chartContainer.classList.add('loading');
-      // Реализация будет позже
+      const canvas = document.getElementById("salesChart");
+      const ctx = canvas.getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["1 вс", "2 пн", "3 вт", "4 ср", "5 чт", "6 пт", "7 сб"],
+          datasets: [{
+            label: "",
+            data: [36, 20, 44, 15, 36, 39, 41],
+            backgroundColor: ["#ffd600", "#ffffff", "#ffd600", "#ffffff", "#ffd600", "#ffd600", "#ffd600"],
+            borderRadius: 6,
+            barPercentage: 0.65,
+            categoryPercentage: 0.95
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              color: "#fff",
+              anchor: "end",
+              align: "end",
+              offset: 4,
+              font: { weight: "bold", size: 14 },
+              formatter: (value) => value + ""
+            }
+          },
+          scales: {
+            y: {
+              display: false,
+              beginAtZero: true,
+              grid: {
+                color: "rgba(255,255,255,0.3)",
+                lineWidth: 1,
+                drawTicks: false,
+                drawBorder: false
+              },
+              ticks: { stepSize: 10000 }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { display: false }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
     }
 
     fetchPlanAndRecordData();
