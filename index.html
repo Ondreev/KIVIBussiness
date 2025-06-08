@@ -104,12 +104,16 @@
   </div>
 
   <script>
-    function fetchPlanAndRecordData() {
-      console.log("fetchPlanAndRecordData запускается, но пока не реализована");
+    async function fetchPlanAndRecordData() {
+      const summary = document.getElementById('summaryBlock');
+      if (summary) summary.classList.add('loading');
+      // Реализация будет позже
     }
 
-    function fetchData() {
-      console.log("fetchData запускается, но пока не реализована");
+    async function fetchData() {
+      const chartContainer = document.getElementById('chartContainer');
+      if (chartContainer) chartContainer.classList.add('loading');
+      // Реализация будет позже
     }
 
     fetchPlanAndRecordData();
