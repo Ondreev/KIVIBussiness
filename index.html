@@ -62,7 +62,7 @@
       position: relative;
     }
     .col {
-      width: 24px;
+      width: 30px;
       border-radius: 5px;
       background-color: white;
       display: flex;
@@ -83,13 +83,13 @@
     }
     .labels div {
       text-align: center;
-      width: 28px;
+      width: 40px;
     }
     .line {
       position: absolute;
       width: 100%;
       height: 1px;
-      background: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.7);
     }
     .line:nth-child(1) { bottom: 90px; }
     .line:nth-child(2) { bottom: 60px; }
@@ -112,5 +112,16 @@
     <div class="box"><div class="value" id="lastYearCompare">–</div><div class="label">К ПГ</div></div>
   </div>
   <div class="chart" id="chartContainer"></div>
+  <script>
+    async function fetchData() {
+      // Заглушка, сюда вставится код загрузки CSV и рендеринга
+      console.log("fetchData запущена, но не реализована");
+    }
+    async function fetchPlanAndRecordData() {
+      console.log("fetchPlanAndRecordData запущена, но не реализована");
+    }
+    fetchPlanAndRecordData();
+    fetchData();
+  </script>
 </body>
 </html>
