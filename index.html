@@ -170,10 +170,14 @@
     let allDataRows = [], showingAll = false;
 
     function toggleRows() {
-      showingAll = !showingAll;
-      allDataRows.forEach((r, i) => {
-        r.classList.toggle('hidden-row', !showingAll && i >= 6);
-      });
-      event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
-    }
+  showingAll = !showingAll;
+  allDataRows.forEach((r, i) => {
+    r.classList.toggle('hidden-row', !showingAll && i >= 6);
+  });
+  event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
+}
 
+window.addEventListener("DOMContentLoaded", () => {
+  if (typeof loadChart === 'function') loadChart();
+  if (typeof buildComparisonBlock === 'function') buildComparisonBlock();
+});
