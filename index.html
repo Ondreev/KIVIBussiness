@@ -22,35 +22,6 @@
       font-weight: 900;
       margin: 20px 0 10px;
     }
-    .summary {
-      width: 95%;
-      max-width: 400px;
-      background-color: rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      color: white;
-      padding: 12px;
-      margin-bottom: 12px;
-      font-size: 14px;
-      box-sizing: border-box;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      text-align: center;
-    }
-    .summary-item {
-      background-color: rgba(255, 255, 255, 0.1);
-      padding: 10px 6px;
-      border-radius: 10px;
-    }
-    .summary-item .value {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .summary-item .label {
-      font-size: 11px;
-      opacity: 0.9;
-    }
     #chartContainer {
       background-color: rgba(255, 255, 255, 0.15);
       border-radius: 16px;
@@ -86,7 +57,6 @@
 </head>
 <body>
   <h1>КИВИ <span style="font-weight: 400">Business</span></h1>
-  <div class="summary" id="summaryBlock"></div>
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
     <div id="customLabels" class="custom-labels"></div>
@@ -113,11 +83,15 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { grid: { display: false }, ticks: { display: false } },
+          x: {
+            grid: { display: false },
+            ticks: { display: false }
+          },
           y: {
             grid: {
               drawTicks: false,
-              color: (ctx) => ctx.tick.value % 10000 === 0 ? "rgba(255,255,255,0.2)" : "transparent"
+              color: (ctx) => ctx.tick.value % 10000 === 0 ? "rgba(255,255,255,0.5)" : "transparent",
+              lineWidth: (ctx) => ctx.tick.value % 10000 === 0 ? 1.5 : 0
             },
             ticks: { display: false },
             beginAtZero: true
@@ -147,7 +121,14 @@
             raw: row,
             revenue
           };
-        }).filter(r => r.date instanceof Date && !isNaN(r.date) && r.date.getMonth() === thisMonth && r.date.getFullYear() === thisYear && r.date <= now);
+        }).filter(r => {
+          const validDate = r.date instanceof Date && !isNaN(r.date);
+          const isThisMonth = validDate && r.date.getMonth() === thisMonth && r.date.getFullYear() === thisYear;
+          const isNotFuture = validDate && r.date <= now;
+          const isToday = validDate && r.date.toDateString() === now.toDateString();
+          const hasData = r.revenue > 0;
+          return isThisMonth && isNotFuture && (!isToday || hasData);
+        });
 
         parsed.sort((a, b) => b.date - a.date);
         const last7 = parsed.slice(0, 7).reverse();
