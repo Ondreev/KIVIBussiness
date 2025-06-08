@@ -156,41 +156,52 @@
       }).join('');
 
       chart.innerHTML += `<div class="labels">${labelHtml}</div>`;
+
+      return currentMonthData;
     }
 
     async function fetchPlanAndRecordData() {
       const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
       const recordUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
 
-      const [plans, records] = await Promise.all([fetchCSV(planUrl), fetchCSV(recordUrl)]);
+      const [plans, records, currentData] = await Promise.all([
+        fetchCSV(planUrl),
+        fetchCSV(recordUrl),
+        fetchData()
+      ]);
+
       const now = new Date();
       const monthKey = now.toISOString().slice(0, 7);
+      const day = now.getDate();
 
       const monthPlan = plans.find(p => p["Месяц"] === monthKey);
-
       const planTO = parseFloat(monthPlan?.["План по выручке"] || 0);
       const planTR = parseFloat(monthPlan?.["План по трафику"] || 0);
       const planCHK = planTR ? Math.round(planTO / planTR) : 0;
+
+      const currentMonthRows = currentData.filter(row => row["ТО"] && row["ТР"]);
+      const factTO = Math.round(currentMonthRows.reduce((acc, row) => acc + parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')), 0) / currentMonthRows.length);
+      const factTR = Math.round(currentMonthRows.reduce((acc, row) => acc + parseFloat(row["ТР"].replace(',', '.')), 0) / currentMonthRows.length);
+      const factCHK = factTR ? Math.round(factTO / factTR) : 0;
 
       const recordTO = records.find(r => r["Показатель"]?.includes("выручка"));
       const recordTR = records.find(r => r["Показатель"]?.includes("трафик"));
 
       const summary = document.getElementById("summaryBlock");
       summary.innerHTML = `
-        <div class="box"><div class="value">${planTO.toLocaleString()}₽</div><div class="label">ТОВАРООБОРОТ</div></div>
-        <div class="box"><div class="value">${planTR} чел.</div><div class="label">ТРАФИК</div></div>
-        <div class="box"><div class="value">${planCHK.toLocaleString()}₽</div><div class="label">СРЕДНИЙ ЧЕК</div></div>
-        <div class="box"><div class="value">–</div><div class="label">Факт ТО</div></div>
-        <div class="box"><div class="value">–</div><div class="label">Факт трафик</div></div>
-        <div class="box"><div class="value">–</div><div class="label">Факт СРЧ</div></div>
+        <div class="box"><div class="value">${planTO.toLocaleString()}₽</div><div class="label">План ТО</div></div>
+        <div class="box"><div class="value">${planTR} чел.</div><div class="label">План трафик</div></div>
+        <div class="box"><div class="value">${planCHK.toLocaleString()}₽</div><div class="label">План СРЧ</div></div>
+        <div class="box"><div class="value">${factTO.toLocaleString()}₽</div><div class="label">Факт ТО</div></div>
+        <div class="box"><div class="value">${factTR}</div><div class="label">Факт трафик</div></div>
+        <div class="box"><div class="value">${factCHK.toLocaleString()}₽</div><div class="label">Факт СРЧ</div></div>
         <div class="box"><div class="value">${recordTO?.["Значение"] || "–"}₽</div><div class="label">Рекорд ТО</div></div>
         <div class="box"><div class="value">${recordTR?.["Значение"] || "–"}</div><div class="label">Рекорд Трафик</div></div>
-        <div class="box"><div class="value">–</div><div class="label">К прошл году</div></div>
+        <div class="box"><div class="value">–</div><div class="label">К ПГ</div></div>
       `;
     }
 
     fetchPlanAndRecordData();
-    fetchData();
   </script>
 </body>
 </html>
