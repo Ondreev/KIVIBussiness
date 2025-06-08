@@ -102,138 +102,44 @@
     <canvas id="salesChart"></canvas>
     <div id="customLabels" class="custom-labels"></div>
   </div>
-  <!-- Здесь ниже позже добавим fetchPlanData и fetchRecordsData -->
   <script>
-    // Здесь останется основной fetchData() и вызовы
-    async function fetchData() {
-  try {
-    const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
-    const response = await fetch(dataUrl);
-    const text = await response.text();
-    const rows = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+    async function fetchPlanAndRecordData() {
+      try {
+        const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+        const recordUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
 
-    const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
+        const [planText, recordText] = await Promise.all([
+          fetch(planUrl).then(res => res.text()),
+          fetch(recordUrl).then(res => res.text())
+        ]);
 
-    const parsed = rows.map(row => {
-      const rawDate = row['Дата']?.trim();
-      const date = rawDate ? new Date(rawDate) : null;
-      const revenue = parseFloat((row['ТО'] || '0').replace(/\s/g, '').replace(',', '.')) || 0;
-      return { date, raw: row, revenue };
-    }).filter(r => {
-      const validDate = r.date instanceof Date && !isNaN(r.date);
-      const isThisMonth = validDate && r.date.getMonth() === thisMonth && r.date.getFullYear() === thisYear;
-      const isNotFuture = validDate && r.date <= now;
-      const isToday = validDate && r.date.toDateString() === now.toDateString();
-      const hasData = r.revenue > 0;
-      return isThisMonth && isNotFuture && (!isToday || hasData);
-    });
+        const planRows = Papa.parse(planText, { header: true, skipEmptyLines: true }).data;
+        const recordRows = Papa.parse(recordText, { header: true, skipEmptyLines: true }).data;
 
-    parsed.sort((a, b) => b.date - a.date);
-    const last7 = parsed.slice(0, 7).reverse();
+        const now = new Date();
+        const currentMonthKey = now.toISOString().slice(0, 7); // '2025-06'
+        const thisMonthRow = planRows.find(row => row['Месяц']?.trim() === currentMonthKey);
 
-    const labels = last7.map(entry => ({
-      revenue: entry.revenue.toLocaleString("ru-RU"),
-      date: `${entry.date.getDate()} ${entry.date.toLocaleDateString('ru-RU', { weekday: 'short' })}`
-    }));
+        const monthlyPlan = thisMonthRow ? parseFloat((thisMonthRow['План по выручке'] || '0').replace(/\s/g, '').replace(',', '.')) : 0;
+        const dailyTrafficPlan = thisMonthRow ? parseFloat((thisMonthRow['План по трафику'] || '0').replace(/\s/g, '').replace(',', '.')) : 0;
+        const planAvgCheck = thisMonthRow ? parseFloat((thisMonthRow['План по среднему чеку'] || '0').replace(/\s/g, '').replace(',', '.')) : 0;
 
-    const sales = last7.map(entry => entry.revenue);
-    const planStatus = last7.map(entry => entry.raw['Выполнение плана (Да/Нет)'] === 'Да');
+        document.getElementById("planRevenue").innerText = isNaN(monthlyPlan) ? '–' : monthlyPlan.toLocaleString("ru-RU") + "₽";
+        document.getElementById("planTraffic").innerText = isNaN(dailyTrafficPlan) ? '–' : dailyTrafficPlan.toLocaleString("ru-RU");
+        document.getElementById("planCheck").innerText = isNaN(planAvgCheck) ? '–' : planAvgCheck.toLocaleString("ru-RU") + "₽";
 
-    const ctx = document.getElementById("salesChart").getContext("2d");
-    const chart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: labels.map(l => l.date),
-        datasets: [{
-          data: sales,
-          backgroundColor: ctx => planStatus[ctx.dataIndex] ? "#ffd600" : "#ffffff",
-          borderRadius: 10,
-          barThickness: 36
-        }]
-      },
-      options: {
-        plugins: {
-          legend: { display: false },
-          datalabels: { display: false }
-        },
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { display: false }
-          },
-          y: {
-            grid: {
-              drawTicks: false,
-              color: (ctx) => ctx.tick.value % 10000 === 0 ? "rgba(255,255,255,0.5)" : "transparent",
-              lineWidth: (ctx) => ctx.tick.value % 10000 === 0 ? 1.5 : 0
-            },
-            ticks: { display: false },
-            beginAtZero: true
-          }
-        }
-      },
-      plugins: [ChartDataLabels]
-    });
+        const recordRevenue = recordRows.find(r => r['Показатель']?.includes('Максимальная выручка:'));
+        const recordTraffic = recordRows.find(r => r['Показатель']?.includes('Максимальный трафик:'));
 
-    document.getElementById("customLabels").innerHTML = labels.map(l => `
-      <div class="label-item">
-        <div class="revenue">${l.revenue}</div>
-        <div class="date">${l.date}</div>
-      </div>
-    `).join("");
+        document.getElementById("recordRevenue").innerText = recordRevenue ? parseInt(recordRevenue['Значение']).toLocaleString("ru-RU") + "₽" : '–';
+        document.getElementById("recordTraffic").innerText = recordTraffic ? parseInt(recordTraffic['Значение']).toLocaleString("ru-RU") : '–';
 
-  } catch (err) {
-    console.error("Ошибка загрузки данных:", err);
-  }
-}
+      } catch (err) {
+        console.error("Ошибка загрузки планов или рекордов:", err);
+      }
+    }
 
-fetchData();
-
+    fetchPlanAndRecordData();
   </script>
-  <script>
-async function fetchPlanAndRecordData() {
-  try {
-    const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
-    const recordUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
-
-    const [planText, recordText] = await Promise.all([
-      fetch(planUrl).then(res => res.text()),
-      fetch(recordUrl).then(res => res.text())
-    ]);
-
-    const planRows = Papa.parse(planText, { header: true, skipEmptyLines: true }).data;
-    const recordRows = Papa.parse(recordText, { header: true, skipEmptyLines: true }).data;
-
-    const now = new Date();
-
-    const monthlyPlan = planRows.reduce((sum, row) => {
-      const val = parseFloat((row['План ТО'] || '0').replace(/\s/g, '').replace(',', '.'));
-      return sum + (isNaN(val) ? 0 : val);
-    }, 0);
-
-    const dailyTrafficPlan = parseFloat((planRows[0]?.['План ТР'] || '0').replace(/\s/g, '').replace(',', '.')) || 0;
-    const planAvgCheck = dailyTrafficPlan > 0 ? Math.round(monthlyPlan / (dailyTrafficPlan * planRows.length)) : 0;
-
-    document.getElementById("planRevenue").innerText = monthlyPlan.toLocaleString("ru-RU") + "₽";
-    document.getElementById("planTraffic").innerText = dailyTrafficPlan.toLocaleString("ru-RU");
-    document.getElementById("planCheck").innerText = planAvgCheck.toLocaleString("ru-RU") + "₽";
-
-    const recordRevenue = recordRows[0]?.['ТО'] || '–';
-    const recordTraffic = recordRows[0]?.['ТР'] || '–';
-
-    document.getElementById("recordRevenue").innerText = `${recordRevenue}₽`;
-    document.getElementById("recordTraffic").innerText = `${recordTraffic}`;
-
-  } catch (err) {
-    console.error("Ошибка загрузки планов или рекордов:", err);
-  }
-}
-
-fetchPlanAndRecordData();
-</script>
 </body>
 </html>
