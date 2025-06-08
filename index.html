@@ -93,8 +93,8 @@
     <div class="summary-item"><div class="value" id="factRevenue">–</div><div class="label">Факт/план ТО</div></div>
     <div class="summary-item"><div class="value" id="factTraffic">–</div><div class="label">Факт/план трафик</div></div>
     <div class="summary-item"><div class="value" id="factCheck">–</div><div class="label">Факт/план ср. чек</div></div>
-    <div class="summary-item"><div class="value" id="recordRevenue">–</div><div class="label">Рекорд ТО</div></div>
-    <div class="summary-item"><div class="value" id="recordTraffic">–</div><div class="label">Рекорд ТР</div></div>
+    <div class="summary-item"><div class="value" id="recordRevenue">–</div><div class="label" id="recordRevenueLabel">Рекорд ТО</div></div>
+    <div class="summary-item"><div class="value" id="recordTraffic">–</div><div class="label" id="recordTrafficLabel">Рекорд ТР</div></div>
     <div class="summary-item"><div class="value" id="lastYearCompare">–</div><div class="label">К ПГ</div></div>
   </div>
 
@@ -120,19 +120,22 @@
         const currentMonthKey = now.toISOString().slice(0, 7); // '2025-06'
         const thisMonthRow = planRows.find(row => row['Месяц']?.trim() === currentMonthKey);
 
-        const monthlyPlan = thisMonthRow ? parseFloat((thisMonthRow['План по выручке'] || '0').replace(/\s/g, '').replace(',', '.')) : 0;
-        const dailyTrafficPlan = thisMonthRow ? parseFloat((thisMonthRow['План по трафику'] || '0').replace(/\s/g, '').replace(',', '.')) : 0;
-        const planAvgCheck = thisMonthRow ? parseFloat((thisMonthRow['План по среднему чеку'] || '0').replace(/\s/g, '').replace(',', '.')) : 0;
+        const monthlyPlan = thisMonthRow ? parseFloat((thisMonthRow['План по выручке'] || '0').toString().replace(/\s/g, '').replace(',', '.')) : 0;
+        const dailyTrafficPlan = thisMonthRow ? parseFloat((thisMonthRow['План по трафику'] || '0').toString().replace(/\s/g, '').replace(',', '.')) : 0;
+        const planAvgCheck = thisMonthRow ? parseFloat((thisMonthRow['План по среднему чеку'] || '0').toString().replace(/\s/g, '').replace(',', '.')) : 0;
 
         document.getElementById("planRevenue").innerText = isNaN(monthlyPlan) ? '–' : monthlyPlan.toLocaleString("ru-RU") + "₽";
         document.getElementById("planTraffic").innerText = isNaN(dailyTrafficPlan) ? '–' : dailyTrafficPlan.toLocaleString("ru-RU");
         document.getElementById("planCheck").innerText = isNaN(planAvgCheck) ? '–' : planAvgCheck.toLocaleString("ru-RU") + "₽";
 
-        const recordRevenue = recordRows.find(r => r['Показатель']?.includes('Максимальная выручка:'));
-        const recordTraffic = recordRows.find(r => r['Показатель']?.includes('Максимальный трафик:'));
+        const recordRevenue = recordRows.find(r => r['Показатель']?.includes('Максимальная выручка'));
+        const recordTraffic = recordRows.find(r => r['Показатель']?.includes('Максимальный трафик'));
 
         document.getElementById("recordRevenue").innerText = recordRevenue ? parseInt(recordRevenue['Значение']).toLocaleString("ru-RU") + "₽" : '–';
+        document.getElementById("recordRevenueLabel").innerText = recordRevenue && recordRevenue['Дата'] ? recordRevenue['Дата'] : 'Рекорд ТО';
+
         document.getElementById("recordTraffic").innerText = recordTraffic ? parseInt(recordTraffic['Значение']).toLocaleString("ru-RU") : '–';
+        document.getElementById("recordTrafficLabel").innerText = recordTraffic && recordTraffic['Дата'] ? recordTraffic['Дата'] : 'Рекорд ТР';
 
       } catch (err) {
         console.error("Ошибка загрузки планов или рекордов:", err);
