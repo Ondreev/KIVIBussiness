@@ -177,15 +177,15 @@
 
       const summary = document.getElementById("summaryBlock");
       summary.innerHTML = `
-        <div class="box"><div class="value">${planTO.toLocaleString()}₽</div><div class="label">План ТО</div></div>
-        <div class="box"><div class="value">${planTR} чел.</div><div class="label">План трафик</div></div>
-        <div class="box"><div class="value">${planCHK.toLocaleString()}₽</div><div class="label">План СРЧ</div></div>
+        <div class="box"><div class="value">${planTO.toLocaleString()}₽</div><div class="label">ТОВАРООБОРОТ</div></div>
+        <div class="box"><div class="value">${planTR} чел.</div><div class="label">ТРАФИК</div></div>
+        <div class="box"><div class="value">${planCHK.toLocaleString()}₽</div><div class="label">СРЕДНИЙ ЧЕК</div></div>
         <div class="box"><div class="value">–</div><div class="label">Факт ТО</div></div>
         <div class="box"><div class="value">–</div><div class="label">Факт трафик</div></div>
         <div class="box"><div class="value">–</div><div class="label">Факт СРЧ</div></div>
         <div class="box"><div class="value">${recordTO?.["Значение"] || "–"}₽</div><div class="label">Рекорд ТО</div></div>
         <div class="box"><div class="value">${recordTR?.["Значение"] || "–"}</div><div class="label">Рекорд Трафик</div></div>
-        <div class="box"><div class="value">–</div><div class="label">К ПГ</div></div>
+        <div class="box"><div class="value">–</div><div class="label">К ПРОШЛОМУ ГОДУ</div></div>
       `;
     }
 
