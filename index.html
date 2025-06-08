@@ -167,4 +167,13 @@
   </div>
 
   <script>
-    
+    let allDataRows = [], showingAll = false;
+
+    function toggleRows() {
+      showingAll = !showingAll;
+      allDataRows.forEach((r, i) => {
+        r.classList.toggle('hidden-row', !showingAll && i >= 6);
+      });
+      event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
+    }
+
