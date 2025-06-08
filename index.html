@@ -100,12 +100,19 @@
 
   <div id="chartContainer">
     <canvas id="salesChart"></canvas>
-    <div id="customLabels" class="custom-labels"></div>
+    <div id="customLabels" class="custom-labels">
+      <div class="label-item"><div class="revenue">44 189</div><div class="date">31 сб</div></div>
+      <div class="label-item"><div class="revenue">36 764</div><div class="date">1 вс</div></div>
+      <div class="label-item"><div class="revenue">20 694</div><div class="date">2 пн</div></div>
+      <div class="label-item"><div class="revenue">44 014</div><div class="date">3 вт</div></div>
+      <div class="label-item"><div class="revenue">15 291</div><div class="date">4 ср</div></div>
+      <div class="label-item"><div class="revenue">36 340</div><div class="date">5 чт</div></div>
+      <div class="label-item"><div class="revenue">39 905</div><div class="date">6 пт</div></div>
+    </div>
   </div>
 
   <script>
     async function fetchPlanAndRecordData() {
-      // Реализуем позже: план по ТО, трафику, чеку + рекорды + прогресс и сравнение
       document.getElementById("planRevenue").textContent = '23 000₽';
       document.getElementById("planTraffic").textContent = '36';
       document.getElementById("planCheck").textContent = '639₽';
@@ -125,11 +132,11 @@
       new Chart(ctx, {
         type: "bar",
         data: {
-          labels: ["1 вс", "2 пн", "3 вт", "4 ср", "5 чт", "6 пт", "7 сб"],
+          labels: ["31 сб", "1 вс", "2 пн", "3 вт", "4 ср", "5 чт", "6 пт"],
           datasets: [{
             label: "",
-            data: [36, 20, 44, 15, 36, 39, 41],
-            backgroundColor: ["#ffd600", "#ffffff", "#ffd600", "#ffffff", "#ffd600", "#ffd600", "#ffd600"],
+            data: [44189, 36764, 20694, 44014, 15291, 36340, 39905],
+            backgroundColor: ["#ffd600", "#ffd600", "#ffffff", "#ffd600", "#ffffff", "#ffd600", "#ffd600"],
             borderRadius: 6,
             barPercentage: 0.65,
             categoryPercentage: 0.95
@@ -144,8 +151,8 @@
               anchor: "end",
               align: "end",
               offset: 4,
-              font: { weight: "bold", size: 14 },
-              formatter: (value) => value + ""
+              font: { weight: "bold", size: 13 },
+              formatter: (value) => value.toLocaleString("ru-RU")
             }
           },
           scales: {
@@ -153,7 +160,7 @@
               display: false,
               beginAtZero: true,
               grid: {
-                color: "rgba(255,255,255,0.3)",
+                color: "rgba(255,255,255,0.6)",
                 lineWidth: 1,
                 drawTicks: false,
                 drawBorder: false
