@@ -103,6 +103,60 @@
     <div id="customLabels" class="custom-labels"></div>
   </div>
   <script>
+    async function fetchData() {
+      const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
+      const response = await fetch(url);
+      const csv = await response.text();
+      const rows = Papa.parse(csv, { header: true, skipEmptyLines: true }).data;
+
+      const filtered = rows.filter(r => r['ТО'] && r['Дата']);
+      const lastDays = filtered.slice(-7).filter(r => r['ТО'].trim() !== '');
+
+      const labels = lastDays.map(r => `${parseInt(r['ТО']).toLocaleString('ru-RU')}`);
+      const dates = lastDays.map(r => {
+        const d = new Date(r['Дата']);
+        return `${d.getDate()} ${['вс','пн','вт','ср','чт','пт','сб'][d.getDay()]}`;
+      });
+      const data = lastDays.map(r => parseFloat(r['ТО'].replace(',', '.')));
+      const plan = 23000;
+      const background = lastDays.map(r => parseFloat(r['ТО'].replace(',', '.')) >= plan ? '#FFD700' : 'white');
+
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dates,
+          datasets: [{ data, backgroundColor: background, borderRadius: 10, barThickness: 28 }]
+        },
+        options: {
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { display: false },
+              grid: {
+                color: '#fff8',
+                lineWidth: 1,
+                drawTicks: false,
+                borderDash: [4,4]
+              }
+            },
+            x: {
+              ticks: { display: false },
+              grid: { display: false }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      const custom = document.getElementById('customLabels');
+      custom.innerHTML = '';
+      for (let i = 0; i < labels.length; i++) {
+        custom.innerHTML += `<div class="label-item"><div class="revenue">${labels[i]}</div><div class="date">${dates[i]}</div></div>`;
+      }
+    }
+
     async function fetchPlanAndRecordData() {
       try {
         const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
@@ -143,6 +197,7 @@
     }
 
     fetchPlanAndRecordData();
+    fetchData();
   </script>
 </body>
 </html>
