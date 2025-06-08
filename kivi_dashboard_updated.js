@@ -36,7 +36,6 @@
     return r["Дата"]?.startsWith(lastYm) && d.getDate() <= currentDay && r["ТО"];
   });
 
-  // Средние значения
   const validDays = new Set(thisMonthRows.map(r => r["Дата"].split("-")[2]));
   const dayCount = validDays.size || 1;
 
@@ -47,7 +46,6 @@
   const avgTr = Math.round(totalTr / dayCount);
   const avgCheck = avgTr ? Math.round(avgTo / avgTr) : 0;
 
-  // Планы
   const planRow = plans.find(r => r["Месяц"] === ym);
   const planTo = parseInt(planRow?.["План по выручке"] || 0);
   const planTr = parseInt(planRow?.["План по трафику"] || 0);
@@ -61,17 +59,20 @@
   document.getElementById("factTraffic").textContent = avgTr;
   document.getElementById("factAvg").textContent = avgCheck + "₽";
 
-  // Рекорды
   const recTo = records.find(r => r["Показатель"]?.includes("выручка"));
   const recTr = records.find(r => r["Показатель"]?.includes("трафик"));
 
   document.getElementById("recordTo").textContent = parseInt((recTo?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU") + "₽";
   document.getElementById("recordTraffic").textContent = parseInt((recTr?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU");
 
-  // К ПГ
   const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
   const currTo = thisMonthRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
   const diff = prevTo ? Math.round((currTo - prevTo) / prevTo * 100) : 0;
 
   document.getElementById("comparePrev").textContent = (diff >= 0 ? "+" : "") + diff + "%";
 })();
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof loadChart === 'function') loadChart();
+  if (typeof buildComparisonBlock === 'function') buildComparisonBlock();
+});
