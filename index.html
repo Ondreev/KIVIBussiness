@@ -102,24 +102,106 @@
     <div class="box"><div class="value" id="planRevenue">–</div><div class="label">План по ТО</div></div>
     <div class="box"><div class="value" id="planTraffic">–</div><div class="label">План по трафику</div></div>
     <div class="box"><div class="value" id="planCheck">–</div><div class="label">План ср. чек</div></div>
-
     <div class="box"><div class="value" id="factRevenue">–</div><div class="label">Факт/план ТО</div></div>
     <div class="box"><div class="value" id="factTraffic">–</div><div class="label">Факт/план трафик</div></div>
     <div class="box"><div class="value" id="factCheck">–</div><div class="label">Факт/план ср. чек</div></div>
-
     <div class="box"><div class="value" id="recordRevenue">–</div><div class="label" id="recordRevenueLabel">Рекорд ТО</div></div>
     <div class="box"><div class="value" id="recordTraffic">–</div><div class="label" id="recordTrafficLabel">Рекорд ТР</div></div>
     <div class="box"><div class="value" id="lastYearCompare">–</div><div class="label">К ПГ</div></div>
   </div>
   <div class="chart" id="chartContainer"></div>
   <script>
-    async function fetchData() {
-      // Заглушка, сюда вставится код загрузки CSV и рендеринга
-      console.log("fetchData запущена, но не реализована");
+    async function fetchCSV(url) {
+      const response = await fetch(url);
+      const text = await response.text();
+      return new Promise(resolve => Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        complete: results => resolve(results.data)
+      }));
     }
+
     async function fetchPlanAndRecordData() {
-      console.log("fetchPlanAndRecordData запущена, но не реализована");
+      const monthNow = new Date().toISOString().slice(0, 7);
+      const plansUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+      const recordsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
+
+      const [plans, records] = await Promise.all([fetchCSV(plansUrl), fetchCSV(recordsUrl)]);
+      const planRow = plans.find(row => row["Месяц"] === monthNow);
+      if (planRow) {
+        document.getElementById("planRevenue").textContent = parseInt(planRow["План по выручке"], 10).toLocaleString() + "₽";
+        document.getElementById("planTraffic").textContent = planRow["План по трафику"];
+        document.getElementById("planCheck").textContent = planRow["План по среднему чеку"] + "₽";
+      }
+      const rev = records.find(r => r["Показатель"].includes("выручка"));
+      const trf = records.find(r => r["Показатель"].includes("трафик"));
+      if (rev) {
+        document.getElementById("recordRevenue").textContent = parseInt(rev["Значение"], 10).toLocaleString() + "₽";
+        document.getElementById("recordRevenueLabel").textContent = rev["Дата"];
+      }
+      if (trf) {
+        document.getElementById("recordTraffic").textContent = trf["Значение"];
+        document.getElementById("recordTrafficLabel").textContent = trf["Дата"];
+      }
     }
+
+    async function fetchData() {
+      const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
+      const allData = await fetchCSV(dataUrl);
+
+      const now = new Date();
+      const monthNow = now.toISOString().slice(0, 7);
+      const currentMonthData = allData.filter(row => row["Дата"].startsWith(monthNow));
+      const today = now.getDate();
+
+      const chart = document.getElementById("chartContainer");
+      chart.innerHTML = '<div class="bar">' +
+        '<div class="line"></div><div class="line"></div><div class="line"></div>';
+
+      let totalTO = 0;
+      let totalTP = 0;
+      let displayRows = [];
+
+      currentMonthData.forEach(row => {
+        const date = new Date(row["Дата"]);
+        const day = date.getDate();
+        if (!row["ТО"].trim()) return;
+        const value = parseInt(row["ТО"].replace(/\s/g, '').replace(',', '.'), 10);
+        const traffic = parseInt(row["ТР"], 10);
+        const isGood = row["Выполнение плана (Да/Нет)"].trim() === "Да";
+        const label = `${day} ${["вс","пн","вт","ср","чт","пт","сб"][date.getDay()]}`;
+        totalTO += value;
+        totalTP += traffic;
+        displayRows.push({ label, value, isGood });
+      });
+
+      displayRows = displayRows.slice(-7);
+      displayRows.forEach(row => {
+        chart.children[0].innerHTML += `<div class="col ${row.isGood ? 'good' : ''}" style="height:${row.value / 1000}px">${row.value.toLocaleString()}</div>`;
+      });
+      chart.innerHTML += '</div><div class="labels">' +
+        displayRows.map(r => `<div>${r.label}</div>`).join('') + '</div>';
+
+      // Средние значения
+      const avgTO = Math.round(totalTO / displayRows.length);
+      const avgTP = Math.round(totalTP / displayRows.length);
+      const avgCheck = Math.round(avgTO / avgTP);
+
+      const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+      const planData = await fetchCSV(planUrl);
+      const planRow = planData.find(r => r["Месяц"] === monthNow);
+
+      if (planRow) {
+        const planTO = parseInt(planRow["План по выручке"], 10);
+        const planTP = parseInt(planRow["План по трафику"], 10);
+        const planCheck = parseInt(planRow["План по среднему чеку"], 10);
+
+        document.getElementById("factRevenue").textContent = `${avgTO.toLocaleString()}₽`;
+        document.getElementById("factTraffic").textContent = avgTP;
+        document.getElementById("factCheck").textContent = `${avgCheck}₽`;
+      }
+    }
+
     fetchPlanAndRecordData();
     fetchData();
   </script>
