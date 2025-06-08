@@ -169,17 +169,17 @@
     let allDataRows = [], showingAll = false;
 
     function toggleRows() {
-  showingAll = !showingAll;
-  allDataRows.forEach((r, i) => {
-    r.classList.toggle('hidden-row', !showingAll && i >= 6);
-  });
-  event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
-}
-
-
+      showingAll = !showingAll;
+      allDataRows.forEach((r, i) => {
+        r.classList.toggle('hidden-row', !showingAll && i >= 6);
+      });
+      event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
+    }
+</script>
   <script src="kivi_dashboard_updated.js"></script>
+
 </body>
 </html>
-  if (typeof buildComparisonBlock === 'function') buildComparisonBlock();
+  
 });
 
