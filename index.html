@@ -87,9 +87,9 @@
 <body>
   <h1>КИВИ <span style="font-weight: 400">Business</span></h1>
   <div class="summary" id="summaryBlock">
-    <div class="summary-item"><div class="value" id="planRevenue">–</div><div class="label">ТОВАРООБОРОТ</div></div>
-    <div class="summary-item"><div class="value" id="planTraffic">–</div><div class="label">ТРАФИК</div></div>
-    <div class="summary-item"><div class="value" id="planCheck">–</div><div class="label">СРЕДНИЙ ЧЕК</div></div>
+    <div class="summary-item"><div class="value" id="planRevenue">–</div><div class="label">План по ТО</div></div>
+    <div class="summary-item"><div class="value" id="planTraffic">–</div><div class="label">План по трафику</div></div>
+    <div class="summary-item"><div class="value" id="planCheck">–</div><div class="label">План ср. чек</div></div>
     <div class="summary-item"><div class="value" id="factRevenue">–</div><div class="label">Факт/план ТО</div></div>
     <div class="summary-item"><div class="value" id="factTraffic">–</div><div class="label">Факт/план трафик</div></div>
     <div class="summary-item"><div class="value" id="factCheck">–</div><div class="label">Факт/план ср. чек</div></div>
@@ -106,12 +106,20 @@
   <script>
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
 
+    async function fetchPlanAndRecordData() {
+      const placeholders = ["planRevenue", "planTraffic", "planCheck", "factRevenue", "factTraffic", "factCheck", "recordRevenue", "recordTraffic", "lastYearCompare"];
+      for (let id of placeholders) {
+        document.getElementById(id).textContent = "–";
+      }
+      document.getElementById("recordRevenueLabel").textContent = "Рекорд ТО";
+      document.getElementById("recordTrafficLabel").textContent = "Рекорд ТР";
+    }
+
     async function fetchData() {
       const res = await fetch(csvUrl);
       const text = await res.text();
       const parsed = Papa.parse(text, { header: true });
       const rows = parsed.data.filter(r => r["Дата"] && r["ТО"]);
-      const today = new Date().toISOString().split("T")[0];
       const last7 = rows.filter(r => r["ТО"]).slice(-7);
       if (last7.length === 0) return;
 
@@ -144,9 +152,7 @@
           plugins: {
             legend: { display: false },
             tooltip: { enabled: false },
-            datalabels: {
-              display: false
-            }
+            datalabels: { display: false }
           },
           scales: {
             y: {
@@ -159,9 +165,7 @@
                 },
                 lineWidth: 1
               },
-              ticks: {
-                display: false
-              }
+              ticks: { display: false }
             },
             x: {
               ticks: { display: false },
