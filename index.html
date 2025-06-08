@@ -194,5 +194,46 @@
 fetchData();
 
   </script>
+  <script>
+async function fetchPlanAndRecordData() {
+  try {
+    const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+    const recordUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
+
+    const [planText, recordText] = await Promise.all([
+      fetch(planUrl).then(res => res.text()),
+      fetch(recordUrl).then(res => res.text())
+    ]);
+
+    const planRows = Papa.parse(planText, { header: true, skipEmptyLines: true }).data;
+    const recordRows = Papa.parse(recordText, { header: true, skipEmptyLines: true }).data;
+
+    const now = new Date();
+
+    const monthlyPlan = planRows.reduce((sum, row) => {
+      const val = parseFloat((row['План ТО'] || '0').replace(/\s/g, '').replace(',', '.'));
+      return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+
+    const dailyTrafficPlan = parseFloat((planRows[0]?.['План ТР'] || '0').replace(/\s/g, '').replace(',', '.')) || 0;
+    const planAvgCheck = dailyTrafficPlan > 0 ? Math.round(monthlyPlan / (dailyTrafficPlan * planRows.length)) : 0;
+
+    document.getElementById("planRevenue").innerText = monthlyPlan.toLocaleString("ru-RU") + "₽";
+    document.getElementById("planTraffic").innerText = dailyTrafficPlan.toLocaleString("ru-RU");
+    document.getElementById("planCheck").innerText = planAvgCheck.toLocaleString("ru-RU") + "₽";
+
+    const recordRevenue = recordRows[0]?.['ТО'] || '–';
+    const recordTraffic = recordRows[0]?.['ТР'] || '–';
+
+    document.getElementById("recordRevenue").innerText = `${recordRevenue}₽`;
+    document.getElementById("recordTraffic").innerText = `${recordTraffic}`;
+
+  } catch (err) {
+    console.error("Ошибка загрузки планов или рекордов:", err);
+  }
+}
+
+fetchPlanAndRecordData();
+</script>
 </body>
 </html>
