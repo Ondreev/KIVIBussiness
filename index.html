@@ -2,8 +2,10 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>КИВИ Business</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     body {
@@ -46,67 +48,46 @@
       font-size: 0.75em;
       display: block;
     }
-    .chart {
-      width: 90%;
-      max-width: 420px;
-      padding: 8px;
+    #chartContainer {
+      padding: 10px 10px 0;
       border-radius: 16px;
+      width: 95%;
+      max-width: 420px;
+      margin-bottom: 20px;
+    }
+    canvas {
+      width: 100% !important;
+      height: 120px !important;
+    }
+    .custom-labels {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: transparent;
+      justify-content: space-between;
+      margin-top: 10px;
     }
-    .bar {
-      display: flex;
-      justify-content: space-around;
-      align-items: flex-end;
-      height: 140px;
-      width: 100%;
-      position: relative;
-      margin-bottom: 8px;
-    }
-    .col {
-      width: 36px;
-      border-radius: 6px 6px 0 0;
-      background-color: white;
-      display: block;
-      position: relative;
-      z-index: 2;
-    }
-    .col.good {
-      background-color: gold;
-    }
-    .labels {
-      display: flex;
-      justify-content: space-around;
-      width: 100%;
-      font-size: 0.8em;
-    }
-    .label-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    .label-item {
       text-align: center;
-      width: 36px;
+      width: 14%;
     }
-    .rev {
+    .revenue {
+      font-size: 15px;
       font-weight: bold;
-      font-size: 0.85em;
-      margin-bottom: 2px;
+      color: white;
     }
-    .line {
-      position: absolute;
-      width: 100%;
-      height: 1px;
-      background: rgba(255,255,255,0.5);
-      z-index: 0;
+    .date {
+      font-size: 13px;
+      color: white;
     }
   </style>
 </head>
 <body>
   <h1><span style="font-weight: 900;">КИВИ</span> Business</h1>
   <div class="summary" id="summaryBlock"></div>
-  <div class="chart" id="chartContainer"></div>
+
+  <div id="chartContainer">
+    <canvas id="salesChart"></canvas>
+    <div id="customLabels" class="custom-labels"></div>
+  </div>
+
   <script>
     async function fetchCSV(url) {
       const response = await fetch(url);
@@ -118,56 +99,15 @@
       }));
     }
 
-    async function fetchData() {
-      const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
-      const allData = await fetchCSV(dataUrl);
-
-      const now = new Date();
-      const monthNow = now.toISOString().slice(0, 7);
-      const currentMonthData = allData.filter(row => row["Дата"]?.startsWith(monthNow));
-
-      const chart = document.getElementById("chartContainer");
-
-      const displayRows = currentMonthData.filter(row => row["ТО"] && row["ТО"] !== "0").slice(-7).map(row => {
-        const date = new Date(row["Дата"]);
-        const day = date.getDate();
-        const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
-        const value = parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.'));
-        const isGood = row["Выполнение плана (Да/Нет)"]?.trim().toLowerCase() === "да";
-        return { label: `${day} ${weekday}`, value, isGood };
-      });
-
-      const maxValue = Math.max(...displayRows.map(r => r.value));
-      const step = 10000;
-      const lines = [];
-      for (let i = step; i < maxValue; i += step) {
-        const bottom = (i / maxValue) * 140;
-        lines.push(`<div class="line" style="bottom: ${bottom}px"></div>`);
-      }
-
-      chart.innerHTML = `<div class="bar">${lines.join('')}</div>`;
-      const barDiv = chart.querySelector('.bar');
-      displayRows.forEach(row => {
-        barDiv.innerHTML += `<div class="col ${row.isGood ? 'good' : ''}" style="height:${(row.value / maxValue) * 140}px"></div>`;
-      });
-
-      const labelHtml = displayRows.map(row => {
-        return `<div class="label-group"><div class="rev">${row.value.toLocaleString()}</div><div>${row.label}</div></div>`;
-      }).join('');
-
-      chart.innerHTML += `<div class="labels">${labelHtml}</div>`;
-
-      return currentMonthData;
-    }
-
     async function fetchPlanAndRecordData() {
       const planUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
       const recordUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
+      const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
 
-      const [plans, records, currentData] = await Promise.all([
+      const [plans, records, allData] = await Promise.all([
         fetchCSV(planUrl),
         fetchCSV(recordUrl),
-        fetchData()
+        fetchCSV(dataUrl)
       ]);
 
       const now = new Date();
@@ -179,10 +119,22 @@
       const planTR = parseFloat(monthPlan?.["План по трафику"] || 0);
       const planCHK = planTR ? Math.round(planTO / planTR) : 0;
 
-      const currentMonthRows = currentData.filter(row => row["ТО"] && row["ТР"]);
+      const currentMonthData = allData.filter(row => row["Дата"]?.startsWith(monthKey));
+      const currentMonthRows = currentMonthData.filter(row => row["ТО"] && row["ТР"]);
       const factTO = Math.round(currentMonthRows.reduce((acc, row) => acc + parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')), 0) / currentMonthRows.length);
       const factTR = Math.round(currentMonthRows.reduce((acc, row) => acc + parseFloat(row["ТР"].replace(',', '.')), 0) / currentMonthRows.length);
       const factCHK = factTR ? Math.round(factTO / factTR) : 0;
+
+      const lastYear = new Date(now);
+      lastYear.setFullYear(now.getFullYear() - 1);
+      const monthLastYear = lastYear.toISOString().slice(0, 7);
+      const cutoffDay = now.getDate();
+
+      const samePeriodLastYear = allData.filter(row => row["Дата"]?.startsWith(monthLastYear) && parseInt(row["Дата"].split("-")[2]) <= cutoffDay);
+      const sumLastYear = samePeriodLastYear.reduce((acc, row) => acc + parseFloat(row["ТО"]?.replace(/\s/g, '').replace(',', '.') || 0), 0);
+      const sumThisYear = currentMonthRows.reduce((acc, row) => acc + parseFloat(row["ТО"]?.replace(/\s/g, '').replace(',', '.') || 0), 0);
+      const percentDiff = sumLastYear ? Math.round(((sumThisYear - sumLastYear) / sumLastYear) * 100) : 0;
+      const formattedDiff = (percentDiff > 0 ? '+' : '') + percentDiff + '%';
 
       const recordTO = records.find(r => r["Показатель"]?.includes("выручка"));
       const recordTR = records.find(r => r["Показатель"]?.includes("трафик"));
@@ -197,8 +149,74 @@
         <div class="box"><div class="value">${factCHK.toLocaleString()}₽</div><div class="label">Факт СРЧ</div></div>
         <div class="box"><div class="value">${recordTO?.["Значение"] || "–"}₽</div><div class="label">Рекорд ТО</div></div>
         <div class="box"><div class="value">${recordTR?.["Значение"] || "–"}</div><div class="label">Рекорд Трафик</div></div>
-        <div class="box"><div class="value">–</div><div class="label">К ПГ</div></div>
+        <div class="box"><div class="value">${formattedDiff}</div><div class="label">К ПГ</div></div>
       `;
+
+      const last7 = currentMonthRows.slice(-7);
+
+      const labels = last7.map(row => {
+        const date = new Date(row["Дата"]);
+        return `${date.getDate()} ${date.toLocaleDateString("ru-RU", { weekday: 'short' })}`;
+      });
+
+      const revenues = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
+      const highlight = last7.map(row => row["Выполнение плана (Да/Нет)"]?.toLowerCase() === "да");
+      const maxValue = Math.max(...revenues);
+      const yMax = Math.ceil(maxValue / 10000) * 10000;
+
+      const ctx = document.getElementById("salesChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            data: revenues,
+            backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
+            borderRadius: 10,
+            barPercentage: 0.8,
+            categoryPercentage: 0.8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false },
+            datalabels: { display: false }
+          },
+          scales: {
+            y: {
+              display: true,
+              min: 0,
+              max: yMax,
+              grid: {
+                drawTicks: false,
+                drawBorder: false,
+                color: ctx => ctx.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.5)' : 'transparent',
+                lineWidth: 1
+              },
+              ticks: {
+                display: false
+              }
+            },
+            x: {
+              ticks: { display: false },
+              grid: { display: false }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      const labelContainer = document.getElementById("customLabels");
+      labelContainer.innerHTML = "";
+      labels.forEach((label, i) => {
+        const div = document.createElement("div");
+        div.className = "label-item";
+        div.innerHTML = `<div class='revenue'>${revenues[i].toLocaleString('ru-RU')}</div><div class='date'>${label}</div>`;
+        labelContainer.appendChild(div);
+      });
     }
 
     fetchPlanAndRecordData();
