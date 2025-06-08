@@ -1,197 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>КИВИ Business</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background-color: #ff4081;
+      font-family: sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 900;
+      margin: 20px 0 10px;
+    }
+    h1 span { font-weight: 400; }
 
-const urls = {
-  data: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv",
-  plans: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv",
-  records: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv"
-};
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 20px;
+      width: 95%;
+      max-width: 600px;
+      box-sizing: border-box;
+    }
 
-async function loadCSV(url) {
-  const res = await fetch(url);
-  const text = await res.text();
-  return Papa.parse(text, { header: true }).data;
-}
+    .cell {
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      text-align: center;
+      padding: 8px;
+    }
 
-async function loadSummary() {
-  const [data, plans, records] = await Promise.all([
-    loadCSV(urls.data),
-    loadCSV(urls.plans),
-    loadCSV(urls.records)
-  ]);
+    .big {
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+    }
 
-  const today = new Date();
-  const ym = today.toISOString().slice(0, 7);
-  const currentDay = today.getDate();
-  const cleanNumber = val => parseFloat((val || '0').replace(/\s/g, '').replace(',', '.'));
+    .small {
+      font-size: 13px;
+      margin-top: 4px;
+      color: #fff;
+    }
 
-  const thisMonthRows = data.filter(r => {
-    const d = new Date(r["Дата"]);
-    return r["Дата"]?.startsWith(ym) && d.getDate() <= currentDay && r["ТО"];
-  });
+    #chartContainer {
+      border-radius: 16px;
+      padding: 10px;
+      width: 95%;
+      max-width: 600px;
+      box-sizing: border-box;
+    }
 
-  const lastYearDate = new Date(today);
-  lastYearDate.setFullYear(today.getFullYear() - 1);
-  const lastYm = lastYearDate.toISOString().slice(0, 7);
-  const lastYearRows = data.filter(r => {
-    const d = new Date(r["Дата"]);
-    return r["Дата"]?.startsWith(lastYm) && d.getDate() <= currentDay && r["ТО"];
-  });
+    canvas {
+      width: 100% !important;
+      height: 125px !important;
+    }
 
-  const validDays = new Set(thisMonthRows.map(r => r["Дата"].split("-")[2]));
-  const dayCount = validDays.size || 1;
+    .custom-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
 
-  const totalTo = thisMonthRows.reduce((sum, r) => sum + cleanNumber(r["ТО"]), 0);
-  const totalTr = thisMonthRows.reduce((sum, r) => sum + parseInt(r["ТР"] || 0), 0);
-  const avgTo = Math.round(totalTo / dayCount);
-  const avgTr = Math.round(totalTr / dayCount);
-  const avgCheck = avgTr ? Math.round(avgTo / avgTr) : 0;
+    .label-item {
+      text-align: center;
+      width: 14%;
+    }
 
-  const planRow = plans.find(r => r["Месяц"] === ym);
-  const planTo = parseInt(planRow?.["План по выручке"] || 0);
-  const planTr = parseInt(planRow?.["План по трафику"] || 0);
-  const planAvg = planTo && planTr ? Math.round(planTo / planTr) : 0;
+    .revenue {
+      font-size: 15px;
+      font-weight: bold;
+      color: #fff;
+    }
 
-  document.getElementById("planTo").textContent = planTo.toLocaleString("ru-RU") + "₽";
-  document.getElementById("planTraffic").textContent = planTr + " чел.";
-  document.getElementById("planAvg").textContent = planAvg + "₽";
+    .date {
+      font-size: 13px;
+      font-weight: 400;
+      color: #fff;
+    }
 
-  document.getElementById("factTo").textContent = avgTo.toLocaleString("ru-RU") + "₽";
-  document.getElementById("factTraffic").textContent = avgTr;
-  document.getElementById("factAvg").textContent = avgCheck + "₽";
+    .compare-block {
+      background: white;
+      color: black;
+      width: 95%;
+      max-width: 600px;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 14px;
+      box-sizing: border-box;
+      margin-top: 16px;
+      text-align: center;
+    }
 
-  const recTo = records.find(r => r["Показатель"]?.includes("выручка"));
-  const recTr = records.find(r => r["Показатель"]?.includes("трафик"));
+    .compare-block h2 {
+      margin-top: 0;
+      font-size: 16px;
+      text-align: center;
+    }
 
-  document.getElementById("recordTo").textContent = parseInt((recTo?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU") + "₽";
-  document.getElementById("recordTraffic").textContent = parseInt((recTr?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU");
+    #compareTable table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
 
-  const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
-  const currTo = thisMonthRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
-  const diff = prevTo ? Math.round((currTo - prevTo) / prevTo * 100) : 0;
-  document.getElementById("comparePrev").textContent = (diff >= 0 ? "+" : "") + diff + "%";
-}
+    #compareTable th, #compareTable td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
 
-async function loadChart() {
-  const csv = await loadCSV(urls.data);
-  const today = new Date();
-  const rows = csv.filter(r => {
-    const d = new Date(r["Дата"]);
-    return r["Дата"] && r["ТО"] && !isNaN(d) && d <= today;
-  });
-  const last7 = rows.slice(-7);
+    .hidden-row {
+      display: none;
+    }
 
-  const labels = last7.map(row => {
-    const date = new Date(row["Дата"]);
-    const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
-    return `${date.getDate()} ${weekday}`;
-  });
+    .highlight {
+      background: #d4edda;
+      font-weight: bold;
+    }
+  </style>
+</head>
+  <body>
+  <h1>КИВИ <span>Business</span></h1>
 
-  const revenues = last7.map(row => parseFloat(row["ТО"].replace(/\s/g, '').replace(',', '.')));
-  const highlight = last7.map(row => row["Выполнение плана (Да/Нет)"]?.trim().toLowerCase() === "да");
-  const yMax = Math.ceil(Math.max(...revenues) / 10000) * 10000;
+  <!-- Верхний блок -->
+  <div class="grid" id="summaryBlock">
+    <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План TO</div></div>
+    <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План трафик</div></div>
+    <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СРЧ</div></div>
 
-  const ctx = document.getElementById("salesChart").getContext("2d");
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [{
-        data: revenues,
-        backgroundColor: highlight.map(done => done ? '#FFD700' : '#FFFFFF'),
-        borderRadius: 10,
-        barPercentage: 0.8,
-        categoryPercentage: 0.8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false },
-        datalabels: { display: false }
-      },
-      scales: {
-        y: {
-          min: 0,
-          max: yMax,
-          ticks: { display: false },
-          grid: {
-            color: context => context.tick.value % 10000 === 0 ? 'rgba(255,255,255,0.5)' : 'transparent'
-          }
-        },
-        x: {
-          ticks: { display: false },
-          grid: { display: false }
-        }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
+    <div class="cell"><div class="big" id="factTo">–</div><div class="small">Факт TO</div></div>
+    <div class="cell"><div class="big" id="factTraffic">–</div><div class="small">Факт трафик</div></div>
+    <div class="cell"><div class="big" id="factAvg">–</div><div class="small">Факт СРЧ</div></div>
 
-  const labelContainer = document.getElementById("customLabels");
-  labelContainer.innerHTML = "";
-  labels.forEach((label, i) => {
-    const div = document.createElement("div");
-    div.className = "label-item";
-    div.innerHTML = `<div class='revenue'>${revenues[i].toLocaleString('ru-RU')}</div><div class='date'>${label}</div>`;
-    labelContainer.appendChild(div);
-  });
-}
+    <div class="cell"><div class="big" id="recordTo">–</div><div class="small">Рекорд TO</div></div>
+    <div class="cell"><div class="big" id="recordTraffic">–</div><div class="small">Рекорд Трафик</div></div>
+    <div class="cell"><div class="big" id="comparePrev">–</div><div class="small">К ПГ</div></div>
+  </div>
 
-async function buildComparisonBlock() {
-  const raw = await fetch(urls.data).then(r => r.text());
-  const data = Papa.parse(raw, { header: true }).data;
+  <!-- График -->
+  <div id="chartContainer">
+    <canvas id="salesChart"></canvas>
+    <div id="customLabels" class="custom-labels"></div>
+  </div>
 
-  const now = new Date();
-  const thisMonth = now.toISOString().slice(0, 7);
-  const lastYear = new Date(now);
-  lastYear.setFullYear(now.getFullYear() - 1);
-  const lastMonth = lastYear.toISOString().slice(0, 7);
-  const todayDate = now.getDate();
+  <!-- Сравнение с прошлым годом -->
+  <div class="compare-block">
+    <h2>В сравнении с прошлым годом</h2>
+    <div id="compareTable"></div>
+    <button onclick="toggleRows()">Показать все</button>
+  </div>
 
-  const rowsThis = data.filter(r => r["Дата"]?.startsWith(thisMonth));
-  const rowsLast = data.filter(r => r["Дата"]?.startsWith(lastMonth));
+  <script>
+    let allDataRows = [], showingAll = false;
 
-  const parseRows = rows => Object.fromEntries(rows.map(r => {
-    const day = parseInt(r["Дата"].split("-")[2]);
-    const date = new Date(r["Дата"]);
-    const traffic = Math.round(parseFloat(r["ТР"]?.replace(',', '.') || 0));
-    const revenue = Math.round(parseFloat(r["ТО"]?.replace(',', '.').replace(/\s/g, '') || 0));
-    return [day, { day, date, traffic, revenue }];
-  }));
+    function toggleRows() {
+      showingAll = !showingAll;
+      allDataRows.forEach((r, i) => {
+        r.classList.toggle('hidden-row', !showingAll && i >= 6);
+      });
+      event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
+    }
+</script>
+  <script src="kivi_dashboard_updated.js"></script>
 
-  const mapThis = parseRows(rowsThis);
-  const mapLast = parseRows(rowsLast);
-  const days = Object.keys(mapThis).map(Number).filter(d => d <= todayDate).sort((a, b) => b - a);
+</body>
+</html>
 
-  const table = document.createElement('table');
-  table.innerHTML = `<tr><th>День</th><th>Прошлый год</th><th>Текущий год</th></tr>`;
-
-  allDataRows = days.map((day, i) => {
-    const row = document.createElement('tr');
-    if (i >= 6) row.classList.add('hidden-row');
-
-    const current = mapThis[day];
-    const previous = mapLast[day] || { date: '-', traffic: 0, revenue: 0 };
-    const weekdayNow = current.date.toLocaleDateString('ru-RU', { weekday: 'short' });
-    const weekdayPrev = previous.date instanceof Date && !isNaN(previous.date)
-      ? previous.date.toLocaleDateString('ru-RU', { weekday: 'short' })
-      : '-';
-
-    if (current.revenue > previous.revenue) row.classList.add('highlight');
-    row.innerHTML = `
-      <td>${day}</td>
-      <td>${weekdayPrev}, ${previous.revenue.toLocaleString('ru-RU')}₽, ${previous.traffic} чел.</td>
-      <td>${weekdayNow}, ${current.revenue.toLocaleString('ru-RU')}₽, ${current.traffic} чел.</td>`;
-    return row;
-  });
-
-  allDataRows.forEach(r => table.appendChild(r));
-  document.getElementById("compareTable").appendChild(table);
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  loadSummary();
-  loadChart();
-  buildComparisonBlock();
-});
