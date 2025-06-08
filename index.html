@@ -38,21 +38,23 @@
       text-align: center;
     }
     .value {
-      font-size: 1em;
+      font-size: 1.4em;
       font-weight: bold;
+      color: white;
     }
     .label {
       font-size: 0.75em;
+      display: block;
     }
     .chart {
       width: 90%;
       max-width: 420px;
-      background: #ff78ad;
       padding: 8px;
       border-radius: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      background: transparent;
     }
     .bar {
       display: flex;
@@ -68,6 +70,8 @@
       border-radius: 6px 6px 0 0;
       background-color: white;
       display: block;
+      position: relative;
+      z-index: 2;
     }
     .col.good {
       background-color: gold;
@@ -94,7 +98,8 @@
       position: absolute;
       width: 100%;
       height: 1px;
-      background: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.5);
+      z-index: 0;
     }
   </style>
 </head>
@@ -123,7 +128,7 @@
 
       const chart = document.getElementById("chartContainer");
 
-      const displayRows = currentMonthData.filter(row => row["ТО"]).slice(-7).map(row => {
+      const displayRows = currentMonthData.filter(row => row["ТО"] && row["ТО"] !== "0").slice(-7).map(row => {
         const date = new Date(row["Дата"]);
         const day = date.getDate();
         const weekday = date.toLocaleDateString("ru-RU", { weekday: 'short' });
@@ -159,28 +164,27 @@
 
       const [plans, records] = await Promise.all([fetchCSV(planUrl), fetchCSV(recordUrl)]);
       const now = new Date();
-      const today = now.getDate();
-      const currentMonth = now.getMonth() + 1;
+      const monthKey = now.toISOString().slice(0, 7);
 
-      const planRow = plans.find(p => parseInt(p["День"]) === today);
-      const totalPlanTO = plans.slice(0, today).reduce((sum, row) => sum + parseFloat((row["План ТО"] || "0").replace(/\s/g, '').replace(',', '.')), 0);
-      const avgPlanTraffic = parseInt(planRow["План Трафик"] || "0");
-      const avgPlanCheck = parseInt(planRow["План СРЧ"] || "0");
+      const monthPlan = plans.find(p => p["Месяц"] === monthKey);
 
-      const recordTO = records[0]?.["Рекорд ТО"] || "–";
-      const recordTR = records[0]?.["Рекорд Трафик"] || "–";
-      const recordDate = records[0]?.["Дата"] || "";
+      const planTO = parseFloat(monthPlan?.["План по выручке"] || 0);
+      const planTR = parseFloat(monthPlan?.["План по трафику"] || 0);
+      const planCHK = planTR ? Math.round(planTO / planTR) : 0;
+
+      const recordTO = records.find(r => r["Показатель"]?.includes("выручка"));
+      const recordTR = records.find(r => r["Показатель"]?.includes("трафик"));
 
       const summary = document.getElementById("summaryBlock");
       summary.innerHTML = `
-        <div class="box"><div class="value">${totalPlanTO.toLocaleString()}₽</div><div class="label">План ТО</div></div>
-        <div class="box"><div class="value">${avgPlanTraffic} чел.</div><div class="label">План трафик</div></div>
-        <div class="box"><div class="value">${avgPlanCheck}₽</div><div class="label">План СРЧ</div></div>
+        <div class="box"><div class="value">${planTO.toLocaleString()}₽</div><div class="label">План ТО</div></div>
+        <div class="box"><div class="value">${planTR} чел.</div><div class="label">План трафик</div></div>
+        <div class="box"><div class="value">${planCHK.toLocaleString()}₽</div><div class="label">План СРЧ</div></div>
         <div class="box"><div class="value">–</div><div class="label">Факт ТО</div></div>
         <div class="box"><div class="value">–</div><div class="label">Факт трафик</div></div>
         <div class="box"><div class="value">–</div><div class="label">Факт СРЧ</div></div>
-        <div class="box"><div class="value">${recordTO}</div><div class="label">Рекорд ТО</div></div>
-        <div class="box"><div class="value">${recordTR}</div><div class="label">Рекорд Трафик</div></div>
+        <div class="box"><div class="value">${recordTO?.["Значение"] || "–"}₽</div><div class="label">Рекорд ТО</div></div>
+        <div class="box"><div class="value">${recordTR?.["Значение"] || "–"}</div><div class="label">Рекорд Трафик</div></div>
         <div class="box"><div class="value">–</div><div class="label">К ПГ</div></div>
       `;
     }
