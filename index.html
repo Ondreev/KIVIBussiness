@@ -129,30 +129,32 @@
 
     async function fetchData() {
       try {
-        const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
+        const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
         const response = await fetch(dataUrl);
         const text = await response.text();
         const rows = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
 
-        const filtered = rows.filter(row => row['Дата'] && !isNaN(Date.parse(row['Дата'])));
-        const last7 = filtered.slice(-7);
-
-        const labels = last7.map(row => {
-          const date = new Date(row['Дата']);
-          const revenueRaw = row['ТО'] || '0';
-          const revenue = parseInt(String(revenueRaw).replace(/\s/g, '').replace(',', '.')) || 0;
+        const parsed = rows.map(row => {
+          const rawDate = row['Дата']?.trim();
+          const date = rawDate ? new Date(rawDate) : null;
+          const revenue = parseFloat((row['ТО'] || '0').replace(/\s/g, '').replace(',', '.')) || 0;
           return {
-            revenue: revenue.toLocaleString("ru-RU"),
-            date: `${date.getDate()} ${date.toLocaleDateString('ru-RU', { weekday: 'short' })}`
+            date,
+            raw: row,
+            revenue
           };
-        });
+        }).filter(r => r.date instanceof Date && !isNaN(r.date));
 
-        const sales = last7.map(row => {
-          const val = row['ТО'] || '0';
-          return parseFloat(String(val).replace(/\s/g, '').replace(',', '.')) || 0;
-        });
+        parsed.sort((a, b) => a.date - b.date);
+        const last7 = parsed.slice(-7);
 
-        const planStatus = last7.map(row => row['Выполнение плана (Да/Нет)'] === 'Да');
+        const labels = last7.map(entry => ({
+          revenue: entry.revenue.toLocaleString("ru-RU"),
+          date: `${entry.date.getDate()} ${entry.date.toLocaleDateString('ru-RU', { weekday: 'short' })}`
+        }));
+
+        const sales = last7.map(entry => entry.revenue);
+        const planStatus = last7.map(entry => entry.raw['Выполнение плана (Да/Нет)'] === 'Да');
 
         chart.data.labels = labels.map(l => l.date);
         chart.data.datasets[0].data = sales;
@@ -165,6 +167,7 @@
             <div class="date">${l.date}</div>
           </div>
         `).join("");
+
       } catch (err) {
         console.error("Ошибка загрузки данных:", err);
       }
