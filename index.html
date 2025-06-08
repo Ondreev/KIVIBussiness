@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>КИВИ Business</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
@@ -15,39 +16,40 @@
       color: white;
     }
     h1 {
-      font-size: 2em;
+      font-size: 1.8em;
       font-weight: bold;
       margin: 16px;
     }
     .summary {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      padding: 16px;
+      gap: 8px;
+      padding: 12px;
       background: #ff5e9c;
-      border-radius: 20px;
-      max-width: 500px;
-      margin-bottom: 20px;
+      border-radius: 16px;
+      max-width: 420px;
+      margin-bottom: 16px;
+      width: 90%;
     }
     .box {
       background: #ff78ad;
-      border-radius: 12px;
-      padding: 10px;
+      border-radius: 10px;
+      padding: 8px;
       text-align: center;
     }
     .value {
-      font-size: 1.2em;
+      font-size: 1em;
       font-weight: bold;
     }
     .label {
-      font-size: 0.9em;
+      font-size: 0.75em;
     }
     .chart {
-      width: 100%;
-      max-width: 500px;
+      width: 90%;
+      max-width: 420px;
       background: #ff78ad;
-      padding: 10px;
-      border-radius: 20px;
+      padding: 8px;
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
     }
@@ -55,27 +57,29 @@
       display: flex;
       justify-content: space-around;
       align-items: flex-end;
-      height: 150px;
-      margin-bottom: 10px;
+      height: 120px;
+      margin-bottom: 6px;
       position: relative;
     }
     .col {
-      width: 28px;
-      border-radius: 6px;
+      width: 24px;
+      border-radius: 5px;
       background-color: white;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      font-size: 10px;
+      font-size: 0.7em;
       font-weight: bold;
+      color: white;
     }
     .col.good {
       background-color: gold;
+      color: #000;
     }
     .labels {
       display: flex;
       justify-content: space-around;
-      font-size: 0.8em;
+      font-size: 0.75em;
     }
     .labels div {
       text-align: center;
@@ -85,12 +89,11 @@
       position: absolute;
       width: 100%;
       height: 1px;
-      background: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.5);
     }
-    .line:nth-child(1) { bottom: 100px; }
-    .line:nth-child(2) { bottom: 75px; }
-    .line:nth-child(3) { bottom: 50px; }
-    .line:nth-child(4) { bottom: 25px; }
+    .line:nth-child(1) { bottom: 90px; }
+    .line:nth-child(2) { bottom: 60px; }
+    .line:nth-child(3) { bottom: 30px; }
   </style>
 </head>
 <body>
@@ -108,106 +111,6 @@
     <div class="box"><div class="value" id="recordTraffic">–</div><div class="label" id="recordTrafficLabel">Рекорд ТР</div></div>
     <div class="box"><div class="value" id="lastYearCompare">–</div><div class="label">К ПГ</div></div>
   </div>
-
   <div class="chart" id="chartContainer"></div>
-
-  <script>
-    const plansUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv";
-    const recordsUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=143269600&single=true&output=csv";
-    const dataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
-
-    const toNum = s => parseFloat(String(s || '').replace(/\s/g, '').replace(',', '.')) || 0;
-    const sum = (arr, key) => arr.reduce((acc, row) => acc + toNum(row[key]), 0);
-    const avg = (arr, key) => arr.length ? sum(arr, key) / arr.length : 0;
-
-    async function loadData() {
-      const [planText, recordText, dataText] = await Promise.all([
-        fetch(plansUrl).then(r => r.text()),
-        fetch(recordsUrl).then(r => r.text()),
-        fetch(dataUrl).then(r => r.text())
-      ]);
-
-      const planData = Papa.parse(planText, { header: true }).data;
-      const recordData = Papa.parse(recordText, { header: true }).data;
-      const fullData = Papa.parse(dataText, { header: true }).data;
-
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      const currentDay = now.getDate();
-
-      const planRow = planData.find(p => p.Месяц.includes(`${currentYear}-${(currentMonth+1).toString().padStart(2, '0')}`)) || {};
-      const planTO = toNum(planRow["План по выручке"]);
-      const planTR = toNum(planRow["План по трафику"]);
-      const planCHK = toNum(planRow["План по среднему чеку"]);
-
-      const thisMonthData = fullData.filter(r => {
-        const d = new Date(r["Дата"]);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear && d.getDate() <= currentDay && r["ТО"];
-      });
-
-      const pastYearData = fullData.filter(r => {
-        const d = new Date(r["Дата"]);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear - 1 && d.getDate() <= currentDay && r["ТО"];
-      });
-
-      const avgTO = avg(thisMonthData, "ТО");
-      const avgTR = avg(thisMonthData, "ТР");
-      const avgCHK = avg(thisMonthData, "СРЧ");
-
-      document.getElementById("planRevenue").textContent = planTO.toLocaleString("ru-RU") + "₽";
-      document.getElementById("planTraffic").textContent = planTR.toLocaleString("ru-RU");
-      document.getElementById("planCheck").textContent = planCHK.toLocaleString("ru-RU") + "₽";
-
-      document.getElementById("factRevenue").textContent = Math.round(avgTO).toLocaleString("ru-RU") + "₽";
-      document.getElementById("factTraffic").textContent = Math.round(avgTR).toLocaleString("ru-RU");
-      document.getElementById("factCheck").textContent = Math.round(avgCHK).toLocaleString("ru-RU") + "₽";
-
-      document.getElementById("recordRevenue").textContent = toNum(recordData[0]["Значение"]).toLocaleString("ru-RU") + "₽";
-      document.getElementById("recordRevenueLabel").textContent = recordData[0]["Дата"];
-      document.getElementById("recordTraffic").textContent = toNum(recordData[1]["Значение"]).toLocaleString("ru-RU");
-      document.getElementById("recordTrafficLabel").textContent = recordData[1]["Дата"];
-
-      const currentTotal = sum(thisMonthData, "ТО");
-      const pastTotal = sum(pastYearData, "ТО");
-      const compare = pastTotal ? ((currentTotal - pastTotal) / pastTotal * 100) : 0;
-      document.getElementById("lastYearCompare").textContent = (compare > 0 ? "+" : "") + compare.toFixed(1) + "%";
-
-      // Draw chart
-      const last7 = thisMonthData.slice(-7);
-      const container = document.getElementById("chartContainer");
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      const max = Math.max(...last7.map(r => toNum(r["ТО"])), 10000);
-      for (let row of last7) {
-        const val = toNum(row["ТО"]);
-        const col = document.createElement("div");
-        col.className = "col";
-        if (val >= planTO) col.classList.add("good");
-        col.style.height = `${(val / max * 100)}%`;
-        bar.appendChild(col);
-      }
-      const lines = ["", "", "", ""].map(() => {
-        const l = document.createElement("div");
-        l.className = "line";
-        return l;
-      });
-      lines.forEach(l => bar.appendChild(l));
-      container.appendChild(bar);
-
-      const labels = document.createElement("div");
-      labels.className = "labels";
-      for (let row of last7) {
-        const d = new Date(row["Дата"]);
-        const txt = `${d.getDate()} ${["вс","пн","вт","ср","чт","пт","сб"][d.getDay()]}`;
-        const div = document.createElement("div");
-        div.innerText = txt;
-        labels.appendChild(div);
-      }
-      container.appendChild(labels);
-    }
-
-    loadData();
-  </script>
 </body>
 </html>
