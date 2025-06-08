@@ -184,9 +184,9 @@ async function buildComparisonBlock() {
 
     if (current.revenue > previous.revenue) row.classList.add('highlight');
     row.innerHTML = `
-      <td>${day}</td>
-      <td>${weekdayPrev}, ${previous.revenue.toLocaleString('ru-RU')}₽, ${previous.traffic} чел.</td>
-      <td>${weekdayNow}, ${current.revenue.toLocaleString('ru-RU')}₽, ${current.traffic} чел.</td>`;
+  <td>${day}</td>
+  <td>${w1}, ${prev.revenue.toLocaleString("ru-RU")}, ${prev.traffic}</td>
+  <td>${w2}, ${curr.revenue.toLocaleString("ru-RU")}, ${curr.traffic}</td>`;
     return row;
   });
 
