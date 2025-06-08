@@ -1,4 +1,3 @@
-
 window.addEventListener("DOMContentLoaded", () => {
   loadSummary();
   loadChart();
@@ -19,6 +18,64 @@ async function loadCSV(url) {
 
 function cleanNumber(val) {
   return parseFloat((val || '0').replace(/\s/g, '').replace(',', '.'));
+}
+
+async function loadSummary() {
+  const [data, plans, records] = await Promise.all([
+    loadCSV(urls.data),
+    loadCSV(urls.plans),
+    loadCSV(urls.records)
+  ]);
+
+  const today = new Date();
+  const ym = today.toISOString().slice(0, 7);
+  const currentDay = today.getDate();
+
+  const thisMonthRows = data.filter(r => {
+    const d = new Date(r["Дата"]);
+    return r["Дата"]?.startsWith(ym) && d.getDate() <= currentDay && r["ТО"];
+  });
+
+  const lastYearDate = new Date(today);
+  lastYearDate.setFullYear(today.getFullYear() - 1);
+  const lastYm = lastYearDate.toISOString().slice(0, 7);
+  const lastYearRows = data.filter(r => {
+    const d = new Date(r["Дата"]);
+    return r["Дата"]?.startsWith(lastYm) && d.getDate() <= currentDay && r["ТО"];
+  });
+
+  const validDays = new Set(thisMonthRows.map(r => r["Дата"].split("-")[2]));
+  const dayCount = validDays.size || 1;
+
+  const totalTo = thisMonthRows.reduce((sum, r) => sum + cleanNumber(r["ТО"]), 0);
+  const totalTr = thisMonthRows.reduce((sum, r) => sum + parseInt(r["ТР"] || 0), 0);
+  const avgTo = Math.round(totalTo / dayCount);
+  const avgTr = Math.round(totalTr / dayCount);
+  const avgCheck = avgTr ? Math.round(avgTo / avgTr) : 0;
+
+  const planRow = plans.find(r => r["Месяц"] === ym);
+  const planTo = parseInt(planRow?.["План по выручке"] || 0);
+  const planTr = parseInt(planRow?.["План по трафику"] || 0);
+  const planAvg = planTo && planTr ? Math.round(planTo / planTr) : 0;
+
+  document.getElementById("planTo").textContent = planTo.toLocaleString("ru-RU") + "₽";
+  document.getElementById("planTraffic").textContent = planTr + " чел.";
+  document.getElementById("planAvg").textContent = planAvg + "₽";
+
+  document.getElementById("factTo").textContent = avgTo.toLocaleString("ru-RU") + "₽";
+  document.getElementById("factTraffic").textContent = avgTr;
+  document.getElementById("factAvg").textContent = avgCheck + "₽";
+
+  const recTo = records.find(r => r["Показатель"]?.includes("выручка"));
+  const recTr = records.find(r => r["Показатель"]?.includes("трафик"));
+
+  document.getElementById("recordTo").textContent = parseInt((recTo?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU") + "₽";
+  document.getElementById("recordTraffic").textContent = parseInt((recTr?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU");
+
+  const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
+  const currTo = thisMonthRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
+  const diff = prevTo ? Math.round((currTo - prevTo) / prevTo * 100) : 0;
+  document.getElementById("comparePrev").textContent = (diff >= 0 ? "+" : "") + diff + "%";
 }
 
 async function loadChart() {
@@ -124,8 +181,8 @@ async function buildComparisonBlock() {
   table.innerHTML = `<tr><th>День</th><th>Прошлый год</th><th>Текущий год</th></tr>`;
 
   allDataRows = days.map((day, i) => {
-    const row = document.createElement("tr");
-    if (i >= 6) row.classList.add("hidden-row");
+    const row = document.createElement('tr');
+    if (i >= 6) row.classList.add('hidden-row');
 
     const current = mapThis[day];
     const previous = mapLast[day] || { date: '-', traffic: 0, revenue: 0 };
@@ -137,7 +194,7 @@ async function buildComparisonBlock() {
       ? current.date.toLocaleDateString('ru-RU', { weekday: 'short' })
       : '-';
 
-    if (current.revenue > previous.revenue) row.classList.add("highlight");
+    if (current.revenue > previous.revenue) row.classList.add('highlight');
 
     row.innerHTML = `
       <td>${day}</td>
@@ -146,6 +203,6 @@ async function buildComparisonBlock() {
     return row;
   });
 
-  allDataRows.forEach(row => table.appendChild(row));
+  allDataRows.forEach(r => table.appendChild(r));
   document.getElementById("compareTable").appendChild(table);
 }
