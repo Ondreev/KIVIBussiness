@@ -117,7 +117,7 @@
         const recordRows = Papa.parse(recordText, { header: true, skipEmptyLines: true }).data;
 
         const now = new Date();
-        const currentMonthKey = now.toISOString().slice(0, 7); // '2025-06'
+        const currentMonthKey = now.toISOString().slice(0, 7);
         const thisMonthRow = planRows.find(row => row['Месяц']?.trim() === currentMonthKey);
 
         const monthlyPlan = thisMonthRow ? parseFloat((thisMonthRow['План по выручке'] || '0').toString().replace(/\s/g, '').replace(',', '.')) : 0;
@@ -132,10 +132,10 @@
         const recordTraffic = recordRows.find(r => r['Показатель']?.includes('Максимальный трафик'));
 
         document.getElementById("recordRevenue").innerText = recordRevenue ? parseInt(recordRevenue['Значение']).toLocaleString("ru-RU") + "₽" : '–';
-        document.getElementById("recordRevenueLabel").innerText = recordRevenue && recordRevenue['Дата'] ? recordRevenue['Дата'] : 'Рекорд ТО';
+        document.getElementById("recordRevenueLabel").innerText = recordRevenue?.['Дата'] ?? 'Рекорд ТО';
 
         document.getElementById("recordTraffic").innerText = recordTraffic ? parseInt(recordTraffic['Значение']).toLocaleString("ru-RU") : '–';
-        document.getElementById("recordTrafficLabel").innerText = recordTraffic && recordTraffic['Дата'] ? recordTraffic['Дата'] : 'Рекорд ТР';
+        document.getElementById("recordTrafficLabel").innerText = recordTraffic?.['Дата'] ?? 'Рекорд ТР';
 
       } catch (err) {
         console.error("Ошибка загрузки планов или рекордов:", err);
