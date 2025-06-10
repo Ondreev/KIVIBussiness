@@ -46,7 +46,7 @@
       <div style="font-size:14px; font-weight:bold;">${months[m % 12]}</div>
       <div style="font-size:20px; font-weight:bold; margin:4px 0;">${revenue.toLocaleString('ru-RU')}₽</div>
       <div style="font-size:14px;">
-        ${traffic} / <span style="font-weight:bold">СРЧ ${avgCheck.toLocaleString('ru-RU')}₽</span>
+        ${traffic} / <span style="font-weight:bold">${avgCheck.toLocaleString('ru-RU')}₽</span>
       </div>
     `;
     container.appendChild(box);
