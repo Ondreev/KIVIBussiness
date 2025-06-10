@@ -31,13 +31,13 @@
     const avgCheck = traffic ? Math.round(revenue / traffic) : 0;
 
     box.style.flex = "1 1 33.33%";
-box.style.maxWidth = "33.33%";
-box.style.boxSizing = "border-box";
-box.style.background = "white";
-box.style.color = "black";
-box.style.borderRadius = "12px";
-box.style.padding = "12px";
-box.style.textAlign = "center";
+    box.style.maxWidth = "33.33%";
+    box.style.boxSizing = "border-box";
+    box.style.background = "white";
+    box.style.color = "black";
+    box.style.borderRadius = "12px";
+    box.style.padding = "12px";
+    box.style.textAlign = "center";
 
     box.innerHTML = `
       <div style="font-size:10px; font-weight:bold;">${months[m % 12]}</div>
