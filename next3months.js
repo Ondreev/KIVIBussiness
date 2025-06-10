@@ -1,5 +1,3 @@
-// next3months.js — блок с прогнозами на ближайшие 3 месяца из прошлого года
-
 (async () => {
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
   const res = await fetch(url);
@@ -13,11 +11,12 @@
 
   const container = document.createElement("div");
   container.style.display = "flex";
+  container.style.flexWrap = "nowrap";
+  container.style.overflowX = "auto";
   container.style.gap = "12px";
   container.style.marginTop = "16px";
-  container.style.flexWrap = "wrap";
+  container.style.paddingBottom = "8px";
   container.style.maxWidth = "95%";
-  container.style.justifyContent = "center";
   container.style.boxSizing = "border-box";
 
   const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
@@ -33,14 +32,15 @@
     const avgCheck = traffic ? Math.round(revenue / traffic) : 0;
 
     const box = document.createElement("div");
+    box.style.flex = "0 0 33.33%";
+    box.style.minWidth = "120px";
+    box.style.maxWidth = "140px";
     box.style.background = "white";
     box.style.color = "black";
     box.style.borderRadius = "12px";
     box.style.padding = "12px";
     box.style.textAlign = "center";
-    box.style.flex = "0 0 32%";
-    box.style.minWidth = "140px";
-    box.style.maxWidth = "140px";
+    box.style.boxSizing = "border-box";
 
     box.innerHTML = `
       <div style="font-size:14px; font-weight:bold;">${months[m % 12]}</div>
