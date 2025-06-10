@@ -14,7 +14,7 @@
 
   const urls = {
     data: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv",
-    leaders: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1359385679&single=true&output=csv"
+    leaders: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1406705679&single=true&output=csv""https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1359385679&single=true&output=csv"
   };
 
   const cleanNumber = val => parseFloat((val || "0").replace(/\s/g, "").replace(",", "."));
@@ -79,15 +79,13 @@
   rightCol.style.fontSize = "14px";
 
   const top10 = leaders
-    .filter(r => r["Выручка"])
-    .sort((a, b) => cleanNumber(b["Выручка"]) - cleanNumber(a["Выручка"]))
+    .filter(r => r["Лидеры продаж"])
+    .map(r => r["Лидеры продаж"])
     .slice(0, 10);
 
-  rightCol.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;'>Лидеры продаж</div>`;
-  top10.forEach(r => {
-    const name = r["Название"] || "";
-    const val = cleanNumber(r["Выручка"]);
-    rightCol.innerHTML += `<div style='display:flex;justify-content:space-between;'><span>${name}</span><span>${val.toLocaleString("ru-RU")}₽</span></div>`;
+  rightCol.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;text-align:center;'>Лидеры продаж</div>`;
+  top10.forEach(name => {
+    rightCol.innerHTML += `<div style='margin-bottom:4px;'>${name}</div>`;
   });
 
   container.appendChild(leftCol);
