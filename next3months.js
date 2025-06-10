@@ -48,7 +48,7 @@
     block.innerHTML = `
       <div style='font-weight:600; margin-bottom:4px;'>${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</div>
       <div style='font-size:20px; font-weight:bold;'>${avgTo.toLocaleString('ru-RU')}₽</div>
-      <div style='font-size:13px; margin-top:4px;'>${avgTr} ч. • ${avgCheck}₽ СРЧ</div>
+      <div style='font-size:13px; margin-top:4px;'>${avgTr} • ${avgCheck}₽ СРЧ</div>
     `;
 
     container.appendChild(block);
