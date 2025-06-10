@@ -43,8 +43,8 @@
     box.style.boxSizing = "border-box";
 
     box.innerHTML = `
-      <div style="font-size:14px; font-weight:bold;">${months[m % 12]}</div>
-      <div style="font-size:20px; font-weight:bold; margin:4px 0;">${revenue.toLocaleString('ru-RU')}₽</div>
+      <div style="font-size:12px; font-weight:bold;">${months[m % 12]}</div>
+      <div style="font-size:18px; font-weight:bold; margin:4px 0;">${revenue.toLocaleString('ru-RU')}₽</div>
       <div style="font-size:14px;">
         ${traffic} / <span style="font-weight:bold">${avgCheck.toLocaleString('ru-RU')}₽</span>
       </div>
