@@ -57,8 +57,8 @@
     div.style.padding = "12px";
     div.style.boxSizing = "border-box";
     div.style.fontSize = "14px";
-    div.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;'>${title}</div><div>${value}</div>`;
-    if (extra) div.innerHTML += `<div style='margin-top:4px;font-size:13px;color:#666;'>${extra}</div>`;
+    div.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;text-align:center;'>${title}</div>${value}`;
+    if (extra) div.innerHTML += `<div style='margin-top:6px;font-size:14px;text-align:center;'>${extra}</div>`;
     return div;
   };
 
@@ -67,8 +67,8 @@
   leftCol.style.flexDirection = "column";
   leftCol.style.gap = "12px";
 
-  leftCol.appendChild(makeBlock("Прогноз по выручке", `${factTo.toLocaleString("ru-RU")}₽`, `Прогноз: ${forecast.toLocaleString("ru-RU")}₽`));
-  leftCol.appendChild(makeBlock("Разница с ПГ", `${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽`));
+  leftCol.appendChild(makeBlock("Показатели месяца", `<div style='font-size:20px;font-weight:bold;'>${factTo.toLocaleString("ru-RU")}₽</div>`, `Прогноз: <strong>${forecast.toLocaleString("ru-RU")}₽</strong>`));
+  leftCol.appendChild(makeBlock("Разница с прошлым годом", `<div style='font-size:20px;font-weight:bold;'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`));
 
   const rightCol = document.createElement("div");
   rightCol.style.background = "white";
