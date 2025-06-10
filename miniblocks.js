@@ -3,7 +3,7 @@
 (async () => {
   const container = document.createElement("div");
   container.style.display = "grid";
-  container.style.gridTemplateColumns = "1fr 1fr";
+  container.style.gridTemplateColumns = "1fr 1.25fr";
   container.style.gap = "12px";
   container.style.marginTop = "20px";
   container.style.width = "95%";
@@ -14,7 +14,7 @@
 
   const urls = {
     data: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv",
-    leaders: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1406705679&single=true&output=csv"
+    leaders: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1406705679&single=true&output=csv""https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1406705679&single=true&output=csv""https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1359385679&single=true&output=csv"
   };
 
   const cleanNumber = val => parseFloat((val || "0").replace(/\s/g, "").replace(",", "."));
@@ -67,8 +67,8 @@
   leftCol.style.flexDirection = "column";
   leftCol.style.gap = "12px";
 
-  leftCol.appendChild(makeBlock("Показатели месяца", `<div style='font-size:20px;font-weight:bold;'>${factTo.toLocaleString("ru-RU")}₽</div>`, `Прогноз: <strong>${forecast.toLocaleString("ru-RU")}₽</strong>`));
-  leftCol.appendChild(makeBlock("Разница с прошлым годом", `<div style='font-size:20px;font-weight:bold;'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`));
+  leftCol.appendChild(makeBlock("Этот месяц", `<div style='text-align:center;'>по накоплению</div><div style='font-size:22px;font-weight:bold;text-align:center;'>${factTo.toLocaleString("ru-RU")}₽</div><div style='margin-top:6px;text-align:center;'>Прогноз:</div><div style='font-size:22px;font-weight:bold;text-align:center;'>${forecast.toLocaleString("ru-RU")}₽</div>`));
+  leftCol.appendChild(makeBlock("От прошл. года", `<div style='font-size:22px;font-weight:bold;text-align:center;'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`));
 
   const rightCol = document.createElement("div");
   rightCol.style.background = "white";
