@@ -1,4 +1,4 @@
-// yearComparisonChart.js — сравнение выручки по месяцам за текущий и прошлый год (линейная диаграмма)
+// yearComparisonChart.js — сравнение выручки по месяцам за 2023, 2024 и 2025 годы (линейная диаграмма с анимацией)
 
 (async () => {
   const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
@@ -10,25 +10,33 @@
   const today = new Date();
   const currentYear = today.getFullYear();
   const lastYear = currentYear - 1;
+  const yearBeforeLast = currentYear - 2;
 
   const months = Array.from({ length: 12 }, (_, i) => i);
   const monthLabels = months.map(i => (i + 1).toString());
 
-  const sums = { [currentYear]: Array(12).fill(0), [lastYear]: Array(12).fill(0) };
-  const counts = { [currentYear]: Array(12).fill(0), [lastYear]: Array(12).fill(0) };
+  const sums = {
+    [currentYear]: Array(12).fill(0),
+    [lastYear]: Array(12).fill(0),
+    [yearBeforeLast]: Array(12).fill(0)
+  };
+  const counts = {
+    [currentYear]: Array(12).fill(0),
+    [lastYear]: Array(12).fill(0),
+    [yearBeforeLast]: Array(12).fill(0)
+  };
 
   data.forEach(row => {
     const d = new Date(row["Дата"]);
     const y = d.getFullYear();
     const m = d.getMonth();
-    if ((y === currentYear || y === lastYear) && row["ТО"]) {
+    if ((y === currentYear || y === lastYear || y === yearBeforeLast) && row["ТО"]) {
       sums[y][m] += clean(row["ТО"]);
       counts[y][m]++;
     }
   });
 
-  const avgCurrent = sums[currentYear].map((s, i) => counts[currentYear][i] ? s / counts[currentYear][i] : 0);
-  const avgLast = sums[lastYear].map((s, i) => counts[lastYear][i] ? s / counts[lastYear][i] : 0);
+  const avg = year => sums[year].map((s, i) => counts[year][i] ? s / counts[year][i] : 0);
 
   const canvas = document.createElement("canvas");
   canvas.id = "yearComparison";
@@ -44,34 +52,51 @@
       datasets: [
         {
           label: `${currentYear}`,
-          data: avgCurrent,
+          data: avg(currentYear),
           borderColor: '#FFD700',
           backgroundColor: '#FFD700',
           tension: 0.4,
-          pointRadius: 4,
+          borderWidth: 3,
+          pointRadius: 5,
           pointBackgroundColor: '#FFD700'
         },
         {
           label: `${lastYear}`,
-          data: avgLast,
+          data: avg(lastYear),
           borderColor: '#FFFFFF',
           backgroundColor: '#FFFFFF',
           tension: 0.4,
-          pointRadius: 4,
+          borderWidth: 3,
+          pointRadius: 5,
           pointBackgroundColor: '#FFFFFF'
+        },
+        {
+          label: `${yearBeforeLast}`,
+          data: avg(yearBeforeLast),
+          borderColor: '#42a5f5',
+          backgroundColor: '#42a5f5',
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: '#42a5f5'
         }
       ]
     },
     options: {
       responsive: true,
+      animation: {
+        duration: 1000,
+        easing: 'easeInOutQuad'
+      },
       plugins: {
         legend: {
           position: 'top',
           labels: {
-            boxWidth: 12,
+            boxWidth: 14,
             color: '#fff',
             font: {
-              weight: 'bold'
+              weight: 'bold',
+              size: 16
             }
           }
         },
@@ -88,7 +113,10 @@
         x: {
           ticks: {
             color: '#fff',
-            font: { weight: 'bold' }
+            font: {
+              weight: 'bold',
+              size: 16
+            }
           }
         }
       }
