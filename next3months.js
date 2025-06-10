@@ -31,7 +31,9 @@
     const avgCheck = traffic ? Math.round(revenue / traffic) : 0;
 
     const box = document.createElement("div");
-    box.style.flex = "0 0 33.33%";
+    box.style.flex = "1 1 33.33%";
+    box.style.maxWidth = "33.33%";
+    box.style.boxSizing = "border-box";
     box.style.minWidth = "120px";
     box.style.maxWidth = "140px";
     box.style.background = "white";
