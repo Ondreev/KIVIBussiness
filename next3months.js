@@ -11,8 +11,7 @@
 
   const container = document.createElement("div");
   container.style.display = "flex";
-  container.style.flexWrap = "nowrap";
-  container.style.overflowX = "auto";
+  container.style.flexWrap = "wrap";
   container.style.gap = "12px";
   container.style.marginTop = "16px";
   container.style.paddingBottom = "8px";
