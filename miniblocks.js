@@ -81,7 +81,7 @@
   const top10 = leaders
     .filter(r => r["Лидеры продаж"])
     .map(r => r["Лидеры продаж"])
-    .slice(0, 10);
+    .slice(0, 7);
 
   rightCol.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;text-align:center;'>Лидеры продаж</div>`;
   top10.forEach(name => {
