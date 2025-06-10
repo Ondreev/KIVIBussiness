@@ -38,9 +38,9 @@
     box.style.borderRadius = "12px";
     box.style.padding = "12px";
     box.style.textAlign = "center";
-    box.style.flex = "1 1 30%";
-    box.style.minWidth = "100px";
-    box.style.maxWidth = "180px";
+    box.style.flex = "0 0 32%";
+box.style.minWidth = "140px";
+box.style.maxWidth = "140px";
 
     box.innerHTML = `
       <div style="font-size:14px; font-weight:bold;">${months[m % 12]}</div>
