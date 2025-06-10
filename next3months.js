@@ -34,7 +34,6 @@
     box.style.flex = "1 1 33.33%";
     box.style.maxWidth = "33.33%";
     box.style.boxSizing = "border-box";
-    box.style.minWidth = "120px";
     box.style.background = "white";
     box.style.color = "black";
     box.style.borderRadius = "12px";
