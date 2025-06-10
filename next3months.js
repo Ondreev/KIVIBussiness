@@ -30,16 +30,14 @@
     const traffic = Math.round(rows.reduce((s, r) => s + parseInt(r["ТР"] || 0), 0) / (rows.length || 1));
     const avgCheck = traffic ? Math.round(revenue / traffic) : 0;
 
-    const box = document.createElement("div");
     box.style.flex = "1 1 33.33%";
-    box.style.maxWidth = "33.33%";
-    box.style.boxSizing = "border-box";
-    box.style.background = "white";
-    box.style.color = "black";
-    box.style.borderRadius = "12px";
-    box.style.padding = "12px";
-    box.style.textAlign = "center";
-    box.style.boxSizing = "border-box";
+box.style.maxWidth = "33.33%";
+box.style.boxSizing = "border-box";
+box.style.background = "white";
+box.style.color = "black";
+box.style.borderRadius = "12px";
+box.style.padding = "12px";
+box.style.textAlign = "center";
 
     box.innerHTML = `
       <div style="font-size:10px; font-weight:bold;">${months[m % 12]}</div>
