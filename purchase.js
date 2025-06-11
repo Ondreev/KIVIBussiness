@@ -17,13 +17,12 @@
 
   const monthRows = data.filter(r => {
     const d = new Date(r["Дата"]);
-    return r["Дата"]?.startsWith(ym) && !isNaN(d) && clean(r["ТО"]) > 0;
+    return r["Дата"]?.startsWith(ym) && !isNaN(d) && clean(r["ТО"]) > 0 && d <= today;
   });
 
   const last3 = monthRows.slice(-3);
-  const total3 = last3.reduce((sum, r) => sum + clean(r["ТО"]), 0);
-
-  const recommended = Math.round((total3 * 4) / 2);
+  const avg3 = last3.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (last3.length || 1);
+  const recommended = Math.round((avg3 * 4) / 2);
 
   const block = document.createElement("div");
   block.style.background = "#fff";
@@ -38,9 +37,9 @@
   block.style.boxShadow = "0 0 16px rgba(0,0,0,0.1)";
 
   block.innerHTML = `
-    <div style='font-size:18px;font-weight:bold;margin-bottom:12px;text-align:center;'>📦 Рекомендуемая сумма закупки</div>
+    <div style='font-size:18px;font-weight:bold;margin-bottom:12px;text-align:center;'>📦 Нужно сделать закупку на:</div>
     <div style='font-size:24px;font-weight:bold;text-align:center;'>${recommended.toLocaleString('ru-RU')}₽</div>
-    <div style='font-size:13px;color:#444;text-align:center;margin-top:6px;'>по формуле: выручка за 3 дня × 4 ÷ 2</div>
+    <div style='font-size:13px;color:#444;text-align:center;margin-top:6px;'>Возможно отклонение от этой суммы на +/- 500 рублей. Никогда не тратьте больше этой суммы, иначе это повлияет на ваши показатели отрицательно. Строго следуйте моим рекомендациям и все будет ТИП-ТОП!</div>
   `;
 
   document.body.appendChild(block);
