@@ -34,7 +34,11 @@ async function runOracleSmart() {
   const now = new Date();
   const ym = now.toISOString().slice(0, 7);
 
-  const thisMonthRows = data.filter(r => r["Дата"]?.startsWith(ym) && r["ТО"]);
+  const thisMonthRows = data.filter(r => {
+  const d = new Date(r["Дата"]);
+  return r["Дата"]?.startsWith(ym) && r["ТО"] && d.getDate() < now.getDate();
+ });
+
 
   const avgTo = Math.round(
     thisMonthRows.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (thisMonthRows.length || 1)
