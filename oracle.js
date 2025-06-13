@@ -63,6 +63,7 @@ async function runOracleSmart() {
 
   const chartContainer = document.getElementById("chartContainer");
   const container = document.createElement("div");
+  container.classList.add("oracle-animate");
   container.style.background = "transparent";
   container.style.color = "#fff";
   container.style.borderRadius = "16px";
@@ -117,6 +118,22 @@ async function runOracleSmart() {
 
   container.innerHTML = html;
   chartContainer.insertAdjacentElement("afterend", container);
+
+  const style = document.createElement("style");
+  style.innerHTML = `
+    .oracle-animate {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideFadeIn 0.6s ease-out forwards;
+    }
+    @keyframes slideFadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 document.addEventListener("DOMContentLoaded", runOracleSmart);
