@@ -33,9 +33,9 @@
   container.style.color = "#000";
   container.style.borderRadius = "16px";
   container.style.padding = "16px";
-  container.style.marginTop = "20px";
+  container.style.margin = "20px auto";
   container.style.width = "95%";
-  container.style.marginInline = "auto";
+  container.style.maxWidth = "600px";
   container.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
   container.style.fontFamily = "sans-serif";
   container.style.boxSizing = "border-box";
@@ -62,5 +62,5 @@
   });
 
   container.innerHTML = html;
-  document.body.appendChild(container);
+  document.querySelector("body").appendChild(container);
 })();
