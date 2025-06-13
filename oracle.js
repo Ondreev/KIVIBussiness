@@ -43,12 +43,10 @@ function runOracle(planToDOM, planTrafficDOM) {
 
   periods.forEach(p => {
     const toShare = dayPercents[p] || 0;
-    const trShare = toShare;
     const periodTo = Math.round(planTo * toShare);
-    const periodTr = Math.round(planTraffic * trShare);
+    const periodTr = Math.round(planTraffic * toShare);
     cumulativeTo += periodTo;
     cumulativeTr += periodTr;
-
     const isPeak = toShare === max;
     const bg = isPeak ? "#ffe082" : "#ff8fb1";
     const endHour = parseInt(p.split(":")[0]);
@@ -56,16 +54,16 @@ function runOracle(planToDOM, planTrafficDOM) {
 
     html += `
       <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; color:#000;">
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <div style="font-weight:700; font-size:14px;">${p}</div>
-          <div style="display:flex; gap:32px; font-weight:700; font-size:16px;">
-            <div>${periodTo.toLocaleString('ru-RU')}₽</div>
-            <div>${periodTr} трафик</div>
+        <div style="flex-grow:1;">
+          <div style="display:flex; justify-content:space-between; font-weight:700; font-size:14px;">
+            <div style="width:90px;">${p}</div>
+            <div style="width:80px;">${periodTo.toLocaleString('ru-RU')}₽</div>
+            <div style="width:80px;">${periodTr} трафик</div>
           </div>
-          <div style="display:flex; gap:24px; font-size:13px;">
-            <div style="text-decoration: underline;">${cumulativeTo.toLocaleString('ru-RU')}₽</div>
-            <div style="text-decoration: underline;">${cumulativeTr} трафик</div>
-            <div style="margin-left:auto; font-weight: 500; font-size:13px;">дашборд</div>
+          <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:4px;">
+            <div style="width:90px;">дашборд</div>
+            <div style="width:80px; text-decoration:underline;">${cumulativeTo.toLocaleString('ru-RU')}₽</div>
+            <div style="width:80px; text-decoration:underline;">${cumulativeTr} трафик</div>
           </div>
         </div>
         <div style="font-size:22px; padding-left:10px;">${status}</div>
