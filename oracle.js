@@ -40,6 +40,7 @@ function runOracle(planToDOM, planTrafficDOM) {
 
   const max = Math.max(...Object.values(dayPercents));
   const now = new Date();
+  const currentHour = now.getHours();
 
   periods.forEach(p => {
     const toShare = dayPercents[p] || 0;
@@ -48,12 +49,23 @@ function runOracle(planToDOM, planTrafficDOM) {
     cumulativeTo += periodTo;
     cumulativeTr += periodTr;
     const isPeak = toShare === max;
-    const bg = isPeak ? "#ffe082" : "#ff8fb1";
-    const endHour = parseInt(p.split(":")[0]);
-    const status = now.getHours() >= endHour ? '✔️' : '—';
+
+    const hourStart = parseInt(p.split(":")[0]);
+    const hourEnd = parseInt(p.split("–")[1]);
+    const isNow = currentHour >= hourStart && currentHour < hourEnd;
+
+    const actualTo = parseInt(document.getElementById("factTo")?.textContent.replace(/\D/g, "") || "0");
+    const actualTr = parseInt(document.getElementById("factTraffic")?.textContent.replace(/\D/g, "") || "0");
+    const isMet = actualTo >= cumulativeTo && actualTr >= cumulativeTr;
+
+    const baseColor = isPeak ? "#ffe082" : "#ff8fb1";
+    const highlightColor = isPeak ? "#ffd54f" : "#f06292";
+    const bg = isMet ? highlightColor : baseColor;
+    const border = isNow ? "2px solid #000" : "none";
+    const status = now.getHours() >= hourEnd ? '✔️' : '—';
 
     html += `
-      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; color:#000;">
+      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000;">
         <div style="flex-grow:1;">
           <div style="display:flex; justify-content:space-between; font-weight:700; font-size:14px;">
             <div style="width:90px;">${p}</div>
