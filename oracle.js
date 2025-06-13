@@ -25,43 +25,54 @@ function runOracle(planToDOM, planTrafficDOM) {
   let cumulativeTr = 0;
 
   const container = document.createElement("div");
-  container.style.background = "#fff";
+  container.style.background = "transparent";
   container.style.color = "#000";
   container.style.borderRadius = "16px";
   container.style.padding = "16px";
   container.style.margin = "20px auto";
   container.style.width = "95%";
   container.style.maxWidth = "600px";
-  container.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
   container.style.fontFamily = "sans-serif";
   container.style.boxSizing = "border-box";
 
-  let html = `<h3 style='margin-top:0;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</h3>`;
+  let html = `<div style='font-weight:bold; font-size:18px; margin-bottom:10px;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</div>`;
   html += `<div style='margin-bottom:12px;'>Цель на день: <b>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTraffic}</b></div>`;
 
-  periods.forEach((p, idx) => {
+  const max = Math.max(...Object.values(dayPercents));
+
+  periods.forEach(p => {
     const toShare = dayPercents[p] || 0;
     const trShare = toShare;
     const periodTo = Math.round(planTo * toShare);
     const periodTr = Math.round(planTraffic * trShare);
-
     cumulativeTo += periodTo;
     cumulativeTr += periodTr;
 
-    const highlight = (toShare === Math.max(...Object.values(dayPercents)))
-      ? "background:#ffe082; font-weight:bold;"
-      : "";
+    const isPeak = toShare === max;
+    const bg = isPeak ? "#ffe082" : "#ffc0cb";
+
+    // Заглушка: выполнено, если период до текущего времени
+    const now = new Date();
+    const endHour = parseInt(p.split("–")[1]);
+    const status = now.getHours() >= endHour ? '✔️' : '—';
 
     html += `
-      <div style='margin-bottom:8px; padding:8px; border-radius:12px; ${highlight}'>
-        <div style='font-weight:bold; font-size:15px;'>${p} — план: ${periodTo.toLocaleString("ru-RU")}₽, трафик: ${periodTr}</div>
-        <div style='font-size:13px; color:#444;'>до ${p.split("–")[1]}: <b>${Math.round(cumulativeTo).toLocaleString("ru-RU")}₽</b>, трафик: <b>${Math.round(cumulativeTr)}</b></div>
+      <div style="background:${bg}; margin-bottom:10px; padding:12px; border-radius:12px; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:bold; font-size:16px;">${p}</div>
+          <div style="font-size:18px;">${status}</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+          <div><b>${periodTo.toLocaleString('ru-RU')}₽</b><br><span style="font-size:13px;">ТО</span></div>
+          <div><b>${periodTr}</b><br><span style="font-size:13px;">трафик</span></div>
+        </div>
+        <div style="font-size:12px; color:#333; margin-top:6px;">по накоплению: <b>${cumulativeTo.toLocaleString('ru-RU')}₽</b>, трафик: <b>${cumulativeTr}</b></div>
       </div>
     `;
   });
 
   container.innerHTML = html;
-  document.querySelector("body").appendChild(container);
+  document.body.appendChild(container);
 }
 
 function waitForPlanData(retries = 10) {
