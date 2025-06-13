@@ -1,6 +1,6 @@
 // oracle.js — умный блок с прогнозом на день по выручке и трафику
 
-function runOracle(planTo, planTraffic) {
+function runOracle(planToDOM, planTrafficDOM) {
   const percentByWeekday = {
     "Monday":    { "09–12": 0.117, "12–15": 0.267, "15–18": 0.322, "18–21": 0.294 },
     "Tuesday":   { "09–12": 0.170, "12–15": 0.291, "15–18": 0.319, "18–21": 0.220 },
@@ -12,9 +12,13 @@ function runOracle(planTo, planTraffic) {
   };
 
   const today = new Date();
-  const weekday = today.toLocaleDateString('en-US', { weekday: 'long' });
-  const dayPercents = percentByWeekday[weekday];
+  const weekdayEn = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const weekdayRu = today.toLocaleDateString('ru-RU', { weekday: 'long' });
+  const dayPercents = percentByWeekday[weekdayEn];
   if (!dayPercents) return;
+
+  const planTo = Math.max(planToDOM, parseInt(document.getElementById("factTo")?.textContent.replace(/\D/g, "") || "0"));
+  const planTraffic = planTrafficDOM;
 
   const periods = ["09–12", "12–15", "15–18", "18–21"];
   let cumulativeTo = 0;
@@ -32,7 +36,7 @@ function runOracle(planTo, planTraffic) {
   container.style.fontFamily = "sans-serif";
   container.style.boxSizing = "border-box";
 
-  let html = `<h3 style='margin-top:0;'>🧪 Сегодня ${weekday}</h3>`;
+  let html = `<h3 style='margin-top:0;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</h3>`;
   html += `<div style='margin-bottom:12px;'>Цель на день: <b>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTraffic}</b></div>`;
 
   periods.forEach((p, idx) => {
