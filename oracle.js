@@ -40,42 +40,38 @@ function runOracle(planToDOM, planTrafficDOM) {
 
   const max = Math.max(...Object.values(dayPercents));
   const now = new Date();
-  const currentHour = now.getHours();
 
   periods.forEach(p => {
     const toShare = dayPercents[p] || 0;
+    const trShare = toShare;
     const periodTo = Math.round(planTo * toShare);
-    const periodTr = Math.round(planTraffic * toShare);
+    const periodTr = Math.round(planTraffic * trShare);
     cumulativeTo += periodTo;
     cumulativeTr += periodTr;
+
     const isPeak = toShare === max;
+    const isNow = now.getHours() >= parseInt(p.split(":")[0]) && now.getHours() < parseInt(p.split("–")[1]);
 
-    const hourStart = parseInt(p.split(":")[0]);
-    const hourEnd = parseInt(p.split("–")[1]);
-    const isNow = currentHour >= hourStart && currentHour < hourEnd;
+    let factTo = parseInt(document.getElementById("factTo")?.textContent.replace(/\D/g, "") || "0");
+    let factTr = parseInt(document.getElementById("factTraffic")?.textContent.replace(/\D/g, "") || "0");
+    const isReached = (cumulativeTo <= factTo) && (cumulativeTr <= factTr);
 
-    const actualTo = parseInt(document.getElementById("factTo")?.textContent.replace(/\D/g, "") || "0");
-    const actualTr = parseInt(document.getElementById("factTraffic")?.textContent.replace(/\D/g, "") || "0");
-    const isMet = actualTo >= cumulativeTo && actualTr >= cumulativeTr;
-
-    const baseColor = isPeak ? "#ffe082" : "#ff8fb1";
-    const highlightColor = isPeak ? "#ffd54f" : "#f06292";
-    const bg = isMet ? highlightColor : baseColor;
-    const border = isNow ? "2px solid #000" : "none";
-    const status = now.getHours() >= hourEnd ? '✔️' : '—';
+    const bg = isReached ? (isPeak ? "#ffcd00" : "#ff4081") : (isPeak ? "#ffe082" : "#ff8fb1");
+    const border = isNow ? "3px solid #fff" : "none";
+    const status = now.getHours() >= parseInt(p.split("–")[1]) ? '✔️' : '—';
 
     html += `
-      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000;">
-        <div style="flex-grow:1;">
-          <div style="display:flex; justify-content:space-between; font-weight:700; font-size:14px;">
-            <div style="width:90px;">${p}</div>
-            <div style="width:80px;">${periodTo.toLocaleString('ru-RU')}₽</div>
-            <div style="width:80px;">${periodTr} трафик</div>
+      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border: ${border}; display:flex; justify-content:space-between; align-items:center; color:#000;">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="font-weight:700; font-size:14px;">${p}</div>
+          <div style="display:flex; gap:32px; font-weight:700; font-size:16px;">
+            <div>${periodTo.toLocaleString('ru-RU')}₽</div>
+            <div>${periodTr} трафик</div>
           </div>
-          <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:4px;">
-            <div style="width:90px;">дашборд</div>
-            <div style="width:80px; text-decoration:underline;">${cumulativeTo.toLocaleString('ru-RU')}₽</div>
-            <div style="width:80px; text-decoration:underline;">${cumulativeTr} трафик</div>
+          <div style="display:flex; gap:24px; font-size:13px;">
+            <div style="text-decoration: underline;">${cumulativeTo.toLocaleString('ru-RU')}₽</div>
+            <div style="text-decoration: underline;">${cumulativeTr} трафик</div>
+            <div style="margin-left:auto; font-weight: 500; font-size:13px;">дашборд</div>
           </div>
         </div>
         <div style="font-size:22px; padding-left:10px;">${status}</div>
@@ -87,10 +83,13 @@ function runOracle(planToDOM, planTrafficDOM) {
   document.body.appendChild(container);
 }
 
-function waitForPlanData(retries = 10) {
+function waitForPlanData(retries = 20) {
   const toEl = document.getElementById("planTo");
   const trEl = document.getElementById("planTraffic");
-  if (!toEl || !trEl) return;
+  if (!toEl || !trEl) {
+    if (retries > 0) setTimeout(() => waitForPlanData(retries - 1), 300);
+    return;
+  }
 
   const to = parseInt(toEl.textContent.replace(/\D/g, "")) || 0;
   const tr = parseInt(trEl.textContent.replace(/\D/g, "")) || 0;
@@ -102,4 +101,6 @@ function waitForPlanData(retries = 10) {
   }
 }
 
-waitForPlanData();
+document.addEventListener("DOMContentLoaded", () => {
+  waitForPlanData();
+});
