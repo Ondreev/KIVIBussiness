@@ -35,8 +35,8 @@ function runOracle(planToDOM, planTrafficDOM) {
   container.style.fontFamily = "sans-serif";
   container.style.boxSizing = "border-box";
 
-  let html = `<div style='font-weight:900; font-size:20px; margin-bottom:10px;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</div>`;
-  html += `<div style='margin-bottom:18px; font-size:16px;'>Цель на день:<br><span style='font-size:22px; font-weight:900;'>${planTo.toLocaleString("ru-RU")}₽</span><br>трафик: <b>${planTraffic}</b></div>`;
+  let html = `<div style='font-weight:900; font-size:22px; text-align:center; margin-bottom:10px;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</div>`;
+  html += `<div style='margin-bottom:18px; text-align:center; font-size:16px;'>Цель на день: <b style='font-size:20px;'>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTraffic}</b></div>`;
 
   const max = Math.max(...Object.values(dayPercents));
   const now = new Date();
@@ -55,14 +55,18 @@ function runOracle(planToDOM, planTrafficDOM) {
     const status = now.getHours() >= endHour ? '✔️' : '—';
 
     html += `
-      <div style="background:${bg}; margin-bottom:10px; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="background:${bg}; margin-bottom:10px; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; color:#000;">
         <div style="flex: 1;">
-          <div style="font-weight:700; font-size:15px;">${p}</div>
-          <div style="display: flex; gap: 18px; margin-top: 6px; font-size: 18px; font-weight: 800;">
+          <div style="font-weight:700; font-size:14px;">${p}</div>
+          <div style="display: flex; gap: 18px; margin-top: 4px; font-size: 16px; font-weight: 700;">
             <div>${periodTo.toLocaleString('ru-RU')}₽</div>
             <div>${periodTr} трафик</div>
           </div>
-          <div style="margin-top: 6px; font-size: 12px;">по накоплению: <b>${cumulativeTo.toLocaleString('ru-RU')}₽</b>, трафик: <b>${cumulativeTr}</b></div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+            <div style="text-decoration: underline;">${cumulativeTo.toLocaleString('ru-RU')}₽</div>
+            <div style="text-decoration: underline;">${cumulativeTr} трафик</div>
+            <div style="margin-left: auto; font-weight: 600;">дашборд</div>
+          </div>
         </div>
         <div style="font-size:24px; padding-left:10px;">${status}</div>
       </div>
