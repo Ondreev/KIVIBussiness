@@ -35,7 +35,6 @@
   container.style.padding = "16px";
   container.style.marginTop = "20px";
   container.style.width = "95%";
-  container.style.maxWidth = "900px";
   container.style.marginInline = "auto";
   container.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
   container.style.fontFamily = "sans-serif";
