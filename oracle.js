@@ -42,17 +42,19 @@ function runOracle(planToDOM, planTrafficDOM) {
   periods.forEach((p, idx) => {
     const toShare = dayPercents[p] || 0;
     const trShare = toShare;
+    const periodTo = Math.round(planTo * toShare);
+    const periodTr = Math.round(planTraffic * trShare);
 
-    cumulativeTo += planTo * toShare;
-    cumulativeTr += planTraffic * trShare;
+    cumulativeTo += periodTo;
+    cumulativeTr += periodTr;
 
     const highlight = (toShare === Math.max(...Object.values(dayPercents)))
       ? "background:#ffe082; font-weight:bold;"
       : "";
 
     html += `<div style='margin-bottom:8px; ${highlight} padding:4px 8px; border-radius:8px;'>` +
-      `<b>${p}</b> — до ${p.split("–")[1]}: ` +
-      `<b>${Math.round(cumulativeTo).toLocaleString("ru-RU")}₽</b>, ` +
+      `<b>${p}</b>: ${periodTo.toLocaleString("ru-RU")}₽, трафик: ${periodTr}<br>` +
+      `— до ${p.split("–")[1]}: <b>${Math.round(cumulativeTo).toLocaleString("ru-RU")}₽</b>, ` +
       `трафик: <b>${Math.round(cumulativeTr)}</b>` +
       `</div>`;
   });
