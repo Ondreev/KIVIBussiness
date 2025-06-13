@@ -28,22 +28,28 @@
   let cumulativeTo = 0;
   let cumulativeTr = 0;
 
+  const wrapper = document.createElement("div");
+  wrapper.style.display = "flex";
+  wrapper.style.justifyContent = "center";
+
   const container = document.createElement("div");
   container.style.background = "#fff";
   container.style.color = "#000";
   container.style.borderRadius = "16px";
   container.style.padding = "16px";
   container.style.marginTop = "20px";
+  container.style.width = "95%";
   container.style.maxWidth = "600px";
   container.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
   container.style.fontFamily = "sans-serif";
+  container.style.boxSizing = "border-box";
 
   let html = `<h3 style='margin-top:0;'>🧪 Сегодня ${weekday}</h3>`;
   html += `<div style='margin-bottom:12px;'>Цель на день: <b>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTraffic}</b></div>`;
 
   periods.forEach((p, idx) => {
     const toShare = dayPercents[p] || 0;
-    const trShare = toShare; // пропорционально
+    const trShare = toShare;
 
     cumulativeTo += planTo * toShare;
     cumulativeTr += planTraffic * trShare;
@@ -59,8 +65,7 @@
       `</div>`;
   });
 
-  // Можно позже добавить анализ отставания
-
   container.innerHTML = html;
-  document.body.appendChild(container);
+  wrapper.appendChild(container);
+  document.body.appendChild(wrapper);
 })();
