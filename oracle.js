@@ -6,7 +6,7 @@
     "Tuesday":   { "09–12": 0.170, "12–15": 0.291, "15–18": 0.319, "18–21": 0.220 },
     "Wednesday": { "09–12": 0.177, "12–15": 0.248, "15–18": 0.252, "18–21": 0.316 },
     "Thursday":  { "09–12": 0.123, "12–15": 0.242, "15–18": 0.330, "18–21": 0.304 },
-    "Пятница":    { "09–12": 0.155, "12–15": 0.215, "15–18": 0.318, "18–21": 0.305 },
+    "Friday":    { "09–12": 0.155, "12–15": 0.215, "15–18": 0.318, "18–21": 0.305 },
     "Saturday":  { "09–12": 0.182, "12–15": 0.333, "15–18": 0.293, "18–21": 0.192 },
     "Sunday":    { "09–12": 0.134, "12–15": 0.389, "15–18": 0.306, "18–21": 0.170 }
   };
@@ -28,10 +28,6 @@
   let cumulativeTo = 0;
   let cumulativeTr = 0;
 
-  const wrapper = document.createElement("div");
-  wrapper.style.display = "flex";
-  wrapper.style.justifyContent = "center";
-
   const container = document.createElement("div");
   container.style.background = "#fff";
   container.style.color = "#000";
@@ -39,7 +35,8 @@
   container.style.padding = "16px";
   container.style.marginTop = "20px";
   container.style.width = "95%";
-  container.style.maxWidth = "600px";
+  container.style.maxWidth = "900px";
+  container.style.marginInline = "auto";
   container.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
   container.style.fontFamily = "sans-serif";
   container.style.boxSizing = "border-box";
@@ -66,6 +63,5 @@
   });
 
   container.innerHTML = html;
-  wrapper.appendChild(container);
-  document.body.appendChild(wrapper);
+  document.body.appendChild(container);
 })();
