@@ -33,13 +33,8 @@ async function runOracleSmart() {
 
   const now = new Date();
   const ym = now.toISOString().slice(0, 7);
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
 
-  const thisMonthRows = data.filter(r => {
-    const d = new Date(r["Дата"]);
-    return r["Дата"]?.startsWith(ym) && d < now && r["ТО"];
-  });
+  const thisMonthRows = data.filter(r => r["Дата"]?.startsWith(ym) && r["ТО"]);
 
   const avgTo = Math.round(
     thisMonthRows.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (thisMonthRows.length || 1)
@@ -76,7 +71,15 @@ async function runOracleSmart() {
   let cumulativeTo = 0;
   let cumulativeTr = 0;
 
-  Object.entries(dayPercents).forEach(([p, share]) => {
+  const cumulativeTarget = Object.entries(dayPercents).map(([p, share]) => {
+    return {
+      period: p,
+      to: Math.round(planTo * share),
+      tr: Math.round(planTr * share)
+    };
+  });
+
+  Object.entries(dayPercents).forEach(([p, share], i) => {
     const periodTo = Math.round(planTo * share);
     const periodTr = Math.round(planTr * share);
     cumulativeTo += periodTo;
@@ -84,8 +87,17 @@ async function runOracleSmart() {
 
     const isPeak = share === max;
     const isNow = now.getHours() >= parseInt(p.split(":"))[0] && now.getHours() < parseInt(p.split("–")[1]);
-    const bg = isPeak ? (isNow ? "#ffd200" : "#ffee99") : (isNow ? "#ff70a1" : "#ffc2d1");
+    const factTo = thisMonthRows.filter(r => {
+      const d = new Date(r["Дата"]);
+      return d.getDate() === now.getDate();
+    }).reduce((sum, r) => sum + clean(r["ТО"]), 0);
+
+    const bg = (factTo >= cumulativeTo)
+      ? (isPeak ? "#ffc400" : "#ff6e9c")
+      : (isPeak ? (isNow ? "#ffd200" : "#ffee99") : (isNow ? "#ff70a1" : "#ffc2d1"));
+
     const border = isNow ? "3px solid white" : "none";
+    const showCheck = factTo >= cumulativeTo;
 
     html += `
       <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000; width:100%; max-width:600px; box-sizing:border-box;">
@@ -100,7 +112,7 @@ async function runOracleSmart() {
             <div style="text-decoration: underline; font-size:13px;">${cumulativeTr} трафик</div>
           </div>
         </div>
-        <div style="font-size:22px; padding-left:10px;">✔️</div>
+        <div style="font-size:22px; padding-left:10px;">${showCheck ? '✔️' : '—'}</div>
       </div>
     `;
   });
