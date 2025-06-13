@@ -22,7 +22,7 @@
 
   const last3 = monthRows.slice(-3);
   const avg3 = last3.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (last3.length || 1);
-  const recommended = Math.round((avg3 * 4) / 2);
+  const recommended = Math.round(avg3 * 4 * 0.45);
 
   const block = document.createElement("div");
   block.style.background = "#fff";
