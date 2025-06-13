@@ -57,6 +57,7 @@ async function runOracleSmart() {
   const dayPercents = percentByWeekday[weekdayEn];
   if (!dayPercents) return;
 
+  const chartContainer = document.getElementById("chartContainer");
   const container = document.createElement("div");
   container.style.background = "transparent";
   container.style.color = "#fff";
@@ -82,12 +83,12 @@ async function runOracleSmart() {
     cumulativeTr += periodTr;
 
     const isPeak = share === max;
-    const isNow = now.getHours() >= parseInt(p.split(":")[0]) && now.getHours() < parseInt(p.split("–")[1]);
+    const isNow = now.getHours() >= parseInt(p.split(":"))[0] && now.getHours() < parseInt(p.split("–")[1]);
     const bg = isPeak ? (isNow ? "#ffd200" : "#ffee99") : (isNow ? "#ff70a1" : "#ffc2d1");
     const border = isNow ? "3px solid white" : "none";
 
     html += `
-      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000;">
+      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000; width:100%; max-width:600px; box-sizing:border-box;">
         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; width:100%; font-size:15px;">
           <div style="font-weight:600">${p}</div>
           <div>
@@ -105,7 +106,7 @@ async function runOracleSmart() {
   });
 
   container.innerHTML = html;
-  document.getElementById("oracleContainer")?.appendChild(container);
+  chartContainer.insertAdjacentElement("afterend", container);
 }
 
 document.addEventListener("DOMContentLoaded", runOracleSmart);
