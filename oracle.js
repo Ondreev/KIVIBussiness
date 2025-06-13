@@ -35,8 +35,8 @@ function runOracle(planToDOM, planTrafficDOM) {
   container.style.fontFamily = "sans-serif";
   container.style.boxSizing = "border-box";
 
-  let html = `<div style='font-weight:900; font-size:22px; text-align:center; margin-bottom:10px;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</div>`;
-  html += `<div style='margin-bottom:18px; text-align:center; font-size:16px;'>Цель на день: <b style='font-size:20px;'>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTraffic}</b></div>`;
+  let html = `<div style='font-weight:900; font-size:24px; text-align:center; margin-bottom:12px;'>📌 Сегодня ${weekdayRu.charAt(0).toUpperCase() + weekdayRu.slice(1)}</div>`;
+  html += `<div style='margin-bottom:20px; text-align:center; font-size:16px;'>Цель на день: <span style='font-size:20px; font-weight:700;'>${planTo.toLocaleString("ru-RU")}₽</span>, трафик: <b>${planTraffic}</b></div>`;
 
   const max = Math.max(...Object.values(dayPercents));
   const now = new Date();
@@ -55,20 +55,20 @@ function runOracle(planToDOM, planTrafficDOM) {
     const status = now.getHours() >= endHour ? '✔️' : '—';
 
     html += `
-      <div style="background:${bg}; margin-bottom:10px; padding:12px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; color:#000;">
-        <div style="flex: 1;">
+      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; color:#000;">
+        <div style="display:flex; flex-direction:column; gap:6px;">
           <div style="font-weight:700; font-size:14px;">${p}</div>
-          <div style="display: flex; gap: 18px; margin-top: 4px; font-size: 16px; font-weight: 700;">
+          <div style="display:flex; gap:32px; font-weight:700; font-size:16px;">
             <div>${periodTo.toLocaleString('ru-RU')}₽</div>
             <div>${periodTr} трафик</div>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+          <div style="display:flex; gap:24px; font-size:13px;">
             <div style="text-decoration: underline;">${cumulativeTo.toLocaleString('ru-RU')}₽</div>
             <div style="text-decoration: underline;">${cumulativeTr} трафик</div>
-            <div style="margin-left: auto; font-weight: 600;">дашборд</div>
+            <div style="margin-left:auto; font-weight: 500; font-size:13px;">дашборд</div>
           </div>
         </div>
-        <div style="font-size:24px; padding-left:10px;">${status}</div>
+        <div style="font-size:22px; padding-left:10px;">${status}</div>
       </div>
     `;
   });
