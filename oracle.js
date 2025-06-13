@@ -52,11 +52,12 @@ function runOracle(planToDOM, planTrafficDOM) {
       ? "background:#ffe082; font-weight:bold;"
       : "";
 
-    html += `<div style='margin-bottom:8px; ${highlight} padding:4px 8px; border-radius:8px;'>` +
-      `<b>${p}</b>: ${periodTo.toLocaleString("ru-RU")}₽, трафик: ${periodTr}<br>` +
-      `— до ${p.split("–")[1]}: <b>${Math.round(cumulativeTo).toLocaleString("ru-RU")}₽</b>, ` +
-      `трафик: <b>${Math.round(cumulativeTr)}</b>` +
-      `</div>`;
+    html += `
+      <div style='margin-bottom:8px; padding:8px; border-radius:12px; ${highlight}'>
+        <div style='font-weight:bold; font-size:15px;'>${p} — план: ${periodTo.toLocaleString("ru-RU")}₽, трафик: ${periodTr}</div>
+        <div style='font-size:13px; color:#444;'>до ${p.split("–")[1]}: <b>${Math.round(cumulativeTo).toLocaleString("ru-RU")}₽</b>, трафик: <b>${Math.round(cumulativeTr)}</b></div>
+      </div>
+    `;
   });
 
   container.innerHTML = html;
