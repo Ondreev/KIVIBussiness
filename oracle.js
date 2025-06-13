@@ -1,6 +1,6 @@
 // oracle.js — умный блок с прогнозом на день по выручке и трафику
 
-(async () => {
+function runOracle(planTo, planTraffic) {
   const percentByWeekday = {
     "Monday":    { "09–12": 0.117, "12–15": 0.267, "15–18": 0.322, "18–21": 0.294 },
     "Tuesday":   { "09–12": 0.170, "12–15": 0.291, "15–18": 0.319, "18–21": 0.220 },
@@ -15,14 +15,6 @@
   const weekday = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dayPercents = percentByWeekday[weekday];
   if (!dayPercents) return;
-
-  // Получаем план из DOM
-  const planToEl = document.getElementById("planTo");
-  const planTrafficEl = document.getElementById("planTraffic");
-  if (!planToEl || !planTrafficEl) return;
-
-  const planTo = parseInt(planToEl.textContent.replace(/\D/g, "")) || 0;
-  const planTraffic = parseInt(planTrafficEl.textContent.replace(/\D/g, "")) || 0;
 
   const periods = ["09–12", "12–15", "15–18", "18–21"];
   let cumulativeTo = 0;
@@ -63,4 +55,21 @@
 
   container.innerHTML = html;
   document.querySelector("body").appendChild(container);
-})();
+}
+
+function waitForPlanData(retries = 10) {
+  const toEl = document.getElementById("planTo");
+  const trEl = document.getElementById("planTraffic");
+  if (!toEl || !trEl) return;
+
+  const to = parseInt(toEl.textContent.replace(/\D/g, "")) || 0;
+  const tr = parseInt(trEl.textContent.replace(/\D/g, "")) || 0;
+
+  if (to > 0 && tr > 0) {
+    runOracle(to, tr);
+  } else if (retries > 0) {
+    setTimeout(() => waitForPlanData(retries - 1), 300);
+  }
+}
+
+waitForPlanData();
