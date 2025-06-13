@@ -33,12 +33,17 @@ async function runOracleSmart() {
 
   const now = new Date();
   const ym = now.toISOString().slice(0, 7);
+  const todayDay = now.getDate();
 
   const thisMonthRows = data.filter(r => {
-  const d = new Date(r["Дата"]);
-  return r["Дата"]?.startsWith(ym) && r["ТО"] && d.getDate() < now.getDate();
- });
+    const d = new Date(r["Дата"]);
+    return r["Дата"]?.startsWith(ym) && d.getDate() < todayDay && r["ТО"];
+  });
 
+  const todayRows = data.filter(r => {
+    const d = new Date(r["Дата"]);
+    return r["Дата"]?.startsWith(ym) && d.getDate() === todayDay && r["ТО"];
+  });
 
   const avgTo = Math.round(
     thisMonthRows.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (thisMonthRows.length || 1)
@@ -75,15 +80,7 @@ async function runOracleSmart() {
   let cumulativeTo = 0;
   let cumulativeTr = 0;
 
-  const cumulativeTarget = Object.entries(dayPercents).map(([p, share]) => {
-    return {
-      period: p,
-      to: Math.round(planTo * share),
-      tr: Math.round(planTr * share)
-    };
-  });
-
-  Object.entries(dayPercents).forEach(([p, share], i) => {
+  Object.entries(dayPercents).forEach(([p, share]) => {
     const periodTo = Math.round(planTo * share);
     const periodTr = Math.round(planTr * share);
     cumulativeTo += periodTo;
@@ -91,10 +88,7 @@ async function runOracleSmart() {
 
     const isPeak = share === max;
     const isNow = now.getHours() >= parseInt(p.split(":"))[0] && now.getHours() < parseInt(p.split("–")[1]);
-    const factTo = thisMonthRows.filter(r => {
-      const d = new Date(r["Дата"]);
-      return d.getDate() === now.getDate();
-    }).reduce((sum, r) => sum + clean(r["ТО"]), 0);
+    const factTo = todayRows.reduce((sum, r) => sum + clean(r["ТО"]), 0);
 
     const bg = (factTo >= cumulativeTo)
       ? (isPeak ? "#ffc400" : "#ff6e9c")
