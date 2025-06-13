@@ -105,7 +105,7 @@ async function runOracleSmart() {
   });
 
   container.innerHTML = html;
-  document.body.appendChild(container);
+  document.getElementById("oracleContainer")?.appendChild(container);
 }
 
 document.addEventListener("DOMContentLoaded", runOracleSmart);
