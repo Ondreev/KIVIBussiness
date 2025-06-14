@@ -121,4 +121,4 @@ async function runOracleSmart() {
   chartContainer.insertAdjacentElement("afterend", container);
 }
 
-document.addEventListener("DOMContentLoaded", runOracleSmart);
+window.addEventListener("DOMContentLoaded", runOracleSmart);
