@@ -86,8 +86,10 @@ async function runOracleSmart() {
     cumulativeTo += periodTo;
     cumulativeTr += periodTr;
 
+    const [startHour, endHour] = p.split("–").map(t => parseInt(t.split(":"))[0]);
+    const isNow = now.getHours() >= startHour && now.getHours() < endHour;
+
     const isPeak = share === max;
-    const isNow = now.getHours() >= parseInt(p.split(":"))[0] && now.getHours() < parseInt(p.split("–")[1]);
     const factTo = todayRows.reduce((sum, r) => sum + clean(r["ТО"]), 0);
 
     const bg = (factTo >= cumulativeTo)
@@ -98,7 +100,7 @@ async function runOracleSmart() {
     const showCheck = factTo >= cumulativeTo;
 
     html += `
-      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000; width:100%; max-width:600px; box-sizing:border-box;">
+      <div style="background:${bg}; margin-bottom:12px; padding:12px 16px; border-radius:12px; border:${border}; display:flex; justify-content:space-between; align-items:center; color:#000; width:100%; max-width:600px; box-sizing:border-box; transition: all 0.3s ease-in-out;">
         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; width:100%; font-size:15px;">
           <div style="font-weight:600">${p}</div>
           <div>
