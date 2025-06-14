@@ -25,6 +25,16 @@ function clean(val) {
   return parseFloat((val || '0').replace(/\s/g, '').replace(',', '.'));
 }
 
+function isWithinPeriod(now, period) {
+  const [start, end] = period.split("–");
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  const current = now.getHours() * 60 + now.getMinutes();
+  const startMin = startH * 60 + startM;
+  const endMin = endH * 60 + endM;
+  return current >= startMin && current < endMin;
+}
+
 async function runOracleSmart() {
   const [data, plans] = await Promise.all([
     loadCSVOracle(oracleUrls.data),
@@ -86,9 +96,7 @@ async function runOracleSmart() {
     cumulativeTo += periodTo;
     cumulativeTr += periodTr;
 
-    const [startHour, endHour] = p.split("–").map(t => parseInt(t.split(":"))[0]);
-    const isNow = now.getHours() >= startHour && now.getHours() < endHour;
-
+    const isNow = isWithinPeriod(now, p);
     const isPeak = share === max;
     const factTo = todayRows.reduce((sum, r) => sum + clean(r["ТО"]), 0);
 
