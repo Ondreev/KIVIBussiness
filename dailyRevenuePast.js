@@ -36,7 +36,10 @@ async function loadDailyRevenuePast() {
 
     const revenue = parseFloat(revenueStrRaw.replace(/\s/g, '').replace(',', '.'));
 
-    if (date.getFullYear() === lastYear && date.getMonth() === currentMonth) {
+    const isTargetMonth = date.getFullYear() === lastYear && date.getMonth() === currentMonth;
+    console.log(`Дата: ${date.toDateString()} | Год = ${date.getFullYear()} | Месяц = ${date.getMonth()} | Попадает: ${isTargetMonth}`);
+
+    if (isTargetMonth) {
       const day = date.getDate();
       dayRevenueMap[day] = (dayRevenueMap[day] || 0) + revenue;
     }
