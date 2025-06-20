@@ -21,7 +21,17 @@ async function loadDailyRevenuePast() {
     const revenueStrRaw = columns[3]?.trim().replace(/"/g, '');
     if (!dateStrRaw || !revenueStrRaw) continue;
 
-    const date = new Date(dateStrRaw);
+    let date;
+    if (dateStrRaw.includes('-')) {
+      const [year, month, day] = dateStrRaw.split('-').map(Number);
+      date = new Date(year, month - 1, day);
+    } else if (dateStrRaw.includes('.')) {
+      const [day, month, year] = dateStrRaw.split('.').map(Number);
+      date = new Date(year, month - 1, day);
+    } else {
+      continue;
+    }
+
     if (isNaN(date.getTime())) continue;
 
     const revenue = parseFloat(revenueStrRaw.replace(/\s/g, '').replace(',', '.'));
