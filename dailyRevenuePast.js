@@ -3,7 +3,7 @@
 // Автор: ассистент
 
 async function loadDailyRevenuePast() {
-  const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv';
+  const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?output=csv';
 
   const response = await fetch(csvUrl);
   const text = await response.text();
@@ -16,23 +16,23 @@ async function loadDailyRevenuePast() {
   const dayRevenueMap = {};
 
   for (const line of lines) {
-  const [dateStrRaw, revenueStrRaw] = line.split(',');
-  const dateStr = dateStrRaw?.trim().replace(/"/g, '');
-  const revenueStr = revenueStrRaw?.trim().replace(/"/g, '');
-  if (!dateStr || !revenueStr) continue;
+    const [dateStrRaw, revenueStrRaw] = line.split(',');
+    const dateStr = dateStrRaw?.trim().replace(/"/g, '');
+    const revenueStr = revenueStrRaw?.trim().replace(/"/g, '');
+    if (!dateStr || !revenueStr) continue;
 
-  const dateParts = dateStr.split('.');
-  if (dateParts.length !== 3) continue;
+    const dateParts = dateStr.split('.');
+    if (dateParts.length !== 3) continue;
 
-  const [day, month, year] = dateParts.map(p => parseInt(p));
-  const date = new Date(year, month - 1, day);
-  const revenue = parseFloat(revenueStr.replace(',', '.'));
+    const [day, month, year] = dateParts.map(p => parseInt(p));
+    const date = new Date(year, month - 1, day);
+    const revenue = parseFloat(revenueStr.replace(',', '.'));
 
-  if (date.getFullYear() === lastYear && date.getMonth() === currentMonth) {
-    const day = date.getDate();
-    dayRevenueMap[day] = (dayRevenueMap[day] || 0) + revenue;
+    if (date.getFullYear() === lastYear && date.getMonth() === currentMonth) {
+      const day = date.getDate();
+      dayRevenueMap[day] = (dayRevenueMap[day] || 0) + revenue;
+    }
   }
-}
 
   renderDailyRevenueChart(dayRevenueMap);
 }
