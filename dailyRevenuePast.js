@@ -12,8 +12,8 @@ async function loadDailyRevenuePast() {
   const lines = text.split('\n').slice(1); // Пропускаем заголовок
 
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const lastYear = now.getFullYear() - 1;
+  const monthToShow = now.getMonth();
+  const yearToShow = now.getFullYear() - 1;
 
   const dayRevenueMap = {};
 
@@ -38,7 +38,7 @@ async function loadDailyRevenuePast() {
 
     const revenue = parseFloat(revenueStrRaw.replace(/\s/g, '').replace(',', '.'));
 
-    const isTargetMonth = date.getFullYear() === lastYear && date.getMonth() === currentMonth;
+    const isTargetMonth = date.getFullYear() === yearToShow && date.getMonth() === monthToShow;
     console.log(`Дата: ${date.toDateString()} | Год = ${date.getFullYear()} | Месяц = ${date.getMonth()} | Попадает: ${isTargetMonth}`);
 
     if (isTargetMonth) {
@@ -47,13 +47,13 @@ async function loadDailyRevenuePast() {
     }
   }
 
-  renderDailyRevenueChart(dayRevenueMap);
+  renderDailyRevenueChart(dayRevenueMap, monthToShow, yearToShow);
 }
 
-function renderDailyRevenueChart(data) {
+function renderDailyRevenueChart(data, month, year) {
   const container = document.createElement('div');
   container.style.marginTop = '20px';
-  container.innerHTML = `<h3 style="text-align:center;margin-bottom:10px;">Выручка по дням — ${getMonthName(new Date().getMonth())} ${new Date().getFullYear() - 1}</h3><div id="daily-revenue-graph" style="display:flex;align-items:flex-end;height:150px;width:100%;overflow-x:auto;padding:0 10px;gap:4px;"></div>`;
+  container.innerHTML = `<h3 style="text-align:center;margin-bottom:10px;">Выручка по дням — ${getMonthName(month)} ${year}</h3><div id="daily-revenue-graph" style="display:flex;align-items:flex-end;height:150px;width:100%;overflow-x:auto;padding:0 10px;gap:4px;"></div>`;
 
   document.body.appendChild(container);
 
@@ -63,7 +63,7 @@ function renderDailyRevenueChart(data) {
   for (let day = 1; day <= 31; day++) {
     const revenue = data[day] || 0;
     const barHeight = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
-    const date = new Date(new Date().getFullYear() - 1, new Date().getMonth(), day);
+    const date = new Date(year, month, day);
     const isWeekend = [0, 6].includes(date.getDay());
 
     const bar = document.createElement('div');
