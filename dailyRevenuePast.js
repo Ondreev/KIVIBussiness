@@ -16,16 +16,23 @@ async function loadDailyRevenuePast() {
   const dayRevenueMap = {};
 
   for (const line of lines) {
-    const [dateStr, revenueStr] = line.split(',');
-    if (!dateStr || !revenueStr) continue;
-    const date = new Date(dateStr);
-    const revenue = parseFloat(revenueStr.replace(',', '.'));
+  const [dateStrRaw, revenueStrRaw] = line.split(',');
+  const dateStr = dateStrRaw?.trim().replace(/"/g, '');
+  const revenueStr = revenueStrRaw?.trim().replace(/"/g, '');
+  if (!dateStr || !revenueStr) continue;
 
-    if (date.getFullYear() === lastYear && date.getMonth() === currentMonth) {
-      const day = date.getDate();
-      dayRevenueMap[day] = (dayRevenueMap[day] || 0) + revenue;
-    }
+  const dateParts = dateStr.split('.');
+  if (dateParts.length !== 3) continue;
+
+  const [day, month, year] = dateParts.map(p => parseInt(p));
+  const date = new Date(year, month - 1, day);
+  const revenue = parseFloat(revenueStr.replace(',', '.'));
+
+  if (date.getFullYear() === lastYear && date.getMonth() === currentMonth) {
+    const day = date.getDate();
+    dayRevenueMap[day] = (dayRevenueMap[day] || 0) + revenue;
   }
+}
 
   renderDailyRevenueChart(dayRevenueMap);
 }
