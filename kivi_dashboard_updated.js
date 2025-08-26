@@ -49,7 +49,9 @@ async function loadSummary() {
       });
     }
 
-    // Фильтруем данные за текущий месяц
+    // Фильтруем данные за текущий месяц (только фактические данные, не планы)
+    console.log("🔍 Подробная проверка каждой строки данных за текущий месяц:");
+    
     const thisMonthRows = data.filter(r => {
       const dateValue = r[dateColumn];
       if (!dateValue) return false;
@@ -58,18 +60,19 @@ async function loadSummary() {
       const d = new Date(dateValue);
       
       const startsWithYm = dateStr.startsWith(ym);
-      const dayOk = d.getDate() <= currentDay;
+      const dayOk = d.getDate() <= currentDay;  // ВАЖНО: только до текущего дня включительно
       const hasRevenue = cleanNumber(r[revenueColumn]) > 0;
       
+      // Детальный лог для всех строк текущего месяца
       if (startsWithYm) {
-        console.log("🎯 Строка за текущий месяц:", {
-          dateStr,
-          day: d.getDate(),
-          currentDay,
+        console.log(`📅 ${dateStr}:`, {
+          день: d.getDate(),
+          текущийДень: currentDay,
           dayOk,
-          revenue: cleanNumber(r[revenueColumn]),
+          выручкаСырая: r[revenueColumn],
+          выручкаОчищенная: cleanNumber(r[revenueColumn]),
           hasRevenue,
-          passes: startsWithYm && dayOk && hasRevenue
+          проходитФильтр: startsWithYm && dayOk && hasRevenue
         });
       }
       
