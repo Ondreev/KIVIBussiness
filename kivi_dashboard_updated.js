@@ -43,6 +43,27 @@ async function loadSummary() {
     const trafficColumn = "ТР";       // Колонка E - трафик  
 
     // Фильтруем данные за текущий месяц
+    console.log("🔍 Проверяем каждую строку данных:");
+    
+    // Показываем первые 10 строк для понимания формата
+    data.slice(0, 10).forEach((row, i) => {
+      const dateValue = row[dateColumn];
+      const revenueValue = row[revenueColumn];
+      const trafficValue = row[trafficColumn];
+      
+      console.log(`Строка ${i + 1}:`, {
+        dateValue,
+        dateType: typeof dateValue,
+        dateStr: dateValue?.toString(),
+        revenueValue,
+        revenueType: typeof revenueValue,
+        cleanRevenue: cleanNumber(revenueValue),
+        trafficValue,
+        startsWithYm: dateValue?.toString().startsWith(ym),
+        hasRevenue: cleanNumber(revenueValue) > 0
+      });
+    });
+
     const thisMonthRows = data.filter(r => {
       const dateValue = r[dateColumn];
       if (!dateValue) return false;
@@ -51,10 +72,24 @@ async function loadSummary() {
       const dateStr = dateValue.toString();
       const d = new Date(dateValue);
       
-      return dateStr.startsWith(ym) && 
-             d.getDate() <= currentDay && 
-             r[revenueColumn] && 
-             cleanNumber(r[revenueColumn]) > 0;
+      const startsWithYm = dateStr.startsWith(ym);
+      const dayOk = d.getDate() <= currentDay;
+      const hasRevenue = r[revenueColumn] && cleanNumber(r[revenueColumn]) > 0;
+      
+      // Отладочный вывод для строк которые могли бы подойти
+      if (startsWithYm) {
+        console.log("🎯 Потенциально подходящая строка:", {
+          dateStr,
+          day: d.getDate(),
+          currentDay,
+          dayOk,
+          revenueValue: r[revenueColumn],
+          hasRevenue,
+          passes: startsWithYm && dayOk && hasRevenue
+        });
+      }
+      
+      return startsWithYm && dayOk && hasRevenue;
     });
 
     console.log(`Найдено строк за текущий месяц: ${thisMonthRows.length}`);
