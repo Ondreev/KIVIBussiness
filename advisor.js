@@ -1,10 +1,9 @@
-// advisor.js — Советник дня (анализ ASP, трафика, закупки и рентабельности)
+// advisor.js - исправленная версия с правильными названиями колонок
 
 async function runAdvisor() {
   try {
-    // ✅ Используем загруженные данные из DATASETS
-    const data = window.DATASETS.data;     // лист "Данные"
-    const costs = window.DATASETS.ebitda;  // лист "ebitda"
+    const data = window.DATASETS.data;
+    const costs = window.DATASETS.ebitda;
 
     if (!data || !costs) {
       console.error("❌ Advisor: Данные не загружены:", { data: !!data, costs: !!costs });
@@ -16,17 +15,43 @@ async function runAdvisor() {
     const today = new Date();
     const ym = today.toISOString().slice(0, 7);
 
+    // ИСПРАВЛЕННЫЕ названия колонок
+    const dateColumn = "Дата";           // Было "День"
+    const revenueColumn = "TO";          // Было "ТО" 
+    const aspColumn = "расчет ASP";      // Возможно тоже нужно исправить
+
+    console.log("🤖 Advisor: Используем колонки:", { dateColumn, revenueColumn, aspColumn });
+
     const validRows = data.filter(r => {
-      return r["Дата"]?.startsWith(ym) && clean(r["ТО"]) > 0 && clean(r["расчет ASP"]) > 0;
+      const dateValue = r[dateColumn];
+      if (!dateValue || !dateValue.toString().startsWith(ym)) return false;
+      
+      const revenue = clean(r[revenueColumn]);
+      const asp = clean(r[aspColumn]);
+      
+      return revenue > 0 && asp > 0;
     });
+
+    console.log(`🤖 Advisor: Найдено валидных строк: ${validRows.length}`);
 
     if (validRows.length === 0) {
       console.warn("⚠️ Advisor: Нет валидных данных для анализа");
+      
+      // Показываем первые несколько строк для отладки
+      console.log("🔍 Первые 3 строки данных для отладки:");
+      data.slice(0, 3).forEach((row, i) => {
+        console.log(`Строка ${i + 1}:`, {
+          дата: row[dateColumn],
+          выручка: row[revenueColumn],
+          asp: row[aspColumn]
+        });
+      });
+      
       return;
     }
 
-    const avgRevenue = validRows.reduce((s, r) => s + clean(r["ТО"]), 0) / (validRows.length || 1);
-    const avgAspCount = validRows.reduce((s, r) => s + clean(r["расчет ASP"]), 0) / (validRows.length || 1);
+    const avgRevenue = validRows.reduce((s, r) => s + clean(r[revenueColumn]), 0) / validRows.length;
+    const avgAspCount = validRows.reduce((s, r) => s + clean(r[aspColumn]), 0) / validRows.length;
     const asp = avgAspCount ? Math.round(avgRevenue / avgAspCount) : 0;
 
     let totalCosts = 0;
@@ -39,7 +64,7 @@ async function runAdvisor() {
 
     const ebitda = avgRevenue - totalCosts;
 
-    // советник
+    // Логика советника
     let advice = "✅ Всё в порядке. Все показатели выполняются! Вы молодцы!!! Продолжаем удерживать курс. Не забываем про наши ценности: Улыбчивость, добродушный ЗАБОТЛИВЫЙ тон. Напоминаем про подписку в Телеграм. Подарки делаем от души, в руки, с улыбкой, смотря прямо в глаза Покупателю. Не будьте грубыми и равнодушными. Этот негативный фактор может разрушить динамику роста!";
 
     if (asp < 250) {
@@ -50,13 +75,13 @@ async function runAdvisor() {
       advice = "🚨 EBITDA отрицательная. Необходимо сократить % расходов или повысить наценку, это КРИТИЧЕСКИЙ ФАКТОР. Снижаем смены сотрудникам, убираем допсмены, вызываем промоутеров. Если сейчас все пустить на самоток, потом будет поздно. Поинтересуйтесь, почему люди уходят. Включите режим ОСОБЕННОЙ ЗАБОТЫ о постетителях Магазина. Бизнес требует радикального вмешательства в процесс! Все учредители должны работать вместе. Проведите SWOT-аналиг. Определите ключевую причину падения прибыли и поставьте план на PDCA основу. Проведите анализ с ИИ. Соберите собрание и обсудите эту проблему в ближайшее время!";
     }
 
-    // Удаляем старый блок советника если есть
+    // Удаляем старый блок
     const oldAdvisor = document.querySelector("#advisorBlock");
     if (oldAdvisor) {
       oldAdvisor.remove();
     }
 
-    // создаём блок
+    // Создаем новый блок
     const block = document.createElement("div");
     block.id = "advisorBlock";
     block.style.background = "#222";
@@ -80,13 +105,17 @@ async function runAdvisor() {
 
     document.body.appendChild(block);
 
-    console.log("✅ Советник дня загружен", { asp, avgRevenue: Math.round(avgRevenue), ebitda: Math.round(ebitda) });
+    console.log("✅ Советник дня загружен", { 
+      asp, 
+      avgRevenue: Math.round(avgRevenue), 
+      ebitda: Math.round(ebitda),
+      validRowsCount: validRows.length 
+    });
   } catch (error) {
     console.error("❌ Ошибка Advisor:", error);
   }
 }
 
-// ✅ Ждем события sheets-ready
 document.addEventListener("sheets-ready", () => {
   console.log("🤖 Инициализируем Advisor...");
   runAdvisor();
