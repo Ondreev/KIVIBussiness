@@ -1,9 +1,17 @@
 // purchase.js — Рекомендованная сумма закупки
-document.addEventListener('sheets-ready', () => {
-  const data = window.DATASETS.data;
+
+(async () => {
+  const dataUrl = SHEETS.data;     // вкладка "Данные";
+
+  const parse = async (url) => {
+    const res = await fetch(url);
+    const text = await res.text();
+    return Papa.parse(text, { header: true }).data;
+  };
 
   const clean = v => parseFloat((v || '0').toString().replace(/\s/g, '').replace(',', '.'));
 
+  const data = await parse(dataUrl);
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
 
@@ -33,5 +41,6 @@ document.addEventListener('sheets-ready', () => {
     <div style='font-size:24px;font-weight:bold;text-align:center;'>${recommended.toLocaleString('ru-RU')}₽</div>
     <div style='font-size:13px;color:#444;text-align:center;margin-top:6px;'>Возможно отклонение от этой суммы на +/- 5000 рублей. Никогда не тратьте больше этой суммы, иначе это повлияет на ваши показатели отрицательно. Строго следуйте моим рекомендациям и все будет ТИП-ТОП!</div>
   `;
+
   document.body.appendChild(block);
-});
+})();
