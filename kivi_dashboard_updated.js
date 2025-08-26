@@ -1,20 +1,9 @@
-window.addEventListener("DOMContentLoaded", () => {
+// ждём, пока sheetsLoader.js загрузит и распарсит все листы
+document.addEventListener("sheets-ready", () => {
   loadSummary();
   loadChart();
   buildComparisonBlock();
 });
-
-const urls = {
-  data: SHEETS.data,
-  plans: SHEETS.plans,
-  records: SHEETS.records
-};
-
-async function loadCSV(url) {
-  const res = await fetch(url);
-  const text = await res.text();
-  return Papa.parse(text, { header: true }).data;
-}
 
 function cleanNumber(val) {
   return parseFloat((val || '0').replace(/\s/g, '').replace(',', '.'));
