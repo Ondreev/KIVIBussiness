@@ -1,10 +1,6 @@
-// yearComparisonChart.js — сравнение выручки по месяцам за 2023, 2024 и 2025 годы (линейная диаграмма с анимацией)
-
-(async () => {
-  const url = SHEETS.data;  // лист "Данные"
-  const res = await fetch(url);
-  const text = await res.text();
-  const data = Papa.parse(text, { header: true }).data;
+// yearComparisonChart.js — сравнение выручки по месяцам за последние 3 года
+document.addEventListener('sheets-ready', () => {
+  const data = window.DATASETS.data;
 
   const clean = val => parseFloat((val || '0').replace(/\s/g, '').replace(',', '.'));
   const today = new Date();
@@ -15,16 +11,8 @@
   const months = Array.from({ length: 12 }, (_, i) => i);
   const monthLabels = months.map(i => (i + 1).toString());
 
-  const sums = {
-    [currentYear]: Array(12).fill(0),
-    [lastYear]: Array(12).fill(0),
-    [yearBeforeLast]: Array(12).fill(0)
-  };
-  const counts = {
-    [currentYear]: Array(12).fill(0),
-    [lastYear]: Array(12).fill(0),
-    [yearBeforeLast]: Array(12).fill(0)
-  };
+  const sums = { [currentYear]: Array(12).fill(0), [lastYear]: Array(12).fill(0), [yearBeforeLast]: Array(12).fill(0) };
+  const counts = { [currentYear]: Array(12).fill(0), [lastYear]: Array(12).fill(0), [yearBeforeLast]: Array(12).fill(0) };
 
   data.forEach(row => {
     const d = new Date(row["Дата"]);
@@ -50,76 +38,19 @@
     data: {
       labels: monthLabels,
       datasets: [
-        {
-          label: `${currentYear}`,
-          data: avg(currentYear),
-          borderColor: '#FFD700',
-          backgroundColor: '#FFD700',
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointBackgroundColor: '#FFD700'
-        },
-        {
-          label: `${lastYear}`,
-          data: avg(lastYear),
-          borderColor: '#FFFFFF',
-          backgroundColor: '#FFFFFF',
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointBackgroundColor: '#FFFFFF'
-        },
-        {
-          label: `${yearBeforeLast}`,
-          data: avg(yearBeforeLast),
-          borderColor: '#42a5f5',
-          backgroundColor: '#42a5f5',
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointBackgroundColor: '#42a5f5'
-        }
+        { label: `${currentYear}`, data: avg(currentYear), borderColor: '#FFD700', backgroundColor: '#FFD700', tension: 0.4, borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#FFD700' },
+        { label: `${lastYear}`, data: avg(lastYear), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', tension: 0.4, borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#FFFFFF' },
+        { label: `${yearBeforeLast}`, data: avg(yearBeforeLast), borderColor: '#42a5f5', backgroundColor: '#42a5f5', tension: 0.4, borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#42a5f5' }
       ]
     },
     options: {
       responsive: true,
-      animation: {
-        duration: 1000,
-        easing: 'easeInOutQuad'
-      },
+      animation: { duration: 1000, easing: 'easeInOutQuad' },
       plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            boxWidth: 14,
-            color: '#fff',
-            font: {
-              weight: 'bold',
-              size: 16
-            }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + Math.round(ctx.raw).toLocaleString('ru-RU') + '₽'
-          }
-        }
+        legend: { position: 'top', labels: { boxWidth: 14, color: '#fff', font: { weight: 'bold', size: 16 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + Math.round(ctx.raw).toLocaleString('ru-RU') + '₽' } }
       },
-      scales: {
-        y: {
-          display: false
-        },
-        x: {
-          ticks: {
-            color: '#fff',
-            font: {
-              weight: 'bold',
-              size: 16
-            }
-          }
-        }
-      }
+      scales: { y: { display: false }, x: { ticks: { color: '#fff', font: { weight: 'bold', size: 16 } } } }
     }
   });
-})();
+});
