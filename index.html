@@ -163,8 +163,6 @@
     <!-- Оракул -->
 <div id="oracleContainer"></div>
 
-<script src="/KIVIBussiness/oracle.js"></script>
-
   <!-- Сравнение с прошлым годом -->
   <div class="compare-block">
     <h2>В сравнении с прошлым годом</h2>
@@ -182,15 +180,19 @@
       });
       event.target.textContent = showingAll ? 'Скрыть' : 'Показать все';
     }
-</script>
- <script src="config.js"></script>
-  <script src="/KIVIBussiness/kivi_dashboard_updated.js"></script>
-  <script src="/KIVIBussiness/miniblocks.js"></script>
-  <script src="/KIVIBussiness/next3months.js"></script>
-  <script src="yearComparisonChart.js"></script>
-  <script src="profitability.js"></script>
-  <script src="advisor.js"></script>
-  <script src="purchase.js"></script>
+<!-- Подключение скриптов -->
+<script src="config.js" defer></script>
+
+<script src="/KIVIBussiness/kivi_dashboard_updated.js" defer></script>
+<script src="/KIVIBussiness/miniblocks.js" defer></script>
+<script src="/KIVIBussiness/next3months.js" defer></script>
+<script src="/KIVIBussiness/oracle.js" defer></script>
+<script src="yearComparisonChart.js" defer></script>
+<script src="profitability.js" defer></script>
+<script src="advisor.js" defer></script>
+<script src="purchase.js" defer></script>
+<script src="dailyRevenuePast.js" defer></script>
+
 
 </body>
 </html>
