@@ -1,8 +1,8 @@
 // oracle.js — умный блок с прогнозом на день по выручке и трафику (независимый расчёт на основе таблицы)
 
 const oracleUrls = {
-  data: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv",
-  plans: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=1774855984&single=true&output=csv"
+  data: SHEETS.data,
+  plans: SHEETS.plans,
 };
 
 const percentByWeekday = {
