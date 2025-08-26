@@ -1,23 +1,7 @@
-
-// Загрузка и обработка данных
-const urls = {
-  data: SHEETS.data,
-  plans: SHEETS.plans,
-  records: SHEETS.records
-};
-
-async function loadCSV(url) {
-  const res = await fetch(url);
-  const text = await res.text();
-  return Papa.parse(text, { header: true }).data;
-}
-
 async function loadSummary() {
-  const [data, plans, records] = await Promise.all([
-    loadCSV(urls.data),
-    loadCSV(urls.plans),
-    loadCSV(urls.records)
-  ]);
+  const data    = window.DATASETS.data;
+  const plans   = window.DATASETS.plans;
+  const records = window.DATASETS.records;
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -186,3 +170,6 @@ function toggleRows() {
 loadSummary();
 loadChart();
 buildComparisonBlock();
+
+// 👇 запуск, когда sheetsLoader.js закончит загрузку
+document.addEventListener('sheets-ready', loadSummary);
