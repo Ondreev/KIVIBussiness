@@ -2,11 +2,11 @@
 <html lang="ru">
 <head>
   <link rel="icon" type="image/png" href="/favicon.ico">
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>KIVI Business</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- CDN-скрипты неблокирующие -->
+  <!-- CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
@@ -24,49 +24,36 @@
     }
     h1 { font-size: 28px; font-weight: 900; margin: 20px 0 10px; }
     h1 span { font-weight: 400; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px; margin-bottom: 20px; width: 95%; max-width: 600px; box-sizing: border-box; }
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; background: rgba(255, 255, 255, 0.2);
+      border-radius: 16px; padding: 12px; margin-bottom: 20px;
+      width: 95%; max-width: 600px; box-sizing: border-box;
+    }
     .cell { background: rgba(255,255,255,0.15); border-radius: 10px; text-align: center; padding: 8px; }
     .big { font-size: 20px; font-weight: bold; color: #fff; }
     .small { font-size: 13px; margin-top: 4px; color: #fff; }
+
     #chartContainer { border-radius: 16px; padding: 10px; width: 95%; max-width: 600px; box-sizing: border-box; }
     canvas { width: 100% !important; height: 125px !important; }
     .custom-labels { display: flex; justify-content: space-between; margin-top: 12px; }
     .label-item { text-align: center; width: 14%; }
     .revenue { font-size: 13px; font-weight: bold; color: #fff; letter-spacing: -0.3px; }
     .date { font-size: 13px; font-weight: 400; color: #fff; }
-    .compare-block { background: white; color: black; width: 95%; max-width: 600px; border-radius: 12px; padding: 16px; font-size: 14px; box-sizing: border-box; margin-top: 16px; text-align: center; }
+
+    .compare-block {
+      background: white; color: black; width: 95%; max-width: 600px;
+      border-radius: 12px; padding: 16px; font-size: 14px; box-sizing: border-box;
+      margin-top: 16px; text-align: center;
+    }
     .compare-block h2 { margin-top: 0; font-size: 16px; text-align: center; }
     #compareTable table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     #compareTable th, #compareTable td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: center; }
     .hidden-row { display: none; }
     .highlight { background: #d4edda; font-weight: bold; }
-    
-    /* Стили для индикатора загрузки */
-    .loading-indicator {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 10px 15px;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 1000;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-    }
-    .loading-indicator.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
   </style>
 </head>
 <body>
-  <!-- Индикатор загрузки -->
-  <div id="loadingIndicator" class="loading-indicator">
-    🔄 Загружаем данные...
-  </div>
-
   <h1>KIVI <span>Business</span></h1>
 
   <!-- Верхний блок -->
@@ -90,97 +77,51 @@
     <div id="customLabels" class="custom-labels"></div>
   </div>
 
-  <!-- Оракул (будет добавлен через oracle.js) -->
+  <!-- Оракул -->
   <div id="oracleContainer"></div>
 
   <!-- Сравнение с прошлым годом -->
   <div class="compare-block">
     <h2>В сравнении с прошлым годом</h2>
     <div id="compareTable"></div>
-    <button onclick="toggleRows()">Показать все</button>
+    <button id="toggleRowsBtn" type="button">Показать все</button>
   </div>
 
   <script>
-    // Глобальные переменные для управления таблицей сравнения
+    // Переключатель видимости строк таблицы сравнения
     let showingAll = false;
-    
     function toggleRows() {
-      // Проверяем наличие данных
-      if (!window.allDataRows || window.allDataRows.length === 0) {
-        console.warn("⚠️ Данные для переключения строк не готовы");
-        return;
-      }
-      
+      if (!window.allDataRows || !window.allDataRows.length) return;
       showingAll = !showingAll;
-      
-      // Переключаем видимость строк
-      window.allDataRows.forEach((row, index) => {
-        if (row && row.classList) {
-          row.classList.toggle('hidden-row', !showingAll && index >= 6);
-        }
+      window.allDataRows.forEach((row, i) => {
+        if (row && row.classList) row.classList.toggle('hidden-row', !showingAll && i >= 6);
       });
-      
-      // Обновляем текст кнопки
-      const button = event?.target || document.querySelector('button[onclick="toggleRows()"]');
-      if (button) {
-        button.textContent = showingAll ? 'Скрыть' : 'Показать все';
-      }
+      const btn = document.getElementById('toggleRowsBtn');
+      if (btn) btn.textContent = showingAll ? 'Скрыть' : 'Показать все';
     }
-    
-    // Обработчик события готовности данных
+    document.getElementById('toggleRowsBtn').addEventListener('click', toggleRows);
+
+    // На случай, если где-то остались оверлеи/лоадеры — аккуратно уберём их после готовности данных
     document.addEventListener('sheets-ready', () => {
-      console.log("🔧 Данные готовы, функции управления таблицей активированы");
-      
-      // Скрываем индикатор загрузки
-      const indicator = document.getElementById('loadingIndicator');
-      if (indicator) {
-        indicator.classList.add('hidden');
-        setTimeout(() => indicator.remove(), 300);
-      }
+      ['#loadingOverlay', '#loadingIndicator', '#loading', '#loader', '#preloader',
+       '.loadingOverlay', '.loading-indicator', '.loading', '.loader', '.preloader'
+      ].forEach(sel => document.querySelectorAll(sel).forEach(el => el.remove()));
     });
-    
-    // Функция для отладки
-    function checkDataStatus() {
-      console.log("Статус данных:", {
-        SHEETS: !!window.SHEETS,
-        DATASETS: !!window.DATASETS,
-        allDataRows: window.allDataRows ? window.allDataRows.length : 'не загружено',
-        loadTime: window.DATASETS?._loadTime,
-        loadedSheets: window.DATASETS?._loadedSheets,
-        hasError: window.DATASETS?._error
-      });
-    }
-    
-    // Делаем функцию доступной из консоли для отладки
-    window.checkDataStatus = checkDataStatus;
-    
-    // Показываем ошибку если данные не загрузились через 10 секунд
-    setTimeout(() => {
-      if (!window.DATASETS || Object.keys(window.DATASETS).length === 0) {
-        console.error("⚠️ Данные не загрузились за 10 секунд");
-        const indicator = document.getElementById('loadingIndicator');
-        if (indicator) {
-          indicator.innerHTML = '❌ Ошибка загрузки данных. <button onclick="location.reload()">Перезагрузить</button>';
-          indicator.style.background = '#ff4444';
-        }
-      }
-    }, 10000);
   </script>
 
-  <!-- Скрипты проекта: config.js должен идти первым -->
+  <!-- Скрипты проекта (порядок важен) -->
   <script src="config.js" defer></script>
   <script src="sheetsLoader.js" defer></script>
-  
-  <!-- Основные модули дашборда -->
+
   <script src="kivi_dashboard_updated.js" defer></script>
   <script src="oracle.js" defer></script>
   <script src="advisor.js" defer></script>
-  
-  <!-- Дополнительные модули (если существуют) -->
-  <script src="miniblocks.js" defer onerror="console.warn('miniblocks.js не найден')"></script>
-  <script src="next3months.js" defer onerror="console.warn('next3months.js не найден')"></script>
-  <script src="yearComparisonChart.js" defer onerror="console.warn('yearComparisonChart.js не найден')"></script>
-  <script src="profitability.js" defer onerror="console.warn('profitability.js не найден')"></script>
-  <script src="purchase.js" defer onerror="console.warn('purchase.js не найден')"></script>
+
+  <!-- Доп. модули (если нужны — оставь, если нет — можно удалить) -->
+  <script src="miniblocks.js" defer></script>
+  <script src="next3months.js" defer></script>
+  <script src="yearComparisonChart.js" defer></script>
+  <script src="profitability.js" defer></script>
+  <script src="purchase.js" defer></script>
 </body>
 </html>
