@@ -1,4 +1,4 @@
-// kivi_dashboard_updated.js - исправленная версия с правильными названиями колонок
+// kivi_dashboard_updated.js - ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ
 document.addEventListener("sheets-ready", () => {
   console.log("📊 Данные загружены, инициализируем дашборд...");
   loadSummary();
@@ -23,13 +23,6 @@ async function loadSummary() {
       return;
     }
 
-    console.log("🔍 Структура данных:");
-    console.log("Всего строк:", data.length);
-    if (data.length > 0) {
-      console.log("Колонки в данных:", Object.keys(data[0]));
-      console.log("Первая строка:", data[0]);
-    }
-
     const today = new Date();
     const ym = today.toISOString().slice(0, 7); // 2025-08
     const currentDay = today.getDate();
@@ -37,53 +30,44 @@ async function loadSummary() {
     console.log("Ищем данные за:", ym);
     console.log("До дня включительно:", currentDay);
 
-    // Правильные названия колонок согласно скриншоту
-    const dateColumn = "День";        // В таблице колонка называется "День", а не "Дата"
-    const revenueColumn = "ТО";       // Колонка C - выручка
-    const trafficColumn = "ТР";       // Колонка E - трафик  
+    // ИСПРАВЛЕННЫЕ названия колонок согласно скриншоту
+    const dateColumn = "Дата";        // Колонка A - полные даты (2025-08-17, 2025-08-18...)
+    const revenueColumn = "TO";       // Колонка C - выручка
+    const trafficColumn = "ТР";       // Колонка D - трафик  
+
+    console.log("Используем колонки:", { dateColumn, revenueColumn, trafficColumn });
+
+    // Показываем первые несколько строк для проверки
+    if (data.length > 0) {
+      console.log("Первые 3 строки данных:");
+      data.slice(0, 3).forEach((row, i) => {
+        console.log(`Строка ${i + 1}:`, {
+          дата: row[dateColumn],
+          выручка: row[revenueColumn],
+          трафик: row[trafficColumn]
+        });
+      });
+    }
 
     // Фильтруем данные за текущий месяц
-    console.log("🔍 Проверяем каждую строку данных:");
-    
-    // Показываем первые 10 строк для понимания формата
-    data.slice(0, 10).forEach((row, i) => {
-      const dateValue = row[dateColumn];
-      const revenueValue = row[revenueColumn];
-      const trafficValue = row[trafficColumn];
-      
-      console.log(`Строка ${i + 1}:`, {
-        dateValue,
-        dateType: typeof dateValue,
-        dateStr: dateValue?.toString(),
-        revenueValue,
-        revenueType: typeof revenueValue,
-        cleanRevenue: cleanNumber(revenueValue),
-        trafficValue,
-        startsWithYm: dateValue?.toString().startsWith(ym),
-        hasRevenue: cleanNumber(revenueValue) > 0
-      });
-    });
-
     const thisMonthRows = data.filter(r => {
       const dateValue = r[dateColumn];
       if (!dateValue) return false;
       
-      // Проверяем что дата подходит под текущий месяц и не больше текущего дня
       const dateStr = dateValue.toString();
       const d = new Date(dateValue);
       
       const startsWithYm = dateStr.startsWith(ym);
       const dayOk = d.getDate() <= currentDay;
-      const hasRevenue = r[revenueColumn] && cleanNumber(r[revenueColumn]) > 0;
+      const hasRevenue = cleanNumber(r[revenueColumn]) > 0;
       
-      // Отладочный вывод для строк которые могли бы подойти
       if (startsWithYm) {
-        console.log("🎯 Потенциально подходящая строка:", {
+        console.log("🎯 Строка за текущий месяц:", {
           dateStr,
           day: d.getDate(),
           currentDay,
           dayOk,
-          revenueValue: r[revenueColumn],
+          revenue: cleanNumber(r[revenueColumn]),
           hasRevenue,
           passes: startsWithYm && dayOk && hasRevenue
         });
@@ -93,22 +77,11 @@ async function loadSummary() {
     });
 
     console.log(`Найдено строк за текущий месяц: ${thisMonthRows.length}`);
-    
-    if (thisMonthRows.length > 0) {
-      console.log("Примеры данных за текущий месяц:");
-      thisMonthRows.slice(0, 3).forEach((row, i) => {
-        console.log(`Строка ${i + 1}:`, {
-          день: row[dateColumn],
-          то: row[revenueColumn],
-          тр: row[trafficColumn]
-        });
-      });
-    }
 
-    // Фильтруем данные за прошлый год (тот же месяц)
+    // Фильтруем данные за прошлый год
     const lastYearDate = new Date(today);
     lastYearDate.setFullYear(today.getFullYear() - 1);
-    const lastYm = lastYearDate.toISOString().slice(0, 7); // 2024-08
+    const lastYm = lastYearDate.toISOString().slice(0, 7);
     
     const lastYearRows = data.filter(r => {
       const dateValue = r[dateColumn];
@@ -119,7 +92,6 @@ async function loadSummary() {
       
       return dateStr.startsWith(lastYm) && 
              d.getDate() <= currentDay && 
-             r[revenueColumn] && 
              cleanNumber(r[revenueColumn]) > 0;
     });
 
@@ -145,7 +117,6 @@ async function loadSummary() {
     });
 
     // Ищем план за текущий месяц
-    console.log("Структура планов:", plans.length > 0 ? Object.keys(plans[0]) : "нет данных");
     const planRow = plans.find(r => r["Месяц"] === ym);
     console.log("Найден план для месяца:", planRow);
     
@@ -191,16 +162,13 @@ async function loadSummary() {
 async function loadChart() {
   try {
     const allRows = window.DATASETS.data;
-    if (!allRows) {
-      console.error("❌ Данные для графика не загружены");
-      return;
-    }
+    if (!allRows) return;
 
     const today = new Date();
-    const dateColumn = "День";
-    const revenueColumn = "ТО";
+    const dateColumn = "Дата";     // ИСПРАВЛЕНО
+    const revenueColumn = "TO";    // ИСПРАВЛЕНО
 
-    // Фильтруем строки с валидными данными и датами не в будущем
+    // Фильтруем строки с валидными данными
     const rows = allRows.filter(r => {
       const dateValue = r[dateColumn];
       if (!dateValue) return false;
@@ -208,7 +176,6 @@ async function loadChart() {
       const d = new Date(dateValue);
       return !isNaN(d) && 
              d <= today && 
-             r[revenueColumn] && 
              cleanNumber(r[revenueColumn]) > 0;
     });
 
@@ -311,9 +278,9 @@ async function buildComparisonBlock() {
     const lastMonth = lastYear.toISOString().slice(0, 7);
     const todayDate = now.getDate();
 
-    const dateColumn = "День";
-    const revenueColumn = "ТО";
-    const trafficColumn = "ТР";
+    const dateColumn = "Дата";      // ИСПРАВЛЕНО
+    const revenueColumn = "TO";     // ИСПРАВЛЕНО
+    const trafficColumn = "ТР";     // ИСПРАВЛЕНО
 
     const rowsThis = data.filter(r => r[dateColumn]?.toString().startsWith(thisMonth));
     const rowsLast = data.filter(r => r[dateColumn]?.toString().startsWith(lastMonth));
