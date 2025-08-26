@@ -1,4 +1,4 @@
-// oracle.js — умный блок с прогнозом на день по выручке и трафику (независимый расчёт на основе таблицы)
+// oracle.js - исправленная версия с правильными названиями колонок
 
 const percentByWeekday = {
   "Monday":    { "09:00–12:00": 0.117, "12:00–15:00": 0.267, "15:00–18:00": 0.322, "18:00–21:00": 0.294 },
@@ -26,7 +26,6 @@ function isWithinPeriod(now, period) {
 
 async function runOracleSmart() {
   try {
-    // ✅ Используем загруженные данные из DATASETS
     const data = window.DATASETS.data;
     const plans = window.DATASETS.plans;
 
@@ -39,21 +38,30 @@ async function runOracleSmart() {
     const ym = now.toISOString().slice(0, 7);
     const todayDay = now.getDate();
 
+    // ИСПРАВЛЕННЫЕ названия колонок
+    const dateColumn = "Дата";    // Было "День" 
+    const revenueColumn = "TO";   // Было "ТО"
+    const trafficColumn = "ТР";   // Правильно
+
     const thisMonthRows = data.filter(r => {
-      const d = new Date(r["Дата"]);
-      return r["Дата"]?.startsWith(ym) && d.getDate() < todayDay && r["ТО"];
+      const dateValue = r[dateColumn];
+      if (!dateValue) return false;
+      const d = new Date(dateValue);
+      return dateValue.toString().startsWith(ym) && d.getDate() < todayDay && r[revenueColumn];
     });
 
     const todayRows = data.filter(r => {
-      const d = new Date(r["Дата"]);
-      return r["Дата"]?.startsWith(ym) && d.getDate() === todayDay && r["ТО"];
+      const dateValue = r[dateColumn];
+      if (!dateValue) return false;
+      const d = new Date(dateValue);
+      return dateValue.toString().startsWith(ym) && d.getDate() === todayDay && r[revenueColumn];
     });
 
     const avgTo = Math.round(
-      thisMonthRows.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (thisMonthRows.length || 1)
+      thisMonthRows.reduce((sum, r) => sum + clean(r[revenueColumn]), 0) / (thisMonthRows.length || 1)
     );
     const avgTr = Math.round(
-      thisMonthRows.reduce((sum, r) => sum + parseInt(r["ТР"] || 0), 0) / (thisMonthRows.length || 1)
+      thisMonthRows.reduce((sum, r) => sum + parseInt(r[trafficColumn] || 0), 0) / (thisMonthRows.length || 1)
     );
 
     const planRow = plans.find(r => r["Месяц"] === ym);
@@ -75,7 +83,6 @@ async function runOracleSmart() {
       return;
     }
 
-    // Удаляем старый блок Oracle если есть
     const oldOracle = document.getElementById("oracleBlock");
     if (oldOracle) {
       oldOracle.remove();
@@ -101,7 +108,7 @@ async function runOracleSmart() {
       const max = Math.max(...Object.values(dayPercents));
       let cumulativeTo = 0;
       let cumulativeTr = 0;
-      const factTo = todayRows.reduce((sum, r) => sum + clean(r["ТО"]), 0);
+      const factTo = todayRows.reduce((sum, r) => sum + clean(r[revenueColumn]), 0);
 
       Object.entries(dayPercents).forEach(([p, share]) => {
         const periodTo = Math.round(planTo * share);
@@ -143,7 +150,6 @@ async function runOracleSmart() {
     renderOracle();
     chartContainer.insertAdjacentElement("afterend", container);
     
-    // Обновляем каждые 5 минут
     if (window.oracleInterval) {
       clearInterval(window.oracleInterval);
     }
@@ -155,7 +161,6 @@ async function runOracleSmart() {
   }
 }
 
-// ✅ Ждем события sheets-ready вместо DOMContentLoaded
 document.addEventListener("sheets-ready", () => {
   console.log("🔮 Инициализируем Oracle...");
   runOracleSmart();
