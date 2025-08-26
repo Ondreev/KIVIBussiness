@@ -1,14 +1,9 @@
 // advisor.js — Советник дня (анализ ASP, трафика, закупки и рентабельности)
 
-(async () => {
-  const dataUrl = SHEETS.data;     // лист "Данные"
-const ebitdaUrl = SHEETS.ebitda; // лист "ebitda"
-
-  const parse = async (url) => {
-    const res = await fetch(url);
-    const text = await res.text();
-    return Papa.parse(text, { header: true }).data;
-  };
+// ждём, пока sheetsLoader.js загрузит все листы один раз
+document.addEventListener('sheets-ready', () => {
+  const data  = window.DATASETS.data;    // лист "Данные" (уже распарсен)
+  const costs = window.DATASETS.ebitda;  // лист "ebitda" (уже распарсен)
 
   const clean = v => parseFloat((v || '0').toString().replace(/\s/g, '').replace(',', '.'));
 
