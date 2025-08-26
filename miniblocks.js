@@ -1,5 +1,6 @@
 // miniblocks.js — генерирует 3 мини-блока (2 слева, 1 справа)
-document.addEventListener('sheets-ready', () => {
+
+(async () => {
   const container = document.createElement("div");
   container.style.display = "grid";
   container.style.gridTemplateColumns = "1fr 1.25fr";
@@ -8,11 +9,24 @@ document.addEventListener('sheets-ready', () => {
   container.style.width = "95%";
   container.style.maxWidth = "600px";
   container.style.boxSizing = "border-box";
+
   document.body.appendChild(container);
 
-  const data = window.DATASETS.data;
-  const leaders = window.DATASETS.leaders;
+  const urls = {
+  data: SHEETS.data,
+  leaders: SHEETS.leaders,
+};
+
   const cleanNumber = val => parseFloat((val || "0").replace(/\s/g, "").replace(",", "."));
+
+  const fetchCSV = async url => {
+    const res = await fetch(url);
+    const text = await res.text();
+    return Papa.parse(text, { header: true }).data;
+  };
+
+  const data = await fetchCSV(urls.data);
+  const leaders = await fetchCSV(urls.leaders);
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -29,7 +43,7 @@ document.addEventListener('sheets-ready', () => {
   const sumTo = rows => rows.reduce((sum, r) => sum + cleanNumber(r["ТО"]), 0);
 
   const factTo = sumTo(thisMonth);
-  const avgPerDay = factTo / (thisMonth.length || 1);
+  const avgPerDay = factTo / thisMonth.length;
   const forecast = Math.round(avgPerDay * daysInMonth);
 
   const prevTo = sumTo(lastMonth);
@@ -70,8 +84,10 @@ document.addEventListener('sheets-ready', () => {
     .slice(0, 7);
 
   rightCol.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;text-align:center;'>Лидеры продаж</div>`;
-  top10.forEach(name => { rightCol.innerHTML += `<div style='margin-bottom:4px;'>${name}</div>`; });
+  top10.forEach(name => {
+    rightCol.innerHTML += `<div style='margin-bottom:4px;'>${name}</div>`;
+  });
 
   container.appendChild(leftCol);
   container.appendChild(rightCol);
-});
+})();
