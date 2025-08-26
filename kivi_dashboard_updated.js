@@ -10,11 +10,10 @@ function cleanNumber(val) {
 }
 
 async function loadSummary() {
-  const [data, plans, records] = await Promise.all([
-    loadCSV(urls.data),
-    loadCSV(urls.plans),
-    loadCSV(urls.records)
-  ]);
+  // ✅ берём готовые массивы из общего загрузчика
+  const data    = window.DATASETS.data;    // "Данные"
+  const plans   = window.DATASETS.plans;   // "Планы"
+  const records = window.DATASETS.records; // "Рекорды"
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -58,8 +57,10 @@ async function loadSummary() {
   const recTo = records.find(r => r["Показатель"]?.includes("выручка"));
   const recTr = records.find(r => r["Показатель"]?.includes("трафик"));
 
-  document.getElementById("recordTo").textContent = parseInt((recTo?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU") + "₽";
-  document.getElementById("recordTraffic").textContent = parseInt((recTr?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU");
+  document.getElementById("recordTo").textContent =
+    parseInt((recTo?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU") + "₽";
+  document.getElementById("recordTraffic").textContent =
+    parseInt((recTr?.Значение || '0').replace(/\s/g, '')).toLocaleString("ru-RU");
 
   const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
   const currTo = thisMonthRows.reduce((s, r) => s + cleanNumber(r["ТО"]), 0);
@@ -68,12 +69,15 @@ async function loadSummary() {
 }
 
 async function loadChart() {
-  const csv = await loadCSV(urls.data);
+  // ✅ берём "Данные" из кэша загрузчика
+  const allRows = window.DATASETS.data;
   const today = new Date();
-  const rows = csv.filter(r => {
+
+  const rows = allRows.filter(r => {
     const d = new Date(r["Дата"]);
     return r["Дата"] && r["ТО"] && !isNaN(d) && d <= today;
   });
+
   const last7 = rows.slice(-7);
 
   const labels = last7.map(row => {
@@ -141,8 +145,8 @@ async function loadChart() {
 }
 
 async function buildComparisonBlock() {
-  const raw = await fetch(urls.data).then(r => r.text());
-  const data = Papa.parse(raw, { header: true }).data;
+  // ✅ данные уже распарсены
+  const data = window.DATASETS.data;
 
   const now = new Date();
   const thisMonth = now.toISOString().slice(0, 7);
@@ -169,6 +173,7 @@ async function buildComparisonBlock() {
   const table = document.createElement('table');
   table.innerHTML = `<tr><th>День</th><th>Прошлый год</th><th>Текущий год</th></tr>`;
 
+  // allDataRows — глобальная переменная объявлена в index.html
   allDataRows = days.map((day, i) => {
     const row = document.createElement('tr');
     if (i >= 6) row.classList.add('hidden-row');
