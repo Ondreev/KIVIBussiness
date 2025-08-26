@@ -1,7 +1,7 @@
 // next3months.js — выводит 3 блока с показателями по выручке, трафику и СРЧ на следующие 3 месяца (прошлого года)
 
 (async () => {
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
+  const url = SHEETS.data;  // лист "Данные"
 
   const res = await fetch(url);
   const text = await res.text();
