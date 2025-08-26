@@ -1,5 +1,6 @@
-// oracle.js — прогноз по тайм-слотам с галочками
+// oracle.js — прогноз по тайм-слотам, средняя только ДО ВЧЕРА (как в старой логике)
 (function () {
+  // распределение выручки по слотам
   const percentByWeekday = {
     Monday:    { "09:00–12:00": 0.117, "12:00–15:00": 0.267, "15:00–18:00": 0.322, "18:00–21:00": 0.294 },
     Tuesday:   { "09:00–12:00": 0.170, "12:00–15:00": 0.291, "15:00–18:00": 0.319, "18:00–21:00": 0.220 },
@@ -10,14 +11,10 @@
     Sunday:    { "09:00–12:00": 0.134, "12:00–15:00": 0.389, "15:00–18:00": 0.306, "18:00–21:00": 0.170 }
   };
 
-  // локальные утилиты, чтобы не конфликтовать с другими файлами
-  const ORACLE_COLS = {
-    date:    ["Дата"],
-    revenue: ["ТО", "TO"],
-    traffic: ["ТР", "TP", "TR"],
-  };
+  // локальные утилиты (без конфликтов с другими файлами)
+  const ORACLE_COLS = { date: ["Дата"], revenue: ["ТО", "TO"], traffic: ["ТР", "TP", "TR"] };
   const pick  = (row, names) => names.find(n => row[n] != null) ?? null;
-  const v     = (row, names) => row[pick(row, names)];
+  const val   = (row, names) => row[pick(row, names)];
   const clean = x => parseFloat(String(x ?? "0").replace(/\s/g, "").replace(",", ".")) || 0;
 
   function parseYMD(str) {
@@ -44,31 +41,41 @@
     const Y = now.getFullYear(), M = now.getMonth()+1, D = now.getDate();
     const ym = now.toISOString().slice(0,7);
 
-    // --- строки текущего месяца: до вчера (для средней) и за сегодня (для факта)
-    const rowsBeforeToday = data.filter(r => {
-      if (!isSameMonth(v(r, ORACLE_COLS.date), Y, M)) return false;
-      const p = parseYMD(v(r, ORACLE_COLS.date));
-      return p && p.d < D && clean(v(r, ORACLE_COLS.revenue)) > 0;
-    });
-    const rowsToday = data.filter(r => {
-      if (!isSameMonth(v(r, ORACLE_COLS.date), Y, M)) return false;
-      const p = parseYMD(v(r, ORACLE_COLS.date));
-      return p && p.d === D && clean(v(r, ORACLE_COLS.revenue)) > 0;
-    });
+    // --- агрегируем по дням текущего месяца ---
+    const days = new Map(); // day -> {to, tr}
+    let todayFactTo = 0;
 
-    // --- средние по уникальным дням ДО ВЧЕРА
-    const daySet = new Set(
-      rowsBeforeToday.map(r => parseYMD(v(r, ORACLE_COLS.date))?.d).filter(Boolean)
-    );
-    const dayCount = daySet.size || 1;
+    for (const r of data) {
+      const ds = val(r, ORACLE_COLS.date);
+      if (!isSameMonth(ds, Y, M)) continue;
+      const p = parseYMD(ds);
+      if (!p) continue;
 
-    const totalTo = rowsBeforeToday.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.revenue)),0);
-    const totalTr = rowsBeforeToday.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.traffic)),0);
+      const to = clean(val(r, ORACLE_COLS.revenue));
+      const tr = clean(val(r, ORACLE_COLS.traffic));
 
-    const avgTo = Math.round(totalTo / dayCount);
-    const avgTr = Math.round(totalTr / dayCount);
+      if (p.d === D) {
+        // факт за сегодня — отдельным счётчиком
+        todayFactTo += to;
+        continue;
+      }
+      if (p.d < D) {
+        const prev = days.get(p.d) || { to: 0, tr: 0 };
+        prev.to += to;
+        prev.tr += tr;
+        days.set(p.d, prev);
+      }
+    }
 
-    // --- цель = max(план, средняя_до_вчера)
+    // --- средние ТОЛЬКО по дням < сегодня ---
+    const dayCount = days.size || 1;
+    let sumTo = 0, sumTr = 0;
+    for (const {to, tr} of days.values()) { sumTo += to; sumTr += tr; }
+
+    const avgTo = Math.round(sumTo / dayCount);
+    const avgTr = Math.round(sumTr / dayCount);
+
+    // --- цель = max(план, средняя_до_вчера) ---
     const planRow = plans.find(r => r["Месяц"] === ym) || {};
     const planToPlan = +planRow["План по выручке"] || 0;
     const planTrPlan = +planRow["План по трафику"] || 0;
@@ -76,7 +83,7 @@
     const planTo = Math.max(planToPlan, avgTo);
     const planTr = Math.max(planTrPlan, avgTr);
 
-    // --- построение слотов
+    // --- отрисовка слотов ---
     const weekdayEn = now.toLocaleDateString("en-US",{weekday:"long"});
     const weekdayRu = now.toLocaleDateString("ru-RU",{weekday:"long"});
     const slots = percentByWeekday[weekdayEn];
@@ -86,7 +93,6 @@
     if (!chartContainer) return;
 
     document.getElementById("oracleBlock")?.remove();
-
     const container = document.createElement("div");
     container.id = "oracleBlock";
     container.style.cssText = "background:transparent;color:#fff;border-radius:16px;padding:16px;margin:20px auto;width:95%;max-width:600px;font-family:sans-serif;box-sizing:border-box;";
@@ -97,7 +103,7 @@
       html += `<div style="margin-bottom:20px;text-align:center;font-size:16px;">Цель на день: <b style="font-size:20px;">${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTr}</b></div>`;
 
       const maxShare = Math.max(...Object.values(slots));
-      const factTo = rowsToday.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.revenue)),0);
+      const factTo = todayFactTo; // факт только за сегодня
 
       let cumTo = 0, cumTr = 0;
       for (const [period, share] of Object.entries(slots)) {
@@ -133,6 +139,6 @@
     clearInterval(window.oracleInterval);
     window.oracleInterval = setInterval(renderOracle, 5*60*1000);
 
-    console.log("✅ Oracle загружен | planTo:", planTo, "avgTo(yesterday):", avgTo);
+    console.log("✅ Oracle: planTo =", planTo, "| avgTo (до вчера) =", avgTo, "| factToday =", todayFactTo);
   });
 })();
