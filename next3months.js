@@ -1,6 +1,11 @@
-// next3months.js — показатели на следующие 3 месяца (по данным прошлого года)
-document.addEventListener('sheets-ready', () => {
-  const data = window.DATASETS.data;
+// next3months.js — выводит 3 блока с показателями по выручке, трафику и СРЧ на следующие 3 месяца (прошлого года)
+
+(async () => {
+  const url = SHEETS.data;  // лист "Данные"
+
+  const res = await fetch(url);
+  const text = await res.text();
+  const data = Papa.parse(text, { header: true }).data;
 
   const container = document.createElement("div");
   container.style.display = "grid";
@@ -27,8 +32,8 @@ document.addEventListener('sheets-ready', () => {
 
     const sumTo = rows.reduce((s, r) => s + clean(r["ТО"]), 0);
     const sumTr = rows.reduce((s, r) => s + clean(r["ТР"]), 0);
-    const avgTo = Math.round(sumTo / (rows.length || 1));
-    const avgTr = Math.round(sumTr / (rows.length || 1));
+    const avgTo = Math.round(sumTo / rows.length);
+    const avgTr = Math.round(sumTr / rows.length);
     const avgCheck = avgTr ? Math.round(avgTo / avgTr) : 0;
 
     const block = document.createElement("div");
@@ -45,8 +50,9 @@ document.addEventListener('sheets-ready', () => {
       <div style='font-size:20px; font-weight:bold;'>${avgTo.toLocaleString('ru-RU')}₽</div>
       <div style='font-size:13px; margin-top:4px;'>${avgTr} • ${avgCheck}₽ СРЧ</div>
     `;
+
     container.appendChild(block);
   }
 
   document.body.appendChild(container);
-});
+})();
