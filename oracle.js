@@ -1,6 +1,5 @@
 // oracle.js — прогноз по тайм-слотам с галочками
 (function () {
-  // --- настройки распределения выручки по слотам
   const percentByWeekday = {
     Monday:    { "09:00–12:00": 0.117, "12:00–15:00": 0.267, "15:00–18:00": 0.322, "18:00–21:00": 0.294 },
     Tuesday:   { "09:00–12:00": 0.170, "12:00–15:00": 0.291, "15:00–18:00": 0.319, "18:00–21:00": 0.220 },
@@ -11,7 +10,7 @@
     Sunday:    { "09:00–12:00": 0.134, "12:00–15:00": 0.389, "15:00–18:00": 0.306, "18:00–21:00": 0.170 }
   };
 
-  // --- утилиты (локальные для oracle.js)
+  // локальные утилиты, чтобы не конфликтовать с другими файлами
   const ORACLE_COLS = {
     date:    ["Дата"],
     revenue: ["ТО", "TO"],
@@ -37,7 +36,6 @@
     return t >= sh*60 + sm && t < eh*60 + em;
   }
 
-  // --- основной код
   document.addEventListener("sheets-ready", () => {
     const data  = window.DATASETS?.data  || [];
     const plans = window.DATASETS?.plans || [];
@@ -46,22 +44,39 @@
     const Y = now.getFullYear(), M = now.getMonth()+1, D = now.getDate();
     const ym = now.toISOString().slice(0,7);
 
-    const thisMonthRows = data.filter(r => {
+    // --- строки текущего месяца: до вчера (для средней) и за сегодня (для факта)
+    const rowsBeforeToday = data.filter(r => {
       if (!isSameMonth(v(r, ORACLE_COLS.date), Y, M)) return false;
-      const p = parseYMD(v(r, ORACLE_COLS.date)); return p && p.d < D && clean(v(r, ORACLE_COLS.revenue)) > 0;
+      const p = parseYMD(v(r, ORACLE_COLS.date));
+      return p && p.d < D && clean(v(r, ORACLE_COLS.revenue)) > 0;
     });
-    const todayRows = data.filter(r => {
+    const rowsToday = data.filter(r => {
       if (!isSameMonth(v(r, ORACLE_COLS.date), Y, M)) return false;
-      const p = parseYMD(v(r, ORACLE_COLS.date)); return p && p.d === D && clean(v(r, ORACLE_COLS.revenue)) > 0;
+      const p = parseYMD(v(r, ORACLE_COLS.date));
+      return p && p.d === D && clean(v(r, ORACLE_COLS.revenue)) > 0;
     });
 
-    const avgTo = Math.round(thisMonthRows.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.revenue)),0) / (thisMonthRows.length || 1));
-    const avgTr = Math.round(thisMonthRows.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.traffic)),0) / (thisMonthRows.length || 1));
+    // --- средние по уникальным дням ДО ВЧЕРА
+    const daySet = new Set(
+      rowsBeforeToday.map(r => parseYMD(v(r, ORACLE_COLS.date))?.d).filter(Boolean)
+    );
+    const dayCount = daySet.size || 1;
 
+    const totalTo = rowsBeforeToday.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.revenue)),0);
+    const totalTr = rowsBeforeToday.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.traffic)),0);
+
+    const avgTo = Math.round(totalTo / dayCount);
+    const avgTr = Math.round(totalTr / dayCount);
+
+    // --- цель = max(план, средняя_до_вчера)
     const planRow = plans.find(r => r["Месяц"] === ym) || {};
-    const planTo = Math.max(avgTo, +planRow["План по выручке"] || 0);
-    const planTr = Math.max(avgTr, +planRow["План по трафику"] || 0);
+    const planToPlan = +planRow["План по выручке"] || 0;
+    const planTrPlan = +planRow["План по трафику"] || 0;
 
+    const planTo = Math.max(planToPlan, avgTo);
+    const planTr = Math.max(planTrPlan, avgTr);
+
+    // --- построение слотов
     const weekdayEn = now.toLocaleDateString("en-US",{weekday:"long"});
     const weekdayRu = now.toLocaleDateString("ru-RU",{weekday:"long"});
     const slots = percentByWeekday[weekdayEn];
@@ -81,8 +96,8 @@
       let html = `<div style="font-weight:900;font-size:24px;text-align:center;margin-bottom:12px;">📌 Сегодня ${weekdayRu[0].toUpperCase()+weekdayRu.slice(1)}</div>`;
       html += `<div style="margin-bottom:20px;text-align:center;font-size:16px;">Цель на день: <b style="font-size:20px;">${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTr}</b></div>`;
 
-      const max = Math.max(...Object.values(slots));
-      const factTo = todayRows.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.revenue)),0);
+      const maxShare = Math.max(...Object.values(slots));
+      const factTo = rowsToday.reduce((s,r)=>s+clean(v(r,ORACLE_COLS.revenue)),0);
 
       let cumTo = 0, cumTr = 0;
       for (const [period, share] of Object.entries(slots)) {
@@ -91,7 +106,7 @@
         cumTo += partTo; cumTr += partTr;
 
         const nowHere = isWithinPeriod(now, period);
-        const peak    = share === max;
+        const peak    = share === maxShare;
         const met     = factTo >= cumTo;
 
         const bg = met ? (peak ? "#ffc400" : "#ff6e9c")
@@ -118,6 +133,6 @@
     clearInterval(window.oracleInterval);
     window.oracleInterval = setInterval(renderOracle, 5*60*1000);
 
-    console.log("✅ Oracle загружен");
+    console.log("✅ Oracle загружен | planTo:", planTo, "avgTo(yesterday):", avgTo);
   });
 })();
