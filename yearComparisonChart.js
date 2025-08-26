@@ -1,7 +1,7 @@
 // yearComparisonChart.js — сравнение выручки по месяцам за 2023, 2024 и 2025 годы (линейная диаграмма с анимацией)
 
 (async () => {
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?gid=2099900296&single=true&output=csv";
+  const url = SHEETS.data;  // лист "Данные"
   const res = await fetch(url);
   const text = await res.text();
   const data = Papa.parse(text, { header: true }).data;
