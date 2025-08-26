@@ -3,9 +3,8 @@
 // Автор: ассистент
 
 async function loadDailyRevenuePast() {
-  const csvUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(
-    'https://docs.google.com/spreadsheets/d/e/2PACX-1vTM-GTiL5auNwSsi0SWkR5_YzX89K-J27vC5nw15bVJbkJRXrmXzNv4LDWb32xfVHNcYac0GnNsxJTI/pub?output=csv'
-  );
+  // берём ссылку напрямую из config.js
+  const csvUrl = SHEETS.data; // лист "Данные"
 
   const response = await fetch(csvUrl);
   const text = await response.text();
