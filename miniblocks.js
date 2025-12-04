@@ -1,21 +1,17 @@
-// miniblocks.js — генерирует 3 мини-блока (2 слева, 1 справа)
+// miniblocks.js — 3 мини-блока с современным дизайном
 
 (async () => {
   const container = document.createElement("div");
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "1fr 1.25fr";
-  container.style.gap = "12px";
-  container.style.marginTop = "20px";
-  container.style.width = "95%";
-  container.style.maxWidth = "600px";
-  container.style.boxSizing = "border-box";
+  container.style.cssText = `
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 12px;
+    margin-top: 24px;
+    width: 100%;
+    max-width: 640px;
+  `;
 
-  document.body.appendChild(container);
-
-  const urls = {
-  data: SHEETS.data,
-  leaders: SHEETS.leaders,
-};
+  document.querySelector('.container').appendChild(container);
 
   const cleanNumber = val => parseFloat((val || "0").replace(/\s/g, "").replace(",", "."));
 
@@ -25,8 +21,8 @@
     return Papa.parse(text, { header: true }).data;
   };
 
-  const data = await fetchCSV(urls.data);
-  const leaders = await fetchCSV(urls.leaders);
+  const data = await fetchCSV(SHEETS.data);
+  const leaders = await fetchCSV(SHEETS.leaders);
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -49,43 +45,81 @@
   const prevTo = sumTo(lastMonth);
   const diffRub = Math.round(factTo - prevTo);
 
-  const makeBlock = (title, value, extra = "") => {
+  const makeBlock = (title, value) => {
     const div = document.createElement("div");
-    div.style.background = "white";
-    div.style.color = "black";
-    div.style.borderRadius = "12px";
-    div.style.padding = "12px";
-    div.style.boxSizing = "border-box";
-    div.style.fontSize = "14px";
-    div.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;text-align:center;'>${title}</div>${value}`;
-    if (extra) div.innerHTML += `<div style='margin-top:6px;font-size:14px;text-align:center;'>${extra}</div>`;
+    div.style.cssText = `
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    `;
+    div.innerHTML = `
+      <div style='font-weight:700;margin-bottom:12px;text-align:center;font-size:15px;'>${title}</div>
+      ${value}
+    `;
+    
+    div.addEventListener('mouseenter', () => {
+      div.style.transform = 'translateY(-2px)';
+      div.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
+    });
+    div.addEventListener('mouseleave', () => {
+      div.style.transform = 'translateY(0)';
+      div.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
+    });
+    
     return div;
   };
 
   const leftCol = document.createElement("div");
-  leftCol.style.display = "flex";
-  leftCol.style.flexDirection = "column";
-  leftCol.style.gap = "12px";
+  leftCol.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  `;
 
-  leftCol.appendChild(makeBlock("Этот месяц", `<div style='text-align:center;'>по накоплению</div><div style='font-size:22px;font-weight:bold;text-align:center;'>${factTo.toLocaleString("ru-RU")}₽</div><div style='margin-top:6px;text-align:center;'>Прогноз:</div><div style='font-size:22px;font-weight:bold;text-align:center;'>${forecast.toLocaleString("ru-RU")}₽</div>`));
-  leftCol.appendChild(makeBlock("От прошл. года", `<div style='font-size:22px;font-weight:bold;text-align:center;'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`));
+  leftCol.appendChild(makeBlock(
+    "Этот месяц",
+    `<div style='text-align:center;font-size:13px;margin-bottom:4px;'>по накоплению</div>
+     <div style='font-size:24px;font-weight:900;text-align:center;background:linear-gradient(135deg, #667eea, #764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;'>${factTo.toLocaleString("ru-RU")}₽</div>
+     <div style='margin-top:8px;text-align:center;font-size:13px;'>Прогноз:</div>
+     <div style='font-size:22px;font-weight:700;text-align:center;color:#555;'>${forecast.toLocaleString("ru-RU")}₽</div>`
+  ));
+
+  leftCol.appendChild(makeBlock(
+    "От прошл. года",
+    `<div style='font-size:24px;font-weight:900;text-align:center;color:${diffRub >= 0 ? '#28a745' : '#dc3545'};'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`
+  ));
 
   const rightCol = document.createElement("div");
-  rightCol.style.background = "white";
-  rightCol.style.color = "black";
-  rightCol.style.borderRadius = "12px";
-  rightCol.style.padding = "12px";
-  rightCol.style.boxSizing = "border-box";
-  rightCol.style.fontSize = "14px";
+  rightCol.style.cssText = `
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+  `;
+
+  rightCol.addEventListener('mouseenter', () => {
+    rightCol.style.transform = 'translateY(-2px)';
+    rightCol.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
+  });
+  rightCol.addEventListener('mouseleave', () => {
+    rightCol.style.transform = 'translateY(0)';
+    rightCol.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
+  });
 
   const top10 = leaders
     .filter(r => r["Лидеры продаж"])
     .map(r => r["Лидеры продаж"])
     .slice(0, 7);
 
-  rightCol.innerHTML = `<div style='font-weight:bold;margin-bottom:8px;text-align:center;'>Лидеры продаж</div>`;
-  top10.forEach(name => {
-    rightCol.innerHTML += `<div style='margin-bottom:4px;'>${name}</div>`;
+  rightCol.innerHTML = `<div style='font-weight:700;margin-bottom:12px;text-align:center;font-size:15px;'>🏆 Лидеры продаж</div>`;
+  top10.forEach((name, index) => {
+    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '•';
+    rightCol.innerHTML += `<div style='margin-bottom:6px;font-size:13px;padding:4px 0;'>${medal} ${name}</div>`;
   });
 
   container.appendChild(leftCol);
