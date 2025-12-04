@@ -1,4 +1,4 @@
-// yearComparisonChart.js — График сравнения с жирными линиями и яркими цветами
+// yearComparisonChart.js — Чистый и читаемый график
 
 (async () => {
   const url = SHEETS.data;
@@ -64,8 +64,8 @@
   canvas.id = "yearComparison";
   canvas.style.cssText = `
     width: 100% !important;
-    height: 280px !important;
-    max-height: 280px;
+    height: 300px !important;
+    max-height: 300px;
   `;
   
   container.appendChild(canvas);
@@ -81,56 +81,61 @@
         {
           label: `${currentYear}`,
           data: avg(currentYear),
-          borderColor: '#ff6b35',        // Оранжевый (яркий)
-          backgroundColor: 'rgba(255, 107, 53, 0.15)',
-          tension: 0.3,
-          borderWidth: 5,                // ✅ Толщина 5
-          pointRadius: 7,                // ✅ Большие точки
-          pointBackgroundColor: '#ff6b35',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 3,
-          pointHoverRadius: 10,          // ✅ Ещё больше при hover
-          pointHoverBorderWidth: 4,
-          fill: true
+          borderColor: '#FFD700',        // Золотой (яркий желтый)
+          backgroundColor: 'transparent', // ✅ БЕЗ ЗАЛИВКИ
+          tension: 0.4,
+          borderWidth: 4,
+          pointRadius: 0,                // ✅ БЕЗ ТОЧЕК (показываем только при hover)
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: '#FFD700',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3,
+          fill: false
         },
         {
           label: `${lastYear}`,
           data: avg(lastYear),
-          borderColor: '#e74c3c',        // Красный (насыщенный)
-          backgroundColor: 'rgba(231, 76, 60, 0.15)',
-          tension: 0.3,
-          borderWidth: 5,                // ✅ Толщина 5
-          pointRadius: 7,
-          pointBackgroundColor: '#e74c3c',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 3,
-          pointHoverRadius: 10,
-          pointHoverBorderWidth: 4,
-          fill: true
+          borderColor: '#FF1744',        // Ярко-красный (неоновый)
+          backgroundColor: 'transparent',
+          tension: 0.4,
+          borderWidth: 4,
+          pointRadius: 0,
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: '#FF1744',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3,
+          fill: false
         },
         {
           label: `${yearBeforeLast}`,
           data: avg(yearBeforeLast),
-          borderColor: '#2ecc71',        // Зелёный (яркий)
-          backgroundColor: 'rgba(46, 204, 113, 0.15)',
-          tension: 0.3,
-          borderWidth: 5,                // ✅ Толщина 5
-          pointRadius: 7,
-          pointBackgroundColor: '#2ecc71',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 3,
-          pointHoverRadius: 10,
-          pointHoverBorderWidth: 4,
-          fill: true
+          borderColor: '#00E676',        // Ярко-зелёный (неоновый)
+          backgroundColor: 'transparent',
+          tension: 0.4,
+          borderWidth: 4,
+          pointRadius: 0,
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: '#00E676',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3,
+          fill: false
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 10,
+          bottom: 10,
+          left: 5,
+          right: 5
+        }
+      },
       animation: {
-        duration: 1200,
-        easing: 'easeInOutQuart'
+        duration: 1000,
+        easing: 'easeInOutCubic'
       },
       interaction: {
         mode: 'index',
@@ -141,24 +146,25 @@
           position: 'top',
           align: 'center',
           labels: {
-            boxWidth: 20,              // ✅ Больше квадраты
-            boxHeight: 20,
-            padding: 16,
+            boxWidth: 24,
+            boxHeight: 4,              // ✅ Тонкие прямоугольники (как линии)
+            padding: 14,
             color: '#333',
             font: {
-              weight: '700',           // ✅ Жирнее шрифт
-              size: window.innerWidth < 480 ? 14 : 16,
+              weight: '700',
+              size: window.innerWidth < 480 ? 13 : 15,
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             },
-            usePointStyle: true,
-            pointStyle: 'circle'
+            usePointStyle: false       // ✅ Прямоугольники вместо кругов
           }
         },
         tooltip: {
           enabled: true,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          backgroundColor: 'rgba(33, 33, 33, 0.95)',
           titleColor: '#fff',
           bodyColor: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
           titleFont: {
             size: 15,
             weight: '700'
@@ -167,17 +173,20 @@
             size: 14,
             weight: '600'
           },
-          padding: 14,
+          padding: 12,
           cornerRadius: 10,
           displayColors: true,
           boxWidth: 12,
           boxHeight: 12,
-          boxPadding: 6,
+          boxPadding: 8,
           callbacks: {
+            title: function(context) {
+              return context[0].label;
+            },
             label: function(context) {
               const label = context.dataset.label || '';
               const value = Math.round(context.parsed.y).toLocaleString('ru-RU');
-              return `${label}: ${value}₽`;
+              return ` ${label}: ${value}₽`;
             }
           }
         }
@@ -185,11 +194,7 @@
       scales: {
         y: {
           display: false,
-          beginAtZero: true,
-          grid: {
-            color: 'rgba(0, 0, 0, 0.08)',
-            drawBorder: false
-          }
+          beginAtZero: true
         },
         x: {
           grid: {
@@ -197,12 +202,12 @@
             drawBorder: false
           },
           ticks: {
-            color: '#555',
+            color: '#666',
             font: {
-              size: window.innerWidth < 480 ? 12 : 14,
-              weight: '700'              // ✅ Жирнее подписи
+              size: window.innerWidth < 480 ? 11 : 13,
+              weight: '600'
             },
-            padding: 10
+            padding: 12
           }
         }
       }
