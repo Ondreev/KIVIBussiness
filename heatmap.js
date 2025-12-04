@@ -1,4 +1,4 @@
-// heatmap.js — Тепловая карта месяца (на основе прошлого года)
+// heatmap.js — Тепловая карта месяца с выделением текущей даты
 
 document.addEventListener("sheets-ready", () => {
   buildHeatmap();
@@ -11,6 +11,7 @@ function buildHeatmap() {
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
   const lastYear = currentYear - 1;
 
   // Парсинг даты
@@ -89,7 +90,7 @@ function buildHeatmap() {
   grid.style.cssText = `
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 6px;
     margin-bottom: 16px;
   `;
 
@@ -101,7 +102,7 @@ function buildHeatmap() {
       font-size: clamp(10px, 2.5vw, 12px);
       font-weight: 600;
       text-align: center;
-      padding: 6px 2px;
+      padding: 8px 2px;
       color: #666;
     `;
     header.textContent = day;
@@ -110,13 +111,20 @@ function buildHeatmap() {
 
   // Функция для получения цвета по выручке
   const getColor = (revenue) => {
-    if (!revenue) return 'rgba(200, 200, 200, 0.2)';
+    if (!revenue) return '#f0f0f0'; // Нет данных - светло-серый
+    
     const normalized = (revenue - minRevenue) / (maxRevenue - minRevenue);
     
-    if (normalized < 0.25) return 'rgba(102, 126, 234, 0.3)'; // Низкая
-    if (normalized < 0.5) return 'rgba(102, 126, 234, 0.5)';  // Средне-низкая
-    if (normalized < 0.75) return 'rgba(255, 193, 7, 0.6)';    // Средняя
-    return 'rgba(255, 107, 53, 0.8)';                          // Высокая
+    if (normalized < 0.33) return '#a8dadc'; // Низкая - голубой
+    if (normalized < 0.66) return '#90ee90'; // Средняя - светло-зелёный
+    return '#2d6a4f';                        // Отличная - тёмно-зелёный
+  };
+
+  const getTextColor = (revenue) => {
+    if (!revenue) return '#999';
+    
+    const normalized = (revenue - minRevenue) / (maxRevenue - minRevenue);
+    return normalized >= 0.66 ? '#fff' : '#333'; // Белый текст на тёмном фоне
   };
 
   // Пустые ячейки в начале
@@ -129,22 +137,25 @@ function buildHeatmap() {
   for (let day = 1; day <= daysInMonth; day++) {
     const dayInfo = dayData[day];
     const revenue = dayInfo ? dayInfo.revenue : 0;
+    const isToday = day === currentDay; // Проверяем текущую дату
     
     const cell = document.createElement('div');
     cell.style.cssText = `
       aspect-ratio: 1;
       background: ${getColor(revenue)};
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: clamp(11px, 2.8vw, 14px);
-      font-weight: 600;
-      color: #333;
+      font-size: clamp(12px, 3vw, 14px);
+      font-weight: ${isToday ? '900' : '700'};
+      color: ${getTextColor(revenue)};
       cursor: pointer;
       transition: all 0.2s ease;
-      border: 1px solid rgba(0, 0, 0, 0.05);
+      border: ${isToday ? '3px solid #ff4081' : '1px solid rgba(0, 0, 0, 0.1)'};
+      position: relative;
+      box-shadow: ${isToday ? '0 0 0 3px rgba(255, 64, 129, 0.2)' : 'none'};
     `;
 
     if (revenue > 0) {
@@ -152,16 +163,39 @@ function buildHeatmap() {
       cell.addEventListener('mouseenter', () => {
         cell.style.transform = 'scale(1.15)';
         cell.style.zIndex = '10';
-        cell.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+        cell.style.boxShadow = isToday 
+          ? '0 6px 16px rgba(255, 64, 129, 0.4)' 
+          : '0 4px 12px rgba(0,0,0,0.25)';
       });
       cell.addEventListener('mouseleave', () => {
         cell.style.transform = 'scale(1)';
         cell.style.zIndex = '1';
-        cell.style.boxShadow = 'none';
+        cell.style.boxShadow = isToday ? '0 0 0 3px rgba(255, 64, 129, 0.2)' : 'none';
       });
+    } else if (isToday) {
+      cell.title = `${day} число: нет данных за прошлый год`;
     }
 
-    cell.textContent = day;
+    // Добавляем индикатор для текущей даты
+    if (isToday && revenue > 0) {
+      const indicator = document.createElement('div');
+      indicator.style.cssText = `
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 6px;
+        height: 6px;
+        background: #ff4081;
+        border-radius: 50%;
+        box-shadow: 0 0 4px rgba(255, 64, 129, 0.6);
+      `;
+      cell.appendChild(indicator);
+    }
+
+    const dayText = document.createElement('span');
+    dayText.textContent = day;
+    cell.appendChild(dayText);
+
     grid.appendChild(cell);
   }
 
@@ -173,32 +207,51 @@ function buildHeatmap() {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    font-size: clamp(10px, 2.5vw, 12px);
+    gap: 12px;
+    font-size: clamp(11px, 2.8vw, 13px);
     color: #666;
     flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid #e0e0e0;
   `;
 
   legend.innerHTML = `
-    <div style='display:flex;align-items:center;gap:4px;'>
-      <div style='width:16px;height:16px;background:rgba(102, 126, 234, 0.3);border-radius:4px;'></div>
+    <div style='display:flex;align-items:center;gap:6px;'>
+      <div style='width:18px;height:18px;background:#f0f0f0;border-radius:4px;border:1px solid #ddd;'></div>
+      <span>Нет данных</span>
+    </div>
+    <div style='display:flex;align-items:center;gap:6px;'>
+      <div style='width:18px;height:18px;background:#a8dadc;border-radius:4px;'></div>
       <span>Низкая</span>
     </div>
-    <div style='display:flex;align-items:center;gap:4px;'>
-      <div style='width:16px;height:16px;background:rgba(102, 126, 234, 0.5);border-radius:4px;'></div>
-      <span>Средняя</span>
-    </div>
-    <div style='display:flex;align-items:center;gap:4px;'>
-      <div style='width:16px;height:16px;background:rgba(255, 193, 7, 0.6);border-radius:4px;'></div>
+    <div style='display:flex;align-items:center;gap:6px;'>
+      <div style='width:18px;height:18px;background:#90ee90;border-radius:4px;'></div>
       <span>Хорошая</span>
     </div>
-    <div style='display:flex;align-items:center;gap:4px;'>
-      <div style='width:16px;height:16px;background:rgba(255, 107, 53, 0.8);border-radius:4px;'></div>
-      <span>Отличная</span>
+    <div style='display:flex;align-items:center;gap:6px;'>
+      <div style='width:18px;height:18px;background:#2d6a4f;border-radius:4px;'></div>
+      <span style='color:#2d6a4f;font-weight:600;'>Отличная</span>
     </div>
   `;
 
   container.appendChild(legend);
+
+  // Подсказка о текущей дате (если она есть в календаре)
+  if (currentDay <= daysInMonth) {
+    const hint = document.createElement('div');
+    hint.style.cssText = `
+      margin-top: 12px;
+      padding: 10px;
+      background: linear-gradient(135deg, rgba(255, 64, 129, 0.1), rgba(255, 64, 129, 0.05));
+      border-left: 3px solid #ff4081;
+      border-radius: 8px;
+      font-size: clamp(11px, 2.8vw, 13px);
+      color: #555;
+      text-align: center;
+    `;
+    hint.innerHTML = `<strong style='color:#ff4081;'>🎯 ${currentDay} число</strong> — сегодняшняя дата выделена розовой рамкой`;
+    container.appendChild(hint);
+  }
 
   // Добавляем в контейнер
   document.querySelector('.container').appendChild(container);
