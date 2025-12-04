@@ -1,4 +1,4 @@
-// yearComparisonChart.js — Чистый и читаемый график
+// yearComparisonChart.js — Чистый график с цифрами и сеткой
 
 (async () => {
   const url = SHEETS.data;
@@ -13,7 +13,7 @@
   const yearBeforeLast = currentYear - 2;
 
   const months = Array.from({ length: 12 }, (_, i) => i);
-  const monthLabels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+  const monthLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']; // ✅ Цифры
 
   const sums = {
     [currentYear]: Array(12).fill(0),
@@ -81,11 +81,11 @@
         {
           label: `${currentYear}`,
           data: avg(currentYear),
-          borderColor: '#FFD700',        // Золотой (яркий желтый)
-          backgroundColor: 'transparent', // ✅ БЕЗ ЗАЛИВКИ
+          borderColor: '#FFD700',
+          backgroundColor: 'transparent',
           tension: 0.4,
           borderWidth: 4,
-          pointRadius: 0,                // ✅ БЕЗ ТОЧЕК (показываем только при hover)
+          pointRadius: 0,
           pointHoverRadius: 8,
           pointHoverBackgroundColor: '#FFD700',
           pointHoverBorderColor: '#fff',
@@ -95,7 +95,7 @@
         {
           label: `${lastYear}`,
           data: avg(lastYear),
-          borderColor: '#FF1744',        // Ярко-красный (неоновый)
+          borderColor: '#FF1744',
           backgroundColor: 'transparent',
           tension: 0.4,
           borderWidth: 4,
@@ -109,7 +109,7 @@
         {
           label: `${yearBeforeLast}`,
           data: avg(yearBeforeLast),
-          borderColor: '#00E676',        // Ярко-зелёный (неоновый)
+          borderColor: '#00E676',
           backgroundColor: 'transparent',
           tension: 0.4,
           borderWidth: 4,
@@ -147,7 +147,7 @@
           align: 'center',
           labels: {
             boxWidth: 24,
-            boxHeight: 4,              // ✅ Тонкие прямоугольники (как линии)
+            boxHeight: 4,
             padding: 14,
             color: '#333',
             font: {
@@ -155,7 +155,7 @@
               size: window.innerWidth < 480 ? 13 : 15,
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             },
-            usePointStyle: false       // ✅ Прямоугольники вместо кругов
+            usePointStyle: false
           }
         },
         tooltip: {
@@ -181,7 +181,11 @@
           boxPadding: 8,
           callbacks: {
             title: function(context) {
-              return context[0].label;
+              // ✅ Показываем название месяца в tooltip
+              const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
+                                  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+              const monthIndex = parseInt(context[0].label) - 1;
+              return monthNames[monthIndex];
             },
             label: function(context) {
               const label = context.dataset.label || '';
@@ -198,14 +202,18 @@
         },
         x: {
           grid: {
-            display: false,
-            drawBorder: false
+            display: true,              // ✅ ВКЛЮЧИЛИ СЕТКУ
+            color: 'rgba(0, 0, 0, 0.06)', // ✅ Светло-серые линии
+            lineWidth: 1,
+            drawBorder: false,
+            drawOnChartArea: true,
+            drawTicks: false
           },
           ticks: {
             color: '#666',
             font: {
-              size: window.innerWidth < 480 ? 11 : 13,
-              weight: '600'
+              size: window.innerWidth < 480 ? 13 : 15,  // ✅ Чуть крупнее цифры
+              weight: '700'
             },
             padding: 12
           }
