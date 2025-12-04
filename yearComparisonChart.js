@@ -1,4 +1,4 @@
-// yearComparisonChart.js — График сравнения выручки по месяцам за годы (контрастные цвета)
+// yearComparisonChart.js — График сравнения с жирными линиями и яркими цветами
 
 (async () => {
   const url = SHEETS.data;
@@ -64,8 +64,8 @@
   canvas.id = "yearComparison";
   canvas.style.cssText = `
     width: 100% !important;
-    height: 250px !important;
-    max-height: 250px;
+    height: 280px !important;
+    max-height: 280px;
   `;
   
   container.appendChild(canvas);
@@ -81,43 +81,46 @@
         {
           label: `${currentYear}`,
           data: avg(currentYear),
-          borderColor: '#ffd700',        // Жёлтый (золотой)
-          backgroundColor: 'rgba(255, 215, 0, 0.1)',
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointBackgroundColor: '#ffd700',
+          borderColor: '#ff6b35',        // Оранжевый (яркий)
+          backgroundColor: 'rgba(255, 107, 53, 0.15)',
+          tension: 0.3,
+          borderWidth: 5,                // ✅ Толщина 5
+          pointRadius: 7,                // ✅ Большие точки
+          pointBackgroundColor: '#ff6b35',
           pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
+          pointBorderWidth: 3,
+          pointHoverRadius: 10,          // ✅ Ещё больше при hover
+          pointHoverBorderWidth: 4,
           fill: true
         },
         {
           label: `${lastYear}`,
           data: avg(lastYear),
-          borderColor: '#ff4757',        // Красный
-          backgroundColor: 'rgba(255, 71, 87, 0.1)',
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointBackgroundColor: '#ff4757',
+          borderColor: '#e74c3c',        // Красный (насыщенный)
+          backgroundColor: 'rgba(231, 76, 60, 0.15)',
+          tension: 0.3,
+          borderWidth: 5,                // ✅ Толщина 5
+          pointRadius: 7,
+          pointBackgroundColor: '#e74c3c',
           pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
+          pointBorderWidth: 3,
+          pointHoverRadius: 10,
+          pointHoverBorderWidth: 4,
           fill: true
         },
         {
           label: `${yearBeforeLast}`,
           data: avg(yearBeforeLast),
-          borderColor: '#7bed9f',        // Салатовый
-          backgroundColor: 'rgba(123, 237, 159, 0.1)',
-          tension: 0.4,
-          borderWidth: 3,
-          pointRadius: 5,
-          pointBackgroundColor: '#7bed9f',
+          borderColor: '#2ecc71',        // Зелёный (яркий)
+          backgroundColor: 'rgba(46, 204, 113, 0.15)',
+          tension: 0.3,
+          borderWidth: 5,                // ✅ Толщина 5
+          pointRadius: 7,
+          pointBackgroundColor: '#2ecc71',
           pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
+          pointBorderWidth: 3,
+          pointHoverRadius: 10,
+          pointHoverBorderWidth: 4,
           fill: true
         }
       ]
@@ -138,13 +141,13 @@
           position: 'top',
           align: 'center',
           labels: {
-            boxWidth: 16,
-            boxHeight: 16,
-            padding: 15,
+            boxWidth: 20,              // ✅ Больше квадраты
+            boxHeight: 20,
+            padding: 16,
             color: '#333',
             font: {
-              weight: '600',
-              size: window.innerWidth < 480 ? 13 : 15,
+              weight: '700',           // ✅ Жирнее шрифт
+              size: window.innerWidth < 480 ? 14 : 16,
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             },
             usePointStyle: true,
@@ -153,19 +156,23 @@
         },
         tooltip: {
           enabled: true,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
           titleColor: '#fff',
           bodyColor: '#fff',
           titleFont: {
+            size: 15,
+            weight: '700'
+          },
+          bodyFont: {
             size: 14,
             weight: '600'
           },
-          bodyFont: {
-            size: 13
-          },
-          padding: 12,
-          cornerRadius: 8,
+          padding: 14,
+          cornerRadius: 10,
           displayColors: true,
+          boxWidth: 12,
+          boxHeight: 12,
+          boxPadding: 6,
           callbacks: {
             label: function(context) {
               const label = context.dataset.label || '';
@@ -177,10 +184,10 @@
       },
       scales: {
         y: {
-          display: false,              // ✅ УБРАЛИ ОСЬ Y ПОЛНОСТЬЮ
+          display: false,
           beginAtZero: true,
           grid: {
-            color: 'rgba(0, 0, 0, 0.05)',
+            color: 'rgba(0, 0, 0, 0.08)',
             drawBorder: false
           }
         },
@@ -190,12 +197,12 @@
             drawBorder: false
           },
           ticks: {
-            color: '#666',
+            color: '#555',
             font: {
-              size: window.innerWidth < 480 ? 11 : 13,
-              weight: '600'
+              size: window.innerWidth < 480 ? 12 : 14,
+              weight: '700'              // ✅ Жирнее подписи
             },
-            padding: 8
+            padding: 10
           }
         }
       }
