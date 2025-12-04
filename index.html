@@ -4,7 +4,7 @@
   <link rel="icon" type="image/png" href="/favicon.ico">
   <meta charset="UTF-8" />
   <title>KIVI Business</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 
   <!-- CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -12,79 +12,412 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
 
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      background-color: #ff4081;
-      font-family: sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 16px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
-    h1 { font-size: 28px; font-weight: 900; margin: 20px 0 10px; }
-    h1 span { font-weight: 400; }
+
+    /* Заголовок */
+    h1 {
+      font-size: clamp(24px, 6vw, 32px);
+      font-weight: 900;
+      margin: 20px 0 24px;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      letter-spacing: -0.5px;
+    }
+    h1 span {
+      font-weight: 400;
+      opacity: 0.9;
+    }
+
+    /* Контейнер */
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    /* Сводка (верхний блок) */
     .grid {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 12px; background: rgba(255, 255, 255, 0.2);
-      border-radius: 16px; padding: 12px; margin-bottom: 20px;
-      width: 95%; max-width: 600px; box-sizing: border-box;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.18);
     }
-    .cell { background: rgba(255,255,255,0.15); border-radius: 10px; text-align: center; padding: 8px; }
-    .big { font-size: 20px; font-weight: bold; color: #fff; }
-    .small { font-size: 13px; margin-top: 4px; color: #fff; }
 
-    #chartContainer { border-radius: 16px; padding: 10px; width: 95%; max-width: 600px; box-sizing: border-box; }
-    canvas { width: 100% !important; height: 125px !important; }
-    .custom-labels { display: flex; justify-content: space-between; margin-top: 12px; }
-    .label-item { text-align: center; width: 14%; }
-    .revenue { font-size: 13px; font-weight: bold; color: #fff; letter-spacing: -0.3px; }
-    .date { font-size: 13px; font-weight: 400; color: #fff; }
+    .cell {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+      border-radius: 14px;
+      text-align: center;
+      padding: 12px 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
+    .cell:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+    }
+
+    .big {
+      font-size: clamp(18px, 4vw, 22px);
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .small {
+      font-size: clamp(11px, 2.5vw, 13px);
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+    }
+
+    /* График */
+    #chartContainer {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 140px !important;
+    }
+
+    .custom-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      gap: 4px;
+    }
+
+    .label-item {
+      text-align: center;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .revenue {
+      font-size: clamp(11px, 2.8vw, 13px);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .date {
+      font-size: clamp(10px, 2.5vw, 12px);
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+      margin-top: 2px;
+    }
+
+    /* Оракул */
+    #oracleContainer {
+      width: 100%;
+    }
+
+    /* Новый блок истории по годам */
+    .history-block {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .history-block h2 {
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .year-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .year-item:hover {
+      transform: translateX(4px);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .year-item.active {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.2) 100%);
+      border-color: rgba(255, 215, 0, 0.4);
+    }
+
+    .year-title {
+      font-size: clamp(16px, 4vw, 18px);
+      font-weight: 700;
+    }
+
+    .year-stats {
+      font-size: clamp(12px, 3vw, 14px);
+      opacity: 0.9;
+      font-weight: 500;
+    }
+
+    .year-arrow {
+      font-size: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .year-item.active .year-arrow {
+      transform: rotate(90deg);
+    }
+
+    .months-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-out;
+      padding-left: 12px;
+      margin-top: 8px;
+    }
+
+    .months-container.open {
+      max-height: 2000px;
+    }
+
+    .month-item {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .month-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateX(4px);
+    }
+
+    .month-item.active {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+    }
+
+    .month-name {
+      font-size: clamp(14px, 3.5vw, 16px);
+      font-weight: 600;
+    }
+
+    .month-stats {
+      font-size: clamp(11px, 2.8vw, 13px);
+      opacity: 0.9;
+    }
+
+    .days-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-out;
+      margin-top: 8px;
+    }
+
+    .days-container.open {
+      max-height: 1500px;
+    }
+
+    .days-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(11px, 2.8vw, 13px);
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .days-table th {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 6px;
+      font-weight: 600;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .days-table td {
+      padding: 8px 6px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .days-table tr:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Блок сравнения */
     .compare-block {
-      background: white; color: black; width: 95%; max-width: 600px;
-      border-radius: 12px; padding: 16px; font-size: 14px; box-sizing: border-box;
-      margin-top: 16px; text-align: center;
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
-    .compare-block h2 { margin-top: 0; font-size: 16px; text-align: center; }
-    #compareTable table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    #compareTable th, #compareTable td { padding: 4px 6px; border-bottom: 1px solid #ddd; text-align: center; }
-    .hidden-row { display: none; }
-    .highlight { background: #d4edda; font-weight: bold; }
+
+    .compare-block h2 {
+      font-size: clamp(16px, 4vw, 18px);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    #compareTable table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(11px, 2.8vw, 13px);
+    }
+
+    #compareTable th,
+    #compareTable td {
+      padding: 10px 6px;
+      border-bottom: 1px solid #e0e0e0;
+      text-align: center;
+    }
+
+    #compareTable th {
+      background: #f5f5f5;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .hidden-row {
+      display: none;
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      font-weight: 600;
+    }
+
+    /* Кнопка */
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    /* Адаптация для маленьких экранов */
+    @media (max-width: 360px) {
+      .grid {
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .cell {
+        padding: 10px 6px;
+      }
+
+      h1 {
+        margin: 16px 0 20px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>KIVI <span>Business</span></h1>
+  <div class="container">
+    <h1>KIVI <span>Business</span></h1>
 
-  <!-- Верхний блок -->
-  <div class="grid" id="summaryBlock">
-    <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План TO</div></div>
-    <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
-    <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СР ЧЕК</div></div>
+    <!-- Верхний блок -->
+    <div class="grid" id="summaryBlock">
+      <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План ТО</div></div>
+      <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
+      <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СР ЧЕК</div></div>
 
-    <div class="cell"><div class="big" id="factTo">—</div><div class="small">Факт TO</div></div>
-    <div class="cell"><div class="big" id="factTraffic">—</div><div class="small">Факт ТР</div></div>
-    <div class="cell"><div class="big" id="factAvg">—</div><div class="small">Факт СР ЧЕК</div></div>
+      <div class="cell"><div class="big" id="factTo">—</div><div class="small">Факт ТО</div></div>
+      <div class="cell"><div class="big" id="factTraffic">—</div><div class="small">Факт ТР</div></div>
+      <div class="cell"><div class="big" id="factAvg">—</div><div class="small">Факт СР ЧЕК</div></div>
 
-    <div class="cell"><div class="big" id="recordTo">—</div><div class="small">Рекорд TO</div></div>
-    <div class="cell"><div class="big" id="recordTraffic">—</div><div class="small">Рекорд ТР</div></div>
-    <div class="cell"><div class="big" id="comparePrev">—</div><div class="small">прошл. год</div></div>
-  </div>
+      <div class="cell"><div class="big" id="recordTo">—</div><div class="small">Рекорд ТО</div></div>
+      <div class="cell"><div class="big" id="recordTraffic">—</div><div class="small">Рекорд ТР</div></div>
+      <div class="cell"><div class="big" id="comparePrev">—</div><div class="small">прошл. год</div></div>
+    </div>
 
-  <!-- График -->
-  <div id="chartContainer">
-    <canvas id="salesChart"></canvas>
-    <div id="customLabels" class="custom-labels"></div>
-  </div>
+    <!-- График -->
+    <div id="chartContainer">
+      <canvas id="salesChart"></canvas>
+      <div id="customLabels" class="custom-labels"></div>
+    </div>
 
-  <!-- Оракул -->
-  <div id="oracleContainer"></div>
+    <!-- Оракул -->
+    <div id="oracleContainer"></div>
 
-  <!-- Сравнение с прошлым годом -->
-  <div class="compare-block">
-    <h2>В сравнении с прошлым годом</h2>
-    <div id="compareTable"></div>
-    <button id="toggleRowsBtn" type="button">Показать все</button>
+    <!-- НОВЫЙ БЛОК: История по годам -->
+    <div class="history-block">
+      <h2>📊 История выручки</h2>
+      <div id="historyYears"></div>
+    </div>
+
+    <!-- Сравнение с прошлым годом -->
+    <div class="compare-block">
+      <h2>В сравнении с прошлым годом</h2>
+      <div id="compareTable"></div>
+      <button id="toggleRowsBtn" type="button">Показать все</button>
+    </div>
   </div>
 
   <script>
@@ -99,9 +432,9 @@
       const btn = document.getElementById('toggleRowsBtn');
       if (btn) btn.textContent = showingAll ? 'Скрыть' : 'Показать все';
     }
-    document.getElementById('toggleRowsBtn').addEventListener('click', toggleRows);
+    document.getElementById('toggleRowsBtn')?.addEventListener('click', toggleRows);
 
-    // На случай, если где-то остались оверлеи/лоадеры — аккуратно уберём их после готовности данных
+    // Убираем возможные оверлеи после загрузки
     document.addEventListener('sheets-ready', () => {
       ['#loadingOverlay', '#loadingIndicator', '#loading', '#loader', '#preloader',
        '.loadingOverlay', '.loading-indicator', '.loading', '.loader', '.preloader'
@@ -117,11 +450,12 @@
   <script src="oracle.js" defer></script>
   <script src="advisor.js" defer></script>
 
-  <!-- Доп. модули (если нужны — оставь, если нет — можно удалить) -->
+  <!-- Новый модуль истории -->
+  <script src="history.js" defer></script>
+
+  <!-- Доп. модули -->
   <script src="miniblocks.js" defer></script>
   <script src="next3months.js" defer></script>
   <script src="yearComparisonChart.js" defer></script>
-  <script src="profitability.js" defer></script>
-  <script src="purchase.js" defer></script>
 </body>
 </html>
