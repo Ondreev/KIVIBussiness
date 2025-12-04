@@ -1,4 +1,4 @@
-// history.js — Компактная история выручки (полностью центрированный дизайн)
+// history.js — Компактная история выручки (контрастный дизайн)
 
 document.addEventListener("sheets-ready", () => {
   buildHistoryBlock();
@@ -101,26 +101,27 @@ function buildHistoryBlock() {
     const yearBlock = document.createElement('div');
     yearBlock.className = 'year-item-compact';
     yearBlock.style.cssText = `
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+      background: rgba(255, 255, 255, 0.95);
       border-radius: 20px;
       padding: 24px 16px;
       margin-bottom: 16px;
       cursor: pointer;
       transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(102, 126, 234, 0.3);
       text-align: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     `;
 
     yearBlock.innerHTML = `
-      <div style='font-size:clamp(16px, 4vw, 20px);color:rgba(255,255,255,0.7);margin-bottom:12px;font-weight:600;'>${year} год</div>
-      <div style='font-size:clamp(36px, 9vw, 48px);font-weight:900;color:#fff;margin-bottom:16px;text-shadow:0 3px 12px rgba(0,0,0,0.4);line-height:1;'>${Math.round(yearRevenue).toLocaleString('ru-RU')}₽</div>
+      <div style='font-size:clamp(16px, 4vw, 20px);color:#666;margin-bottom:12px;font-weight:600;'>${year} год</div>
+      <div style='font-size:clamp(36px, 9vw, 48px);font-weight:900;background:linear-gradient(135deg, #667eea, #764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;line-height:1;'>${Math.round(yearRevenue).toLocaleString('ru-RU')}₽</div>
       <div style='display:flex;justify-content:center;align-items:center;gap:clamp(12px, 3vw, 20px);flex-wrap:wrap;'>
-        <div style='font-size:clamp(14px, 3.5vw, 16px);color:rgba(255,255,255,0.9);font-weight:600;'>
-          <span style='font-size:clamp(18px, 4.5vw, 22px);font-weight:900;color:#FFD700;'>${Math.round(yearTraffic).toLocaleString('ru-RU')}</span> чеков
+        <div style='font-size:clamp(14px, 3.5vw, 16px);color:#555;font-weight:600;'>
+          <span style='font-size:clamp(18px, 4.5vw, 22px);font-weight:900;color:#667eea;'>${Math.round(yearTraffic).toLocaleString('ru-RU')}</span> чеков
         </div>
-        <div style='color:rgba(255,255,255,0.5);font-size:20px;'>•</div>
-        <div style='font-size:clamp(14px, 3.5vw, 16px);color:rgba(255,255,255,0.9);font-weight:600;'>
-          <span style='font-size:clamp(18px, 4.5vw, 22px);font-weight:900;color:#FFD700;'>${avgCheck.toLocaleString('ru-RU')}₽</span> ср. чек
+        <div style='color:#ccc;font-size:20px;'>•</div>
+        <div style='font-size:clamp(14px, 3.5vw, 16px);color:#555;font-weight:600;'>
+          <span style='font-size:clamp(18px, 4.5vw, 22px);font-weight:900;color:#764ba2;'>${avgCheck.toLocaleString('ru-RU')}₽</span> ср. чек
         </div>
       </div>
     `;
@@ -155,23 +156,23 @@ function buildHistoryBlock() {
       const monthBlock = document.createElement('div');
       monthBlock.className = 'month-item-compact';
       monthBlock.style.cssText = `
-        background: rgba(255, 255, 255, 0.15);
+        background: #f8f9fa;
         border-radius: 16px;
         padding: 20px 16px;
         margin-bottom: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 2px solid #e0e0e0;
         text-align: center;
       `;
 
       monthBlock.innerHTML = `
-        <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;color:#fff;margin-bottom:12px;text-shadow:0 2px 8px rgba(0,0,0,0.3);'>${getMonthName(month)}</div>
-        <div style='font-size:clamp(13px, 3.2vw, 15px);color:rgba(255,255,255,0.85);line-height:1.6;'>
+        <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;color:#333;margin-bottom:12px;'>${getMonthName(month)}</div>
+        <div style='font-size:clamp(13px, 3.2vw, 15px);color:#666;line-height:1.6;'>
           Средний день:<br>
-          <strong style='font-size:clamp(16px, 4vw, 18px);color:#FFD700;'>${avgRevenue.toLocaleString('ru-RU')}₽</strong> • 
-          <strong style='color:#fff;'>${avgTraffic}</strong> чел. • 
-          <strong style='color:#fff;'>${avgMonthCheck}₽</strong> чек
+          <strong style='font-size:clamp(16px, 4vw, 18px);color:#667eea;'>${avgRevenue.toLocaleString('ru-RU')}₽</strong> • 
+          <strong style='color:#333;'>${avgTraffic}</strong> чел. • 
+          <strong style='color:#764ba2;'>${avgMonthCheck}₽</strong> чек
         </div>
       `;
 
@@ -191,18 +192,19 @@ function buildHistoryBlock() {
         width: 100%;
         border-collapse: collapse;
         font-size: clamp(11px, 2.8vw, 13px);
-        background: rgba(0, 0, 0, 0.25);
+        background: #fff;
         border-radius: 12px;
         overflow: hidden;
+        border: 1px solid #e0e0e0;
       `;
       
       table.innerHTML = `
         <thead>
-          <tr style='background:rgba(0,0,0,0.4);'>
-            <th style='padding:10px 4px;font-weight:600;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);width:15%;'>День</th>
-            <th style='padding:10px 4px;font-weight:600;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);width:15%;'>Д.н.</th>
-            <th style='padding:10px 4px;font-weight:600;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);width:45%;'>Выручка</th>
-            <th style='padding:10px 4px;font-weight:600;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);width:25%;'>Чеков</th>
+          <tr style='background:#667eea;color:#fff;'>
+            <th style='padding:10px 4px;font-weight:600;text-align:center;width:15%;'>День</th>
+            <th style='padding:10px 4px;font-weight:600;text-align:center;width:15%;'>Д.н.</th>
+            <th style='padding:10px 4px;font-weight:600;text-align:center;width:45%;'>Выручка</th>
+            <th style='padding:10px 4px;font-weight:600;text-align:center;width:25%;'>Чеков</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -218,22 +220,23 @@ function buildHistoryBlock() {
 
         const row = document.createElement('tr');
         row.style.cssText = `
-          ${isWeekend ? 'background:rgba(255, 215, 0, 0.2);' : ''}
+          ${isWeekend ? 'background:#fff3cd;' : 'background:#fff;'}
           transition: background 0.2s ease;
+          border-bottom: 1px solid #f0f0f0;
         `;
         
         row.innerHTML = `
-          <td style='padding:10px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);'><strong>${day}</strong></td>
-          <td style='padding:10px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);'>${weekday}</td>
-          <td style='padding:10px 4px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.05);padding-right:8px;'><strong>${Math.round(dayData.revenue).toLocaleString('ru-RU')}₽</strong></td>
-          <td style='padding:10px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);'>${Math.round(dayData.traffic)}</td>
+          <td style='padding:10px 4px;text-align:center;color:#333;'><strong>${day}</strong></td>
+          <td style='padding:10px 4px;text-align:center;color:#666;'>${weekday}</td>
+          <td style='padding:10px 4px;text-align:right;padding-right:8px;color:#333;'><strong>${Math.round(dayData.revenue).toLocaleString('ru-RU')}₽</strong></td>
+          <td style='padding:10px 4px;text-align:center;color:#666;'>${Math.round(dayData.traffic)}</td>
         `;
 
         row.addEventListener('mouseenter', () => {
-          row.style.background = 'rgba(255, 255, 255, 0.2)';
+          row.style.background = '#e7f3ff';
         });
         row.addEventListener('mouseleave', () => {
-          row.style.background = isWeekend ? 'rgba(255, 215, 0, 0.2)' : '';
+          row.style.background = isWeekend ? '#fff3cd' : '#fff';
         });
 
         tbody.appendChild(row);
@@ -249,7 +252,8 @@ function buildHistoryBlock() {
         // Закрываем все другие месяцы в этом году
         monthsContainer.querySelectorAll('.month-item-compact').forEach(item => {
           item.classList.remove('active');
-          item.style.background = 'rgba(255, 255, 255, 0.15)';
+          item.style.background = '#f8f9fa';
+          item.style.borderColor = '#e0e0e0';
           item.style.boxShadow = 'none';
         });
         monthsContainer.querySelectorAll('.days-container-compact').forEach(dc => {
@@ -258,20 +262,23 @@ function buildHistoryBlock() {
 
         if (!isOpen) {
           monthBlock.classList.add('active');
-          monthBlock.style.background = 'rgba(255, 255, 255, 0.25)';
-          monthBlock.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+          monthBlock.style.background = '#fff';
+          monthBlock.style.borderColor = '#667eea';
+          monthBlock.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.2)';
           daysContainer.style.maxHeight = '2000px';
         }
       });
 
       monthBlock.addEventListener('mouseenter', () => {
         if (!monthBlock.classList.contains('active')) {
-          monthBlock.style.background = 'rgba(255, 255, 255, 0.2)';
+          monthBlock.style.background = '#fff';
+          monthBlock.style.borderColor = '#ccc';
         }
       });
       monthBlock.addEventListener('mouseleave', () => {
         if (!monthBlock.classList.contains('active')) {
-          monthBlock.style.background = 'rgba(255, 255, 255, 0.15)';
+          monthBlock.style.background = '#f8f9fa';
+          monthBlock.style.borderColor = '#e0e0e0';
         }
       });
 
@@ -286,9 +293,10 @@ function buildHistoryBlock() {
       // Закрываем все годы
       container.querySelectorAll('.year-item-compact').forEach(item => {
         item.classList.remove('active');
-        item.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)';
+        item.style.background = 'rgba(255, 255, 255, 0.95)';
+        item.style.borderColor = 'rgba(102, 126, 234, 0.3)';
         item.style.transform = 'scale(1)';
-        item.style.boxShadow = 'none';
+        item.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
       });
       container.querySelectorAll('.months-container-compact').forEach(mc => {
         mc.style.maxHeight = '0';
@@ -296,8 +304,8 @@ function buildHistoryBlock() {
 
       if (!isOpen) {
         yearBlock.classList.add('active');
-        yearBlock.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.35) 0%, rgba(255, 215, 0, 0.2) 100%)';
-        yearBlock.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.25)';
+        yearBlock.style.borderColor = '#667eea';
+        yearBlock.style.boxShadow = '0 8px 32px rgba(102, 126, 234, 0.3)';
         monthsContainer.style.maxHeight = '3000px';
       }
     });
@@ -306,13 +314,13 @@ function buildHistoryBlock() {
     yearBlock.addEventListener('mouseenter', () => {
       if (!yearBlock.classList.contains('active')) {
         yearBlock.style.transform = 'translateY(-2px)';
-        yearBlock.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
+        yearBlock.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)';
       }
     });
     yearBlock.addEventListener('mouseleave', () => {
       if (!yearBlock.classList.contains('active')) {
         yearBlock.style.transform = 'translateY(0)';
-        yearBlock.style.boxShadow = 'none';
+        yearBlock.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
       }
     });
 
