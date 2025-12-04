@@ -1,8 +1,8 @@
-// profitability.js — расчёт рентабельности (EBITDA) + ASP на основе вкладок "ebitda" и "Данные"
+// profitability.js — расчёт рентабельности (EBITDA) + ASP с современным дизайном
 
 (async () => {
-  const dataUrl = SHEETS.data;     // вкладка "Данные"
-  const ebitdaUrl = SHEETS.ebitda; // вкладка "ebitda"
+  const dataUrl = SHEETS.data;
+  const ebitdaUrl = SHEETS.ebitda;
 
   const parse = async (url) => {
     const res = await fetch(url);
@@ -19,7 +19,6 @@
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
 
-  // Фильтруем строки только с заполненной выручкой и ASP
   const validRows = data.filter(r => {
     return r["Дата"]?.startsWith(ym) && clean(r["ТО"]) > 0 && clean(r["расчет ASP"]) > 0;
   });
@@ -47,29 +46,70 @@
   }).filter(Boolean);
 
   const ebitda = avgRevenue - totalCosts;
+  const ebitdaPercent = avgRevenue ? Math.round((ebitda / avgRevenue) * 100) : 0;
 
   const block = document.createElement("div");
-  block.style.background = "white";
-  block.style.color = "black";
-  block.style.borderRadius = "16px";
-  block.style.padding = "20px";
-  block.style.marginTop = "24px";
-  block.style.width = "95%";
-  block.style.maxWidth = "600px";
-  block.style.boxSizing = "border-box";
-  block.style.fontFamily = "monospace";
-  block.style.boxShadow = "0 0 16px rgba(255,255,255,0.2)";
+  block.style.cssText = `
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 24px;
+    width: 100%;
+    max-width: 640px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  `;
 
-  block.innerHTML = `<div style='font-size:18px;font-weight:bold;margin-bottom:12px;text-align:center;'>Расчёт EBITDA</div>`;
-  block.innerHTML += `<div style='text-align:center;font-weight:bold;font-size:16px;margin-bottom:8px;'>ASP: ${asp}₽</div>`;
-  block.innerHTML += `<div style='display:flex;justify-content:space-between;margin-bottom:6px;'><span>Средняя выручка:</span><span>${format(avgRevenue)}</span></div>`;
-
-  rendered.forEach(r => {
-    block.innerHTML += `<div style='display:flex;justify-content:space-between;margin-bottom:4px;'><span>– ${r.label}</span><span>${format(r.value)}</span></div>`;
+  block.addEventListener('mouseenter', () => {
+    block.style.transform = 'translateY(-2px)';
+    block.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.25)';
+  });
+  block.addEventListener('mouseleave', () => {
+    block.style.transform = 'translateY(0)';
+    block.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
   });
 
-  block.innerHTML += `<hr style='border:none;border-top:1px solid #ccc;margin:12px 0;'>`;
-  block.innerHTML += `<div style='display:flex;justify-content:space-between;font-weight:bold;font-size:16px;'><span>EBITDA:</span><span>${format(ebitda)}</span></div>`;
+  // ASP блок
+  const aspColor = asp >= 250 ? '#28a745' : asp >= 200 ? '#ffc107' : '#dc3545';
+  
+  block.innerHTML = `
+    <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;margin-bottom:16px;text-align:center;'>💰 Расчёт EBITDA</div>
+    
+    <!-- ASP -->
+    <div style='background:linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;'>
+      <div style='font-size:clamp(12px, 3vw, 14px);color:#666;margin-bottom:4px;'>Средний чек (ASP)</div>
+      <div style='font-size:clamp(24px, 6vw, 32px);font-weight:900;color:${aspColor};'>${asp}₽</div>
+    </div>
 
-  document.body.appendChild(block);
+    <!-- Выручка -->
+    <div style='display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e0e0e0;'>
+      <span style='font-size:clamp(13px, 3.2vw, 15px);font-weight:600;'>Средняя выручка</span>
+      <span style='font-size:clamp(14px, 3.5vw, 16px);font-weight:700;color:#667eea;'>${format(avgRevenue)}</span>
+    </div>
+
+    <!-- Расходы -->
+    <div style='margin:12px 0;'>
+      <div style='font-size:clamp(12px, 3vw, 14px);color:#666;margin-bottom:8px;font-weight:600;'>Расходы:</div>
+      ${rendered.map(r => `
+        <div style='display:flex;justify-content:space-between;padding:6px 0;padding-left:12px;font-size:clamp(12px, 3vw, 13px);'>
+          <span style='color:#666;'>– ${r.label}</span>
+          <span style='color:#dc3545;font-weight:600;'>${format(r.value)}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Разделитель -->
+    <div style='border-top:2px solid #667eea;margin:16px 0;'></div>
+
+    <!-- EBITDA -->
+    <div style='background:${ebitda >= 0 ? 'linear-gradient(135deg, #d4edda, #c3e6cb)' : 'linear-gradient(135deg, #f8d7da, #f5c6cb)'};border-radius:12px;padding:16px;text-align:center;'>
+      <div style='font-size:clamp(13px, 3.2vw, 15px);color:#333;margin-bottom:8px;font-weight:600;'>Прибыль (EBITDA)</div>
+      <div style='font-size:clamp(28px, 7vw, 36px);font-weight:900;color:${ebitda >= 0 ? '#28a745' : '#dc3545'};margin-bottom:4px;'>${format(ebitda)}</div>
+      <div style='font-size:clamp(12px, 3vw, 14px);color:${ebitda >= 0 ? '#155724' : '#721c24'};font-weight:600;'>${ebitdaPercent >= 0 ? '+' : ''}${ebitdaPercent}% рентабельность</div>
+    </div>
+  `;
+
+  document.querySelector('.container').appendChild(block);
 })();
