@@ -1,7 +1,7 @@
-// yearComparisonChart.js — сравнение выручки по месяцам за 2023, 2024 и 2025 годы (линейная диаграмма с анимацией)
+// yearComparisonChart.js — График сравнения выручки по месяцам за годы (улучшенный дизайн)
 
 (async () => {
-  const url = SHEETS.data;  // лист "Данные"
+  const url = SHEETS.data;
   const res = await fetch(url);
   const text = await res.text();
   const data = Papa.parse(text, { header: true }).data;
@@ -13,7 +13,7 @@
   const yearBeforeLast = currentYear - 2;
 
   const months = Array.from({ length: 12 }, (_, i) => i);
-  const monthLabels = months.map(i => (i + 1).toString());
+  const monthLabels = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
   const sums = {
     [currentYear]: Array(12).fill(0),
@@ -38,13 +38,41 @@
 
   const avg = year => sums[year].map((s, i) => counts[year][i] ? s / counts[year][i] : 0);
 
+  // Контейнер для графика
+  const container = document.createElement("div");
+  container.style.cssText = `
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 24px 20px;
+    margin-top: 24px;
+    width: 100%;
+    max-width: 640px;
+    box-sizing: border-box;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  `;
+
+  container.innerHTML = `
+    <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;margin-bottom:16px;text-align:center;color:#333;'>
+      📈 Сравнение по годам
+    </div>
+    <div style='font-size:clamp(12px, 3vw, 14px);color:#666;margin-bottom:20px;text-align:center;'>
+      Средняя выручка по месяцам
+    </div>
+  `;
+
   const canvas = document.createElement("canvas");
   canvas.id = "yearComparison";
-  canvas.style.marginTop = "24px";
-  canvas.style.maxWidth = "640px";
-  canvas.style.width = "95%";
-  document.body.appendChild(canvas);
+  canvas.style.cssText = `
+    width: 100% !important;
+    height: 250px !important;
+    max-height: 250px;
+  `;
+  
+  container.appendChild(canvas);
+  
+  document.querySelector('.container').appendChild(container);
 
+  // Создаём график
   new Chart(canvas.getContext("2d"), {
     type: "line",
     data: {
@@ -53,73 +81,139 @@
         {
           label: `${currentYear}`,
           data: avg(currentYear),
-          borderColor: '#FFD700',
-          backgroundColor: '#FFD700',
+          borderColor: '#667eea',
+          backgroundColor: 'rgba(102, 126, 234, 0.1)',
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
-          pointBackgroundColor: '#FFD700'
+          pointBackgroundColor: '#667eea',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          fill: true
         },
         {
           label: `${lastYear}`,
           data: avg(lastYear),
-          borderColor: '#FFFFFF',
-          backgroundColor: '#FFFFFF',
+          borderColor: '#764ba2',
+          backgroundColor: 'rgba(118, 75, 162, 0.1)',
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
-          pointBackgroundColor: '#FFFFFF'
+          pointBackgroundColor: '#764ba2',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          fill: true
         },
         {
           label: `${yearBeforeLast}`,
           data: avg(yearBeforeLast),
           borderColor: '#42a5f5',
-          backgroundColor: '#42a5f5',
+          backgroundColor: 'rgba(66, 165, 245, 0.1)',
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
-          pointBackgroundColor: '#42a5f5'
+          pointBackgroundColor: '#42a5f5',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          fill: true
         }
       ]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       animation: {
-        duration: 1000,
-        easing: 'easeInOutQuad'
+        duration: 1200,
+        easing: 'easeInOutQuart'
+      },
+      interaction: {
+        mode: 'index',
+        intersect: false
       },
       plugins: {
         legend: {
           position: 'top',
+          align: 'center',
           labels: {
-            boxWidth: 14,
-            color: '#fff',
+            boxWidth: 16,
+            boxHeight: 16,
+            padding: 15,
+            color: '#333',
             font: {
-              weight: 'bold',
-              size: 16
-            }
+              weight: '600',
+              size: window.innerWidth < 480 ? 13 : 15,
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            },
+            usePointStyle: true,
+            pointStyle: 'circle'
           }
         },
         tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          titleFont: {
+            size: 14,
+            weight: '600'
+          },
+          bodyFont: {
+            size: 13
+          },
+          padding: 12,
+          cornerRadius: 8,
+          displayColors: true,
           callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + Math.round(ctx.raw).toLocaleString('ru-RU') + '₽'
+            label: function(context) {
+              const label = context.dataset.label || '';
+              const value = Math.round(context.parsed.y).toLocaleString('ru-RU');
+              return `${label}: ${value}₽`;
+            }
           }
         }
       },
       scales: {
         y: {
-          display: false
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#666',
+            font: {
+              size: window.innerWidth < 480 ? 10 : 12,
+              weight: '500'
+            },
+            padding: 8,
+            callback: function(value) {
+              if (value >= 1000) {
+                return (value / 1000).toFixed(0) + 'k';
+              }
+              return value;
+            }
+          }
         },
         x: {
+          grid: {
+            display: false,
+            drawBorder: false
+          },
           ticks: {
-            color: '#fff',
+            color: '#666',
             font: {
-              weight: 'bold',
-              size: 16
-            }
+              size: window.innerWidth < 480 ? 11 : 13,
+              weight: '600'
+            },
+            padding: 8
           }
         }
       }
     }
   });
+
+  console.log('✅ График сравнения по годам создан');
 })();
