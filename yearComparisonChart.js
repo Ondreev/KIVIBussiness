@@ -1,4 +1,4 @@
-// yearComparisonChart.js — График сравнения выручки по месяцам за годы (улучшенный дизайн)
+// yearComparisonChart.js — График сравнения выручки по месяцам за годы (контрастные цвета)
 
 (async () => {
   const url = SHEETS.data;
@@ -81,12 +81,12 @@
         {
           label: `${currentYear}`,
           data: avg(currentYear),
-          borderColor: '#667eea',
-          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+          borderColor: '#ffd700',        // Жёлтый (золотой)
+          backgroundColor: 'rgba(255, 215, 0, 0.1)',
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
-          pointBackgroundColor: '#667eea',
+          pointBackgroundColor: '#ffd700',
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
           pointHoverRadius: 7,
@@ -95,12 +95,12 @@
         {
           label: `${lastYear}`,
           data: avg(lastYear),
-          borderColor: '#764ba2',
-          backgroundColor: 'rgba(118, 75, 162, 0.1)',
+          borderColor: '#ff4757',        // Красный
+          backgroundColor: 'rgba(255, 71, 87, 0.1)',
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
-          pointBackgroundColor: '#764ba2',
+          pointBackgroundColor: '#ff4757',
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
           pointHoverRadius: 7,
@@ -109,12 +109,12 @@
         {
           label: `${yearBeforeLast}`,
           data: avg(yearBeforeLast),
-          borderColor: '#42a5f5',
-          backgroundColor: 'rgba(66, 165, 245, 0.1)',
+          borderColor: '#7bed9f',        // Салатовый
+          backgroundColor: 'rgba(123, 237, 159, 0.1)',
           tension: 0.4,
           borderWidth: 3,
           pointRadius: 5,
-          pointBackgroundColor: '#42a5f5',
+          pointBackgroundColor: '#7bed9f',
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
           pointHoverRadius: 7,
@@ -177,24 +177,11 @@
       },
       scales: {
         y: {
+          display: false,              // ✅ УБРАЛИ ОСЬ Y ПОЛНОСТЬЮ
           beginAtZero: true,
           grid: {
             color: 'rgba(0, 0, 0, 0.05)',
             drawBorder: false
-          },
-          ticks: {
-            color: '#666',
-            font: {
-              size: window.innerWidth < 480 ? 10 : 12,
-              weight: '500'
-            },
-            padding: 8,
-            callback: function(value) {
-              if (value >= 1000) {
-                return (value / 1000).toFixed(0) + 'k';
-              }
-              return value;
-            }
           }
         },
         x: {
