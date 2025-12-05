@@ -1,4 +1,4 @@
-// advisor.js — Персонализированный умный советник KIVI Market v4
+// advisor.js — Умный советник KIVI Market (финальная версия)
 
 (async () => {
   const dataUrl = SHEETS.data;
@@ -18,6 +18,7 @@
   const leaders = await parse(leadersUrl);
 
   const today = new Date();
+  const currentHour = today.getHours();
   const ym = today.toISOString().slice(0, 7);
   const currentDay = today.getDate();
   const dayOfWeek = today.getDay();
@@ -30,19 +31,36 @@
   const todayName = dayNames[dayOfWeek];
   const isWeekend = [0, 6].includes(dayOfWeek);
 
-  // РЕКОРДЫ ИЗ ВЕРХНЕГО БЛОКА (window.DATASETS)
-  console.log('🔍 Проверяем window.DATASETS.miniblocks:', window.DATASETS?.miniblocks);
-  
+  // РЕКОРДЫ
   const miniblocks = window.DATASETS?.miniblocks || [];
   const recordRevenueBlock = miniblocks.find(b => b.label === "Рекорд ТО");
   const recordTrafficBlock = miniblocks.find(b => b.label === "Рекорд ТР");
   const planBlock = miniblocks.find(b => b.label === "План ТО");
+  const growthBlock = miniblocks.find(b => b.label && b.label.includes("прошл. год"));
   
-  const maxRevenue = recordRevenueBlock ? clean(recordRevenueBlock.value) : 0;
-  const maxTraffic = recordTrafficBlock ? clean(recordTrafficBlock.value) : 0;
+  let maxRevenue = recordRevenueBlock ? clean(recordRevenueBlock.value) : 0;
+  let maxTraffic = recordTrafficBlock ? clean(recordTrafficBlock.value) : 0;
   const dailyPlan = planBlock ? clean(planBlock.value) : 27000;
+  
+  // РОСТ от прошлого года (из блока)
+  let growthPercent = 0;
+  if (growthBlock) {
+    const growthText = growthBlock.value || '';
+    const match = growthText.match(/-?\d+/);
+    if (match) growthPercent = parseInt(match[0]);
+  }
 
-  console.log('📊 Рекорды:', { maxRevenue, maxTraffic, dailyPlan });
+  // Если рекорды не загрузились из miniblocks, ищем в данных
+  if (maxRevenue === 0 || maxTraffic === 0) {
+    data.forEach(r => {
+      const rev = clean(r["ТО"]);
+      const traf = clean(r["ТР"]);
+      if (rev > maxRevenue) maxRevenue = rev;
+      if (traf > maxTraffic) maxTraffic = traf;
+    });
+  }
+
+  console.log('📊 Данные загружены:', { maxRevenue, maxTraffic, dailyPlan, growthPercent });
 
   // Данные текущего месяца
   const thisMonthData = data.filter(r => {
@@ -79,7 +97,7 @@
 
   // ЦЕЛЬ НА ДЕНЬ
   const targetRevenue = avgRevenue > dailyPlan ? Math.round(avgRevenue) : dailyPlan;
-  const targetTraffic = avgTraffic > 30 ? Math.round(avgTraffic) : Math.round(dailyPlan / avgCheck);
+  const targetTraffic = Math.ceil(targetRevenue / avgCheck);
 
   // ПРЕМИЯ
   const bonusIfPlan = Math.round((dailyPlan - dailyPlan * 0.04) * 0.05);
@@ -106,11 +124,6 @@
   const ebitda = avgRevenue - totalCosts;
   const ebitdaPercent = avgRevenue ? Math.round((ebitda / avgRevenue) * 100) : 0;
 
-  // Сравнение с прошлым годом
-  const lastYearTotal = lastYearMonth.reduce((s, r) => s + clean(r["ТО"]), 0);
-  const lastYearAvg = lastYearMonth.length > 0 ? lastYearTotal / lastYearMonth.length : 0;
-  const growthPercent = lastYearAvg ? Math.round(((avgRevenue - lastYearAvg) / lastYearAvg) * 100) : 0;
-
   // Тренд 7 дней
   const trend7Days = last7Days.length >= 2 ? clean(last7Days[last7Days.length - 1]["ТО"]) - clean(last7Days[0]["ТО"]) : 0;
 
@@ -128,7 +141,13 @@
   const recommendedPurchase = Math.round(avg3 * 4 * 0.45);
 
   // Количество кассиров
-  const cashiersToday = isWeekend && avgTraffic > 40 ? 2 : 1;
+  const cashiersToday = 1; // обычно 1, в выходные может быть 2
+
+  // Определяем время суток для советов
+  let timeOfDay = '';
+  if (currentHour < 12) timeOfDay = 'утро';
+  else if (currentHour < 17) timeOfDay = 'день';
+  else timeOfDay = 'вечер';
 
   // 🎨 СОЗДАНИЕ БЛОКОВ
   const cashierSection = [];
@@ -137,158 +156,174 @@
   const warnings = [];
 
   // === ПРИВЕТСТВИЕ ===
-  cashierSection.push(`👋 Доброе утро, **${cashierToday}**! Сегодня **${todayName}**, ${currentDay} декабря.`);
+  if (timeOfDay === 'утро') {
+    cashierSection.push(`👋 Доброе утро, **${cashierToday}**! Сегодня **${todayName}**, ${currentDay} декабря.`);
+  } else if (timeOfDay === 'день') {
+    cashierSection.push(`👋 **${cashierToday}**, добрый день! Как проходит смена?`);
+  } else {
+    cashierSection.push(`👋 **${cashierToday}**, добрый вечер! Завершаем день на высокой ноте!`);
+  }
 
   // === ПРЕДУПРЕЖДЕНИЯ ===
-  if (ebitdaPercent < 5) warnings.push('🚨 Низкая рентабельность');
-  if (avgCheck < 600) warnings.push(`📉 Средний чек ${avgCheck}₽ — можно увеличить`);
+  if (ebitdaPercent < 5) warnings.push('🚨 EBITDA 4% — критично низко');
+  if (avgCheck < 650) warnings.push(`📉 Средний чек ${avgCheck}₽ — есть резерв`);
   if (avgTraffic < 25) warnings.push(`👥 Трафик ${Math.round(avgTraffic)} чел — ниже нормы`);
-  if (growthPercent < -10) warnings.push(`📊 Падение ${Math.abs(growthPercent)}% к прошлому году`);
+  if (growthPercent < -3) warnings.push(`📊 Отстаём от прошлого года на ${Math.abs(growthPercent)}%`);
 
   // === ЦЕЛЬ НА ДЕНЬ ===
   cashierSection.push(`\n**🎯 Цель на сегодня:**`);
-  cashierSection.push(`• **Выручка: ${targetRevenue.toLocaleString('ru-RU')}₽** ${targetRevenue > dailyPlan ? '(амбициозно!)' : '(план)'}`);
-  cashierSection.push(`• **Средний чек: ${Math.round(avgCheck * 1.15)}₽+** (сейчас ${avgCheck}₽)`);
-  cashierSection.push(`• **Трафик: ~${targetTraffic} человек**`);
+  cashierSection.push(`• **Выручка: ${targetRevenue.toLocaleString('ru-RU')}₽** ${targetRevenue > dailyPlan ? '(выше плана!)' : '(план)'}`);
+  cashierSection.push(`• **Средний чек: ${Math.round(avgCheck * 1.1)}₽+** (сейчас ${avgCheck}₽)`);
+  cashierSection.push(`• **Трафик: ${targetTraffic}+ человек**`);
 
   // === ПРЕМИИ ===
-  cashierSection.push(`\n**💰 Твоя премия сегодня:**`);
-  if (targetRevenue === dailyPlan) {
-    cashierSection.push(`• При выполнении плана (${dailyPlan.toLocaleString('ru-RU')}₽): **+${bonusIfPlan}₽**`);
-  } else {
-    cashierSection.push(`• При ${targetRevenue.toLocaleString('ru-RU')}₽: **+${bonusIfTarget}₽**`);
+  cashierSection.push(`\n**💰 Твоя премия:**`);
+  cashierSection.push(`• План (${dailyPlan.toLocaleString('ru-RU')}₽): **+${bonusIfPlan}₽**`);
+  if (targetRevenue > dailyPlan) {
+    cashierSection.push(`• Цель (${targetRevenue.toLocaleString('ru-RU')}₽): **+${bonusIfTarget}₽**`);
   }
-  
-  // ГАРАНТИРОВАННО показываем рекорды
-  cashierSection.push(`• Побить рекорд выручки (${maxRevenue.toLocaleString('ru-RU')}₽): **+${Math.round(2000 / cashiersToday)}₽**`);
-  cashierSection.push(`• Побить рекорд трафика (${maxTraffic} чел): **+${Math.round(800 / cashiersToday)}₽**`);
+  cashierSection.push(`• Рекорд выручки (${maxRevenue.toLocaleString('ru-RU')}₽): **+2000₽**`);
+  cashierSection.push(`• Рекорд трафика (${maxTraffic} чел): **+800₽**`);
 
   // === АНАЛИЗ ПРОШЛОГО ГОДА ===
-  if (lastYearSameDayRevenue > 0 && lastYearSameDayName) {
-    const diff = lastYearSameDayName !== todayName ? `(тогда был **${lastYearSameDayName}**, а сегодня **${todayName}**)` : '';
-    if (lastYearSameDayRevenue > targetRevenue) {
-      cashierSection.push(`\n📅 **${currentDay} декабря ${lastYear}** было ${Math.round(lastYearSameDayRevenue).toLocaleString('ru-RU')}₽ ${diff}. Это выше нашей цели — будь на пике!`);
-    } else {
-      cashierSection.push(`\n📅 **${currentDay} декабря ${lastYear}** было ${Math.round(lastYearSameDayRevenue).toLocaleString('ru-RU')}₽ ${diff}. Сегодня есть все шансы сделать больше!`);
+  if (lastYearSameDayRevenue > 0) {
+    const diff = lastYearSameDayName && lastYearSameDayName !== todayName ? ` (был **${lastYearSameDayName}**)` : '';
+    cashierSection.push(`\n📅 **${currentDay}.12.${lastYear}:** ${Math.round(lastYearSameDayRevenue).toLocaleString('ru-RU')}₽${diff}`);
+    if (targetRevenue > lastYearSameDayRevenue) {
+      cashierSection.push(`Сегодня цель выше — отличный шанс показать рост! 📈`);
     }
   }
 
-  // === РЕКОРДЫ (ВСЕГДА ПОКАЗЫВАЕМ) ===
+  // === РЕКОРДЫ ===
   cashierSection.push(`\n**🏆 Наши рекорды:**`);
-  cashierSection.push(`• **Выручка:** ${maxRevenue.toLocaleString('ru-RU')}₽`);
-  cashierSection.push(`• **Трафик:** ${maxTraffic} человек`);
+  cashierSection.push(`• Выручка: **${maxRevenue.toLocaleString('ru-RU')}₽**`);
+  cashierSection.push(`• Трафик: **${maxTraffic} чел**`);
   
-  if (targetRevenue > maxRevenue * 0.85) {
-    cashierSection.push(`\n**🔥 Мы близко к рекорду выручки!** Побьём — получишь **+${Math.round(2000 / cashiersToday)}₽** дополнительно!`);
+  const revenueGap = maxRevenue - targetRevenue;
+  const trafficGap = maxTraffic - targetTraffic;
+  
+  if (revenueGap < maxRevenue * 0.15) {
+    cashierSection.push(`\n🔥 До рекорда выручки **${revenueGap.toLocaleString('ru-RU')}₽** — реально побить!`);
   }
-  if (targetTraffic > maxTraffic * 0.85) {
-    cashierSection.push(`**🔥 Близко к рекорду трафика!** Побьём — **+${Math.round(800 / cashiersToday)}₽**!`);
+  if (trafficGap < maxTraffic * 0.15) {
+    cashierSection.push(`🔥 До рекорда трафика **${trafficGap} чел** — можем!`);
   }
 
-  // === МОТИВАЦИЯ ===
-  cashierSection.push(`\n**💪 ${cashierToday}, не переживай! Мы с тобой сделаем план!**`);
-  if (avgCheck < 700) {
-    cashierSection.push(`Давай сосредоточимся на **среднем чеке** — с утра активно предлагай комплекты и носки. К обеду выйдем на нужный темп! 🚀`);
+  // === МОТИВАЦИЯ ПО ВРЕМЕНИ ===
+  if (timeOfDay === 'утро') {
+    cashierSection.push(`\n**💪 Утренний настрой:**`);
+    if (avgCheck < 700) {
+      cashierSection.push(`• Сосредоточься на **среднем чеке** с первых клиентов`);
+      cashierSection.push(`• Активно предлагай **комплекты** (футболка + носки)`);
+      cashierSection.push(`• К обеду выйдем на нужный темп!`);
+    } else {
+      cashierSection.push(`• Средний чек ${avgCheck}₽ — отлично!`);
+      cashierSection.push(`• Держи такой же темп весь день`);
+    }
+  } else if (timeOfDay === 'день') {
+    cashierSection.push(`\n**📊 Промежуточный итог:**`);
+    cashierSection.push(`• Данные обновляются — следи за динамикой`);
+    if (avgRevenue < dailyPlan * 0.7) {
+      cashierSection.push(`• Нужно ускориться — вечером больше клиентов!`);
+    } else {
+      cashierSection.push(`• Хороший темп, продолжай!`);
+    }
   } else {
-    cashierSection.push(`У тебя отличный средний чек! Продолжай так же, и план будет **легко**! 💯`);
+    cashierSection.push(`\n**🌆 Вечерний рывок:**`);
+    cashierSection.push(`• Последние часы — самое время для рекорда!`);
+    cashierSection.push(`• Вечером обычно больше покупок`);
   }
 
   // === СЕРВИС ===
-  cashierSection.push(`\n**🎁 Сервис (главное!):**`);
-  cashierSection.push(`• **УЛЫБАЙСЯ!** Это первое, что видит клиент`);
-  cashierSection.push(`• Подарок (жвачку) давай **В РУКИ**, с улыбкой`);
-  cashierSection.push(`• От 499₽ → упаковка жвачек, от 999₽ → брелок`);
-  cashierSection.push(`• 2+ товара → предлагай **крафт-пакет** (не простой!)`);
-  cashierSection.push(`• Зрительный контакт, дружелюбие — превосходи ожидания!`);
+  cashierSection.push(`\n**🎁 Сервис:**`);
+  cashierSection.push(`• **Улыбка** — первое впечатление`);
+  cashierSection.push(`• Подарок **в руки** (жвачка всем, от 499₽ — упаковка, от 999₽ — брелок)`);
+  cashierSection.push(`• 2+ товара → **крафт-пакет**`);
+  cashierSection.push(`• Каждому про **Telegram** (QR-код на кассе)`);
 
-  if (cashierToday === 'Денис') {
-    cashierSection.push(`\n**💬 Денис, важно:**`);
-    cashierSection.push(`• **Смягчай голос** — тёплое общение = больше продаж 😊`);
-    cashierSection.push(`• Можно шутить, но держи дистанцию`);
-    cashierSection.push(`• Не переходи на личности (даже с детьми)`);
-  } else {
-    cashierSection.push(`\n**💬 Дима, ты молодец!**`);
-    cashierSection.push(`• Клиенты тебя ценят за вежливость`);
-    cashierSection.push(`• Можешь быть чуть активнее в допродажах — ты справишься!`);
+  // === ПЕРСОНАЛИЗАЦИЯ (раз в неделю для Дениса) ===
+  if (cashierToday === 'Денис' && dayOfWeek === 5) { // только в пятницу
+    cashierSection.push(`\n**💬 Денис, совет недели:**`);
+    cashierSection.push(`• Клиенты ценят твою энергию! Чуть мягче в тоне — и продажи пойдут ещё лучше 😊`);
+  } else if (cashierToday === 'Дмитрий') {
+    cashierSection.push(`\n**💬 Дима:**`);
+    cashierSection.push(`• Ты всё делаешь правильно — клиенты довольны!`);
+    cashierSection.push(`• Можешь быть чуть активнее в допродажах`);
   }
 
   // === СКРИПТЫ ===
-  cashierSection.push(`\n**🛍️ Скрипты продаж:**`);
-  cashierSection.push(`**Приветствие:** "Добрый день! Подскажу, если что 😊"`);
-  cashierSection.push(`**Допродажа:** "Отлично! К этому обычно берут носки — покажу?"`);
-  cashierSection.push(`**Акция:** "У нас акция — всё по 350₽! Посмотрите"`);
-  cashierSection.push(`**Комплект:** "При покупке 3-х вещей выгоднее — покажу?"`);
-  cashierSection.push(`**Оплата:** "Наличными удобно?" (ненавязчиво!)`);
-  cashierSection.push(`**Прощание:** "Спасибо! И подписывайтесь на Telegram 'КИВИ Маркет' — там акции!" (показать стикер)`);
+  cashierSection.push(`\n**🛍️ Скрипты:**`);
+  cashierSection.push(`"Добрый день! Подскажу, если нужно 😊"`);
+  cashierSection.push(`"К этому отлично подойдут носки — покажу?"`);
+  cashierSection.push(`"Акция 'Всё по 350₽' — посмотрите"`);
+  cashierSection.push(`"Комплект выгоднее — подберём?"`);
+  cashierSection.push(`"Наличными удобно?" (экономим 3% на эквайринге)`);
+  cashierSection.push(`"Спасибо! И подписывайтесь на Telegram 'КИВИ Маркет'"`);
 
-  // === TELEGRAM ===
-  cashierSection.push(`\n**📱 Telegram канал:**`);
-  cashierSection.push(`• Каждому показывай **стикер** с QR-кодом`);
-  cashierSection.push(`• "В канале анонсы акций, первыми узнаете о новинках!"`);
-  cashierSection.push(`• Это повторные покупки (+20-30% конверсии)`);
-
-  // === ЧТО ПРЕДЛАГАТЬ ===
-  cashierSection.push(`\n**🔥 Что предлагать активно:**`);
-  cashierSection.push(`• **Хиты месяца:** ${top3Overall.join(', ')}`);
-  cashierSection.push(`• **Импульс:** Носки у кассы, трусы комплектами`);
+  // === ЧТО ПРОДАВАТЬ ===
+  cashierSection.push(`\n**🔥 Приоритеты:**`);
+  cashierSection.push(`• **Хиты:** ${top3Overall.join(', ')}`);
+  cashierSection.push(`• **Импульс:** Носки (у кассы), трусы (комплектами)`);
   cashierSection.push(`• **Комбо:** Футболка + носки, Худи + трусы`);
 
   // === ДЛЯ РУКОВОДИТЕЛЕЙ ===
-  managementSection.push(`**📊 Виктор и Кирилл, аналитика:**`);
+  managementSection.push(`**📊 Виктор и Кирилл:**`);
   
-  if (ebitdaPercent < 15) {
-    managementSection.push(`\n**💰 EBITDA ${ebitdaPercent}%** — ниже целевых 20%. Топ расходов:`);
+  managementSection.push(`\n**💰 EBITDA ${ebitdaPercent}%** (прибыль после всех расходов)`);
+  if (ebitdaPercent < 10) {
+    managementSection.push(`Низковато. Топ-3 расхода:`);
     costBreakdown.sort((a, b) => b.value - a.value).slice(0, 3).forEach(c => {
       managementSection.push(`• ${c.name}: ${Math.round(c.value).toLocaleString('ru-RU')}₽/день (${c.percent}%)`);
     });
+    managementSection.push(`**Резервы:** пересмотр условий с поставщиками (-5%), оптимизация графика`);
   } else {
-    managementSection.push(`\n**✅ EBITDA ${ebitdaPercent}%** — отлично, особенно в кризис! 💪`);
+    managementSection.push(`Нормальный показатель для кризиса. Есть куда расти — цель 15-20%`);
   }
 
+  // === ЛИДЕРЫ VC vs AN ===
   if (vcLeaders.length !== anLeaders.length) {
-    const victorTotal = vcLeaders.length;
-    const kirillTotal = anLeaders.length;
-    
-    managementSection.push(`\n**🏆 Лидеры продаж:**`);
-    if (victorTotal > kirillTotal) {
-      managementSection.push(`**Виктор,** твои товары лидируют (${victorTotal} в топ-3): ${vcLeaders.map(cleanProductName).join(', ')}`);
-      managementSection.push(`**Кирилл,** твои чуть отстают (${kirillTotal} в топ-3) — проверь цены/выкладку`);
+    managementSection.push(`\n**🏆 Лидеры:**`);
+    if (vcLeaders.length > anLeaders.length) {
+      managementSection.push(`**Виктор:** ${vcLeaders.map(cleanProductName).join(', ')} (${vcLeaders.length} в топ-3)`);
+      managementSection.push(`**Кирилл:** проверь выкладку/цены — отстаёшь`);
     } else {
-      managementSection.push(`**Кирилл,** твои товары лидируют (${kirillTotal} в топ-3): ${anLeaders.map(cleanProductName).join(', ')}`);
-      managementSection.push(`**Виктор,** твои чуть отстают (${victorTotal} в топ-3) — может обновить модели?`);
+      managementSection.push(`**Кирилл:** ${anLeaders.map(cleanProductName).join(', ')} (${anLeaders.length} в топ-3)`);
+      managementSection.push(`**Виктор:** обнови ассортимент?`);
     }
   } else {
-    managementSection.push(`\n**🏆 Топ-5 товаров:** ${top5Overall.join(', ')}`);
+    managementSection.push(`\n**🏆 Топ-5:** ${top5Overall.join(', ')}`);
   }
 
   managementSection.push(`\n**💼 Закупка: ${recommendedPurchase.toLocaleString('ru-RU')}₽**`);
-  managementSection.push(`• Лидеры: ${top3Overall.join(', ')} — увеличить запас`);
-  managementSection.push(`• Ходовики: Носки (3-5 пар), трусы (комплекты)`);
-  managementSection.push(`• Не превышать ${(recommendedPurchase + 5000).toLocaleString('ru-RU')}₽`);
+  managementSection.push(`• ${top3Overall.join(', ')} — увеличить запас`);
+  managementSection.push(`• Носки (3-5 пар), трусы (комплекты)`);
+  managementSection.push(`• Лимит: ${(recommendedPurchase + 5000).toLocaleString('ru-RU')}₽`);
 
   // === АНАЛИТИКА ===
-  if (growthPercent < 0) {
-    analyticsSection.push(`📉 **Выручка ${Math.abs(growthPercent)}%** vs ${lastYear} год.`);
-    analyticsSection.push(`Но в кризис держаться на уровне — уже успех! 💪`);
-  } else if (growthPercent > 0) {
-    analyticsSection.push(`📈 **Рост ${growthPercent}%** к прошлому году!`);
-    analyticsSection.push(`В кризис это отличный показатель! 🚀`);
+  if (growthPercent !== 0) {
+    if (growthPercent < 0) {
+      analyticsSection.push(`📊 **${Math.abs(growthPercent)}%** от прошлого года (данные на ${currentHour}:00)`);
+      analyticsSection.push(`В кризис держаться рядом — успех. Цель: выйти в 0 к концу месяца`);
+    } else {
+      analyticsSection.push(`📈 **+${growthPercent}%** к прошлому году!`);
+      analyticsSection.push(`Отличная динамика в кризис! 🚀`);
+    }
   }
 
   if (trend7Days < -1000) {
-    analyticsSection.push(`\n⚠️ Выручка падает неделю (${Math.round(trend7Days)}₽)`);
-    analyticsSection.push(`**Действие:** "Счастливые часы" (скидка 10% с 17:00)`);
+    analyticsSection.push(`\n⚠️ Выручка падает неделю (-${Math.round(Math.abs(trend7Days))}₽)`);
+    analyticsSection.push(`**Срочно:** "Счастливые часы" (скидка 10% с 17:00-19:00)`);
   } else if (trend7Days > 1000) {
-    analyticsSection.push(`\n📈 Рост за неделю (+${Math.round(trend7Days)}₽)!`);
+    analyticsSection.push(`\n📈 Рост за неделю (+${Math.round(trend7Days)}₽) — продолжайте!`);
   }
 
   // === МОТИВАЦИЯ ===
   const motivation = [];
-  motivation.push(`\n🎯 **${cashierToday}, помни:**`);
-  motivation.push(`• Каждый клиент уходит **счастливым**`);
-  motivation.push(`• Твоя улыбка = наша репутация`);
-  motivation.push(`• Превосходи ожидания — клиент вернётся!`);
-  motivation.push(`\n**У тебя всё получится! KIVI — лучший магазин Реутова! 💪🔥**`);
+  motivation.push(`**${cashierToday}, у тебя всё получится!**`);
+  motivation.push(`• Каждый клиент — **счастливым**`);
+  motivation.push(`• Твоя улыбка = наш успех`);
+  motivation.push(`• Превосходи ожидания!`);
+  motivation.push(`\n**KIVI — лучший магазин Реутова! 💪🔥**`);
 
   // 🎨 РЕНДЕРИНГ
   const container = document.createElement("div");
@@ -310,7 +345,7 @@
       🧠 Советник дня
     </div>
     <div style='font-size:clamp(11px, 2.8vw, 13px);opacity:0.8;text-align:center;margin-bottom:20px;'>
-      KIVI Market • Смена: ${cashierToday}
+      KIVI Market • ${timeOfDay} • ${cashierToday}
     </div>
   `;
 
@@ -327,7 +362,7 @@
       </div>
       <div style='background:rgba(255,255,255,0.1);border-radius:12px;padding:12px;text-align:center;'>
         <div style='font-size:clamp(10px,2.5vw,12px);opacity:0.7;margin-bottom:4px;'>EBITDA</div>
-        <div style='font-size:clamp(18px,4.5vw,22px);font-weight:900;color:${ebitdaPercent < 5 ? '#e74c3c' : ebitdaPercent < 15 ? '#f39c12' : '#2ecc71'};'>${ebitdaPercent}%</div>
+        <div style='font-size:clamp(18px,4.5vw,22px);font-weight:900;color:${ebitdaPercent < 5 ? '#e74c3c' : ebitdaPercent < 10 ? '#f39c12' : '#2ecc71'};'>${ebitdaPercent}%</div>
       </div>
     </div>
   `;
@@ -336,7 +371,7 @@
   if (warnings.length > 0) {
     html += `
       <div style='background:rgba(231,76,60,0.2);border-left:4px solid #e74c3c;border-radius:8px;padding:14px;margin-bottom:16px;'>
-        <div style='font-size:clamp(13px,3.2vw,15px);font-weight:700;margin-bottom:8px;'>⚠️ Требуют внимания:</div>
+        <div style='font-size:clamp(13px,3.2vw,15px);font-weight:700;margin-bottom:8px;'>⚠️ Внимание:</div>
         ${warnings.map(w => `<div style='font-size:clamp(12px,3vw,14px);margin-bottom:6px;'>• ${w}</div>`).join('')}
       </div>
     `;
@@ -378,5 +413,5 @@
   container.innerHTML = html;
   document.querySelector('.container').appendChild(container);
 
-  console.log('✅ Персонализированный советник v4 создан');
+  console.log('✅ Умный советник создан (финал)');
 })();
