@@ -1,4 +1,4 @@
-// heatmap.js — Тепловая карта месяца + События (БЫСТРАЯ ВЕРСИЯ)
+// heatmap.js — Тепловая карта месяца + События (ПРАВИЛЬНАЯ РАСЦВЕТКА)
 
 // ====================================
 // 📅 СОБЫТИЯ (редактируй здесь!)
@@ -24,7 +24,7 @@ document.addEventListener('sheets-ready', buildHeatmap);
 
 function buildHeatmap() {
   const startTime = performance.now();
-  console.log('🔨 Создаём карту месяца (быстро)...');
+  console.log('🔨 Создаём карту месяца...');
 
   const data = window.DATASETS?.data || [];
   if (!data.length) return;
@@ -51,17 +51,25 @@ function buildHeatmap() {
     }
   }
 
-  // Цветовая шкала
-  const revenues = Object.values(revenueByDay);
-  const maxRevenue = Math.max(...revenues, 1);
-  const minRevenue = Math.min(...revenues.filter(r => r > 0), 0);
+  // ПРАВИЛЬНАЯ цветовая шкала (на основе среднего)
+  const revenues = Object.values(revenueByDay).filter(r => r > 0);
+  const avgRevenue = revenues.length > 0 ? revenues.reduce((a, b) => a + b, 0) / revenues.length : 0;
+
+  console.log('📊 Средняя выручка прошлого года:', Math.round(avgRevenue));
 
   function getColor(revenue) {
-    if (!revenue) return '#f0f0f0';
-    const n = (revenue - minRevenue) / (maxRevenue - minRevenue);
-    if (n < 0.33) return '#a8dadc';
-    if (n < 0.66) return '#90ee90';
-    return '#2d6a4f';
+    if (!revenue || revenue === 0) return '#f0f0f0'; // нет данных
+    
+    // Пороги на основе среднего:
+    // Низкая: 0 - 80% от среднего
+    // Хорошая: 80% - 120% от среднего
+    // Отличная: 120%+ от среднего
+    
+    const ratio = revenue / avgRevenue;
+    
+    if (ratio < 0.8) return '#a8dadc'; // низкая (голубой)
+    if (ratio < 1.2) return '#90ee90'; // хорошая (светло-зелёный)
+    return '#2d6a4f'; // отличная (тёмно-зелёный)
   }
 
   // События для дня
@@ -77,7 +85,7 @@ function buildHeatmap() {
     document.querySelector('.container').appendChild(container);
   }
 
-  // БЫСТРАЯ генерация HTML (одной строкой)
+  // БЫСТРАЯ генерация HTML
   const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
   const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
   
@@ -122,9 +130,9 @@ function buildHeatmap() {
   html += `
       </div>
       <div style="display:flex;justify-content:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;font-size:clamp(11px,2.8vw,13px);">
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#a8dadc;border-radius:4px;"></div><span style="color:#666;">Низкая</span></div>
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#90ee90;border-radius:4px;"></div><span style="color:#666;">Хорошая</span></div>
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#2d6a4f;border-radius:4px;"></div><span style="color:#666;">Отличная</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#a8dadc;border-radius:4px;"></div><span style="color:#666;">Низкая (&lt;80%)</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#90ee90;border-radius:4px;"></div><span style="color:#666;">Средняя (80-120%)</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#2d6a4f;border-radius:4px;"></div><span style="color:#666;">Отличная (&gt;120%)</span></div>
       </div>
       <div id="eventsBlock" style="background:#f8f9fa;border-radius:12px;padding:16px;margin-top:16px;display:none;"></div>
     </div>
@@ -132,7 +140,7 @@ function buildHeatmap() {
 
   container.innerHTML = html;
 
-  // Обработчики кликов (БЫСТРО — делегирование)
+  // Обработчики кликов (делегирование)
   container.addEventListener('click', e => {
     const dayCell = e.target.closest('.heatmap-day');
     if (!dayCell) return;
@@ -143,7 +151,7 @@ function buildHeatmap() {
     showEvents(day, events, revenue);
   });
 
-  // Hover (делегирование)
+  // Hover
   container.addEventListener('mouseover', e => {
     const dayCell = e.target.closest('.heatmap-day');
     if (!dayCell || dayCell.style.border.includes('#ff4081')) return;
@@ -190,7 +198,8 @@ function buildHeatmap() {
     }
 
     if (revenue) {
-      html += `<div style="background:white;border-left:4px solid #667eea;border-radius:8px;padding:12px;margin-top:8px;font-size:clamp(13px,3.2vw,15px);color:#666;">📊 Выручка ${lastYear} года: <strong style="color:#667eea;">${Math.round(revenue).toLocaleString('ru-RU')}₽</strong></div>`;
+      const ratio = (revenue / avgRevenue * 100).toFixed(0);
+      html += `<div style="background:white;border-left:4px solid #667eea;border-radius:8px;padding:12px;margin-top:8px;font-size:clamp(13px,3.2vw,15px);color:#666;">📊 Выручка ${lastYear} года: <strong style="color:#667eea;">${Math.round(revenue).toLocaleString('ru-RU')}₽</strong> (${ratio}% от среднего)</div>`;
     }
 
     block.innerHTML = html;
@@ -201,5 +210,5 @@ function buildHeatmap() {
   showEvents(currentDay, todayEvents, revenueByDay[currentDay] || 0);
 
   const endTime = performance.now();
-  console.log(`✅ Карта месяца создана за ${Math.round(endTime - startTime)}ms`);
+  console.log(`✅ Карта создана за ${Math.round(endTime - startTime)}ms`);
 }
