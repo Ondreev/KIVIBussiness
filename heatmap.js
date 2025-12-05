@@ -9,8 +9,8 @@ const EVENTS = [
   { type: 'payment', name: 'Аренда (2 часть)', day: 23, amount: 63000, icon: '💰' },
   
   // Кредиты
-  { type: 'payment', name: 'Кредит Сбербанк', day: 7, amount: 13100, icon: '🏦' },
-  { type: 'payment', name: 'Кредит ВТБ', day: 23, amount: 14700, icon: '🏦' },
+  { type: 'payment', name: 'Кредит 1', day: 7, amount: 13100, icon: '🏦' },
+  { type: 'payment', name: 'Кредит 2', day: 23, amount: 14700, icon: '🏦' },
   
   // Дни рождения (month: номер месяца, если null — каждый месяц)
   { type: 'birthday', name: 'День рождения Виктора', day: 15, month: 5, icon: '🎂' },
