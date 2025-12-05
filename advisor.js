@@ -1,10 +1,9 @@
-// advisor.js — Персонализированный умный советник KIVI Market v2
+// advisor.js — Персонализированный умный советник KIVI Market v3
 
 (async () => {
   const dataUrl = SHEETS.data;
   const ebitdaUrl = SHEETS.ebitda;
   const leadersUrl = SHEETS.leaders;
-  const recordsUrl = SHEETS.records;
 
   const parse = async (url) => {
     const res = await fetch(url);
@@ -17,7 +16,6 @@
   const data = await parse(dataUrl);
   const costs = await parse(ebitdaUrl);
   const leaders = await parse(leadersUrl);
-  const records = await parse(recordsUrl);
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -32,13 +30,13 @@
   const todayName = dayNames[dayOfWeek];
   const isWeekend = [0, 6].includes(dayOfWeek);
 
-  // Рекорды
-  const recordRevenue = records.find(r => r["Показатель"] === "Максимальная выручка:");
-  const recordTraffic = records.find(r => r["Показатель"] === "Максимальный трафик:");
-  const maxRevenue = recordRevenue ? clean(recordRevenue["Значение"]) : 0;
-  const maxRevenueDate = recordRevenue ? recordRevenue["Дата"] : '';
-  const maxTraffic = recordTraffic ? clean(recordTraffic["Значение"]) : 0;
-  const maxTrafficDate = recordTraffic ? recordTraffic["Дата"] : '';
+  // РЕКОРДЫ ИЗ ВЕРХНЕГО БЛОКА (window.DATASETS)
+  const miniblocks = window.DATASETS?.miniblocks || [];
+  const recordRevenueBlock = miniblocks.find(b => b.label === "Рекорд ТО");
+  const recordTrafficBlock = miniblocks.find(b => b.label === "Рекорд ТР");
+  
+  const maxRevenue = recordRevenueBlock ? clean(recordRevenueBlock.value) : 0;
+  const maxTraffic = recordTrafficBlock ? clean(recordTrafficBlock.value) : 0;
 
   // Данные текущего месяца
   const thisMonthData = data.filter(r => {
@@ -58,6 +56,7 @@
     return d.getFullYear() === lastYear && d.getMonth() === today.getMonth() && d.getDate() === currentDay;
   });
   const lastYearSameDayRevenue = lastYearSameDay ? clean(lastYearSameDay["ТО"]) : 0;
+  const lastYearSameDayTraffic = lastYearSameDay ? clean(lastYearSameDay["ТР"]) : 0;
   const lastYearSameDayWeekday = lastYearSameDay ? new Date(lastYearSameDay["Дата"]).getDay() : null;
   const lastYearSameDayName = lastYearSameDayWeekday !== null ? dayNames[lastYearSameDayWeekday] : null;
 
@@ -82,16 +81,15 @@
   const avgASP = thisMonthData.reduce((s, r) => s + clean(r["расчет ASP"]), 0) / thisMonthData.length;
   const asp = avgASP ? Math.round(avgRevenue / avgASP) : 0;
 
-  // План (из верхнего блока - можно парсить или задать константу)
-  // Предположим, что план хранится где-то или мы его вычисляем
-  // Для примера возьмём из window или зададим
-  const dailyPlan = window.PLAN_TO || 27000; // План на день (можно брать из DATASETS)
+  // ПЛАН ИЗ ВЕРХНЕГО БЛОКА
+  const planBlock = miniblocks.find(b => b.label === "План ТО");
+  const dailyPlan = planBlock ? clean(planBlock.value) : 27000;
 
   // ЦЕЛЬ НА ДЕНЬ
   const targetRevenue = avgRevenue > dailyPlan ? Math.round(avgRevenue) : dailyPlan;
   const targetTraffic = avgTraffic > 30 ? Math.round(avgTraffic) : Math.round(dailyPlan / avgCheck);
 
-  // ПРЕМИЯ при выполнении плана
+  // ПРЕМИЯ
   const bonusIfPlan = Math.round((dailyPlan - dailyPlan * 0.04) * 0.05);
   const bonusIfTarget = Math.round((targetRevenue - targetRevenue * 0.04) * 0.05);
 
@@ -137,7 +135,7 @@
   const avg3 = last3Days.reduce((sum, r) => sum + clean(r["ТО"]), 0) / (last3Days.length || 1);
   const recommendedPurchase = Math.round(avg3 * 4 * 0.45);
 
-  // Количество кассиров сегодня (обычно 1, в выходные может быть 2)
+  // Количество кассиров
   const cashiersToday = isWeekend && avgTraffic > 40 ? 2 : 1;
 
   // 🎨 СОЗДАНИЕ БЛОКОВ
@@ -168,8 +166,13 @@
   } else {
     cashierSection.push(`• При ${targetRevenue.toLocaleString('ru-RU')}₽: **+${bonusIfTarget}₽**`);
   }
-  cashierSection.push(`• Побить рекорд выручки (${maxRevenue.toLocaleString('ru-RU')}₽): **+${Math.round(2000 / cashiersToday)}₽**`);
-  cashierSection.push(`• Побить рекорд трафика (${maxTraffic} чел): **+${Math.round(800 / cashiersToday)}₽**`);
+  
+  if (maxRevenue > 0) {
+    cashierSection.push(`• Побить рекорд выручки (${maxRevenue.toLocaleString('ru-RU')}₽): **+${Math.round(2000 / cashiersToday)}₽**`);
+  }
+  if (maxTraffic > 0) {
+    cashierSection.push(`• Побить рекорд трафика (${maxTraffic} чел): **+${Math.round(800 / cashiersToday)}₽**`);
+  }
 
   // === АНАЛИЗ ПРОШЛОГО ГОДА ===
   if (lastYearSameDayRevenue > 0 && lastYearSameDayName) {
@@ -182,17 +185,17 @@
   }
 
   // === РЕКОРДЫ ===
-  if (maxRevenueDate) {
-    const recordDate = new Date(maxRevenueDate);
-    const daysAgo = Math.round((today - recordDate) / (1000 * 60 * 60 * 24));
-    cashierSection.push(`\n🏆 **Рекорд выручки:** ${maxRevenue.toLocaleString('ru-RU')}₽ (${recordDate.toLocaleDateString('ru-RU')}, ${daysAgo} дней назад)`);
+  if (maxRevenue > 0) {
+    cashierSection.push(`\n🏆 **Рекорд выручки:** ${maxRevenue.toLocaleString('ru-RU')}₽`);
     if (targetRevenue > maxRevenue * 0.9) {
       cashierSection.push(`**Мы близко к рекорду!** Побьём — получишь **+${Math.round(2000 / cashiersToday)}₽** 🔥`);
     }
   }
-  if (maxTrafficDate) {
-    const recordDate = new Date(maxTrafficDate);
-    cashierSection.push(`🏆 **Рекорд трафика:** ${maxTraffic} чел (${recordDate.toLocaleDateString('ru-RU')})`);
+  if (maxTraffic > 0) {
+    cashierSection.push(`🏆 **Рекорд трафика:** ${maxTraffic} чел`);
+    if (targetTraffic > maxTraffic * 0.9) {
+      cashierSection.push(`**Мы близко!** Побьём — **+${Math.round(800 / cashiersToday)}₽** 💪`);
+    }
   }
 
   // === МОТИВАЦИЯ ===
@@ -388,5 +391,5 @@
   container.innerHTML = html;
   document.querySelector('.container').appendChild(container);
 
-  console.log('✅ Персонализированный советник v2 создан');
+  console.log('✅ Персонализированный советник v3 создан');
 })();
