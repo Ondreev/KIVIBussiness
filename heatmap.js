@@ -20,16 +20,26 @@ const EVENTS = [
 ];
 // ====================================
 
-document.addEventListener("sheets-ready", () => {
+(async function() {
+  // Ждём загрузки данных
+  if (!window.DATASETS || !window.DATASETS.data) {
+    console.log('⏳ Ждём загрузки данных...');
+    await new Promise(resolve => {
+      document.addEventListener('sheets-ready', resolve, { once: true });
+    });
+  }
+
   buildHeatmap();
-});
+})();
 
 async function buildHeatmap() {
-  const dataUrl = SHEETS.data;
-  const response = await fetch(dataUrl);
-  const text = await response.text();
-  const parsed = Papa.parse(text, { header: true });
-  const data = parsed.data;
+  console.log('🔨 Создаём карту месяца...');
+
+  const data = window.DATASETS?.data || [];
+  if (!data.length) {
+    console.error('❌ Нет данных для карты месяца');
+    return;
+  }
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -61,25 +71,34 @@ async function buildHeatmap() {
 
   // Цветовая функция
   function getColor(revenue) {
-    if (!revenue || revenue === 0) return '#f0f0f0'; // нет данных
+    if (!revenue || revenue === 0) return '#f0f0f0';
     const normalized = (revenue - minRevenue) / (maxRevenue - minRevenue);
-    if (normalized < 0.33) return '#a8dadc'; // низкая
-    if (normalized < 0.66) return '#90ee90'; // хорошая
-    return '#2d6a4f'; // отличная
+    if (normalized < 0.33) return '#a8dadc';
+    if (normalized < 0.66) return '#90ee90';
+    return '#2d6a4f';
   }
 
   // Получаем события для текущего месяца
   function getEventsForDay(day) {
     return EVENTS.filter(e => {
       if (e.day !== day) return false;
-      if (e.month && e.month !== currentMonth + 1) return false; // month: 1-12
+      if (e.month && e.month !== currentMonth + 1) return false;
       return true;
     });
   }
 
-  // Создаём контейнер
-  const container = document.getElementById('heatmapMonth');
-  if (!container) return;
+  // Создаём или находим контейнер
+  let container = document.getElementById('heatmapMonth');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'heatmapMonth';
+    const mainContainer = document.querySelector('.container');
+    if (mainContainer) {
+      mainContainer.appendChild(container);
+    } else {
+      document.body.appendChild(container);
+    }
+  }
 
   container.innerHTML = '';
   container.style.cssText = `
@@ -119,7 +138,7 @@ async function buildHeatmap() {
   // Календарная сетка
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
-  const startDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Пн = 0
+  const startDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
   const grid = document.createElement('div');
   grid.style.cssText = `
@@ -151,8 +170,6 @@ async function buildHeatmap() {
   }
 
   // Ячейки дней
-  let selectedDay = currentDay; // по умолчанию выбран сегодняшний день
-
   for (let day = 1; day <= daysInMonth; day++) {
     const revenue = revenueByDay[day] || 0;
     const bgColor = getColor(revenue);
@@ -218,7 +235,6 @@ async function buildHeatmap() {
 
     // Клик — показать события
     cell.addEventListener('click', () => {
-      selectedDay = day;
       showEvents(day, events, revenue);
     });
 
@@ -257,7 +273,7 @@ async function buildHeatmap() {
 
   container.appendChild(legend);
 
-  // Блок событий (изначально скрыт)
+  // Блок событий
   const eventsBlock = document.createElement('div');
   eventsBlock.id = 'eventsBlock';
   eventsBlock.style.cssText = `
