@@ -1,4 +1,4 @@
-// advisor.js — Персонализированный умный советник KIVI Market v3
+// advisor.js — Персонализированный умный советник KIVI Market v4
 
 (async () => {
   const dataUrl = SHEETS.data;
@@ -31,12 +31,18 @@
   const isWeekend = [0, 6].includes(dayOfWeek);
 
   // РЕКОРДЫ ИЗ ВЕРХНЕГО БЛОКА (window.DATASETS)
+  console.log('🔍 Проверяем window.DATASETS.miniblocks:', window.DATASETS?.miniblocks);
+  
   const miniblocks = window.DATASETS?.miniblocks || [];
   const recordRevenueBlock = miniblocks.find(b => b.label === "Рекорд ТО");
   const recordTrafficBlock = miniblocks.find(b => b.label === "Рекорд ТР");
+  const planBlock = miniblocks.find(b => b.label === "План ТО");
   
   const maxRevenue = recordRevenueBlock ? clean(recordRevenueBlock.value) : 0;
   const maxTraffic = recordTrafficBlock ? clean(recordTrafficBlock.value) : 0;
+  const dailyPlan = planBlock ? clean(planBlock.value) : 27000;
+
+  console.log('📊 Рекорды:', { maxRevenue, maxTraffic, dailyPlan });
 
   // Данные текущего месяца
   const thisMonthData = data.filter(r => {
@@ -56,21 +62,11 @@
     return d.getFullYear() === lastYear && d.getMonth() === today.getMonth() && d.getDate() === currentDay;
   });
   const lastYearSameDayRevenue = lastYearSameDay ? clean(lastYearSameDay["ТО"]) : 0;
-  const lastYearSameDayTraffic = lastYearSameDay ? clean(lastYearSameDay["ТР"]) : 0;
   const lastYearSameDayWeekday = lastYearSameDay ? new Date(lastYearSameDay["Дата"]).getDay() : null;
   const lastYearSameDayName = lastYearSameDayWeekday !== null ? dayNames[lastYearSameDayWeekday] : null;
 
   // Последние 7 дней
   const last7Days = thisMonthData.slice(-7);
-
-  // Карта месяца прошлого года
-  const lastYearHeatmap = {};
-  lastYearMonth.forEach(r => {
-    const d = new Date(r["Дата"]);
-    const day = d.getDate();
-    if (!lastYearHeatmap[day]) lastYearHeatmap[day] = 0;
-    lastYearHeatmap[day] += clean(r["ТО"]);
-  });
 
   // Расчёты
   const totalRevenue = thisMonthData.reduce((s, r) => s + clean(r["ТО"]), 0);
@@ -80,10 +76,6 @@
   const avgCheck = totalTraffic ? Math.round(totalRevenue / totalTraffic) : 0;
   const avgASP = thisMonthData.reduce((s, r) => s + clean(r["расчет ASP"]), 0) / thisMonthData.length;
   const asp = avgASP ? Math.round(avgRevenue / avgASP) : 0;
-
-  // ПЛАН ИЗ ВЕРХНЕГО БЛОКА
-  const planBlock = miniblocks.find(b => b.label === "План ТО");
-  const dailyPlan = planBlock ? clean(planBlock.value) : 27000;
 
   // ЦЕЛЬ НА ДЕНЬ
   const targetRevenue = avgRevenue > dailyPlan ? Math.round(avgRevenue) : dailyPlan;
@@ -167,12 +159,9 @@
     cashierSection.push(`• При ${targetRevenue.toLocaleString('ru-RU')}₽: **+${bonusIfTarget}₽**`);
   }
   
-  if (maxRevenue > 0) {
-    cashierSection.push(`• Побить рекорд выручки (${maxRevenue.toLocaleString('ru-RU')}₽): **+${Math.round(2000 / cashiersToday)}₽**`);
-  }
-  if (maxTraffic > 0) {
-    cashierSection.push(`• Побить рекорд трафика (${maxTraffic} чел): **+${Math.round(800 / cashiersToday)}₽**`);
-  }
+  // ГАРАНТИРОВАННО показываем рекорды
+  cashierSection.push(`• Побить рекорд выручки (${maxRevenue.toLocaleString('ru-RU')}₽): **+${Math.round(2000 / cashiersToday)}₽**`);
+  cashierSection.push(`• Побить рекорд трафика (${maxTraffic} чел): **+${Math.round(800 / cashiersToday)}₽**`);
 
   // === АНАЛИЗ ПРОШЛОГО ГОДА ===
   if (lastYearSameDayRevenue > 0 && lastYearSameDayName) {
@@ -184,18 +173,16 @@
     }
   }
 
-  // === РЕКОРДЫ ===
-  if (maxRevenue > 0) {
-    cashierSection.push(`\n🏆 **Рекорд выручки:** ${maxRevenue.toLocaleString('ru-RU')}₽`);
-    if (targetRevenue > maxRevenue * 0.9) {
-      cashierSection.push(`**Мы близко к рекорду!** Побьём — получишь **+${Math.round(2000 / cashiersToday)}₽** 🔥`);
-    }
+  // === РЕКОРДЫ (ВСЕГДА ПОКАЗЫВАЕМ) ===
+  cashierSection.push(`\n**🏆 Наши рекорды:**`);
+  cashierSection.push(`• **Выручка:** ${maxRevenue.toLocaleString('ru-RU')}₽`);
+  cashierSection.push(`• **Трафик:** ${maxTraffic} человек`);
+  
+  if (targetRevenue > maxRevenue * 0.85) {
+    cashierSection.push(`\n**🔥 Мы близко к рекорду выручки!** Побьём — получишь **+${Math.round(2000 / cashiersToday)}₽** дополнительно!`);
   }
-  if (maxTraffic > 0) {
-    cashierSection.push(`🏆 **Рекорд трафика:** ${maxTraffic} чел`);
-    if (targetTraffic > maxTraffic * 0.9) {
-      cashierSection.push(`**Мы близко!** Побьём — **+${Math.round(800 / cashiersToday)}₽** 💪`);
-    }
+  if (targetTraffic > maxTraffic * 0.85) {
+    cashierSection.push(`**🔥 Близко к рекорду трафика!** Побьём — **+${Math.round(800 / cashiersToday)}₽**!`);
   }
 
   // === МОТИВАЦИЯ ===
@@ -391,5 +378,5 @@
   container.innerHTML = html;
   document.querySelector('.container').appendChild(container);
 
-  console.log('✅ Персонализированный советник v3 создан');
+  console.log('✅ Персонализированный советник v4 создан');
 })();
