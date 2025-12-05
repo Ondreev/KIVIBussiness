@@ -1,4 +1,4 @@
-// history.js — Компактная история выручки (контрастный дизайн)
+// history.js — Компактная история выручки (исправлен баг с декабрём)
 
 document.addEventListener("sheets-ready", () => {
   buildHistoryBlock();
@@ -49,6 +49,9 @@ function buildHistoryBlock() {
   const data = window.DATASETS?.data || [];
   if (!data.length) return;
 
+  const today = new Date();
+  const currentYear = today.getFullYear();
+
   // Собираем данные по годам → месяцам → дням
   const structure = {}; // year -> month -> day -> {revenue, traffic}
 
@@ -63,6 +66,11 @@ function buildHistoryBlock() {
     if (revenue === 0) return;
 
     const { y, m, d } = p;
+
+    // ✅ ИСПРАВЛЕНИЕ: для прошлых лет показываем ВСЕ дни
+    // Для текущего года показываем только до сегодняшнего дня
+    const rowDate = new Date(y, m - 1, d);
+    if (y === currentYear && rowDate > today) return;
 
     if (!structure[y]) structure[y] = {};
     if (!structure[y][m]) structure[y][m] = {};
@@ -186,7 +194,7 @@ function buildHistoryBlock() {
         margin-top: 16px;
       `;
 
-      // Таблица дней - компактная версия для мобильных
+      // Таблица дней
       const table = document.createElement('table');
       table.style.cssText = `
         width: 100%;
