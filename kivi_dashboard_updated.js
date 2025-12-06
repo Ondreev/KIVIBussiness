@@ -1,4 +1,5 @@
-// kivi_dashboard_updated.js — финальная версия с эффектами
+// kivi_dashboard_updated.js — финальная версия
+// ВАЖНО: в index.html должен быть подключен ТОЛЬКО этот файл (kivi_dashboard.js удалить/не подключать)
 
 // Ждём, когда sheetsLoader.js загрузит все листы
 document.addEventListener("sheets-ready", () => {
@@ -44,26 +45,9 @@ function toDate(p) {
 // Названия колонок (поддерживаем кириллицу/латиницу)
 const COLS = {
   date: ["Дата"],
-  revenue: ["ТО", "TO"],
-  traffic: ["ТР", "TP", "TR"]
+  revenue: ["ТО", "TO"],     // поддержка "ТО" (кириллица) и "TO" (латиница)
+  traffic: ["ТР", "TP", "TR"] // "ТР" (кириллица), "TP/TR" на всякий случай
 };
-
-// Функция для установки текста с анимацией
-function setTextAnimated(id, text) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  
-  if (window.animateCounter) {
-    window.animateCounter(el, text, 1000);
-  } else {
-    el.textContent = text;
-  }
-}
-
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
 
 // ---- СВОДКА ----------------------------------------------------------------
 
@@ -113,54 +97,31 @@ async function loadSummary() {
   const planTr = cleanNumber(planRow["План по трафику"]);
   const planAvg = planTo && planTr ? Math.round(planTo / planTr) : 0;
 
-  // Применяем к UI с анимацией
-  setTextAnimated("planTo", planTo.toLocaleString("ru-RU") + "₽");
-  setTextAnimated("planTraffic", `${planTr} чел.`);
-  setTextAnimated("planAvg", planAvg + "₽");
+  // Применяем к UI
+  setText("planTo",      planTo.toLocaleString("ru-RU") + "₽");
+  setText("planTraffic", `${planTr} чел.`);
+  setText("planAvg",     planAvg + "₽");
 
-  setTextAnimated("factTo", avgTo.toLocaleString("ru-RU") + "₽");
-  setTextAnimated("factTraffic", `${avgTr} чел.`);
-  setTextAnimated("factAvg", avgCheck + "₽");
+  setText("factTo",      avgTo.toLocaleString("ru-RU") + "₽");
+  setText("factTraffic", `${avgTr} чел.`);
+  setText("factAvg",     avgCheck + "₽");
 
-  // Рекорды с датами
+  // Рекорды
   const recTo = records.find(r => r["Показатель"]?.toString().toLowerCase().includes("выручка"));
   const recTr = records.find(r => r["Показатель"]?.toString().toLowerCase().includes("трафик"));
-  
-  if (recTo) {
-    setTextAnimated("recordTo", cleanNumber(recTo.Значение).toLocaleString("ru-RU") + "₽");
-    
-    // Дата рекорда
-    if (recTo.Дата) {
-      const dateStr = recTo.Дата;
-      const p = parseYMD(dateStr);
-      if (p) {
-        const d = toDate(p);
-        const formatted = d.toLocaleDateString("ru-RU", { day: 'numeric', month: 'short' });
-        setText("recordToDate", formatted);
-      }
-    }
-  }
-  
-  if (recTr) {
-    setTextAnimated("recordTraffic", cleanNumber(recTr.Значение).toLocaleString("ru-RU"));
-    
-    // Дата рекорда
-    if (recTr.Дата) {
-      const dateStr = recTr.Дата;
-      const p = parseYMD(dateStr);
-      if (p) {
-        const d = toDate(p);
-        const formatted = d.toLocaleDateString("ru-RU", { day: 'numeric', month: 'short' });
-        setText("recordTrafficDate", formatted);
-      }
-    }
-  }
+  if (recTo) setText("recordTo",      cleanNumber(recTo.Значение).toLocaleString("ru-RU") + "₽");
+  if (recTr) setText("recordTraffic", cleanNumber(recTr.Значение).toLocaleString("ru-RU"));
 
   // Сравнение с прошлым годом (%)
   const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(getCol(r, COLS.revenue)), 0);
   const currTo = totalTo;
   const diff = prevTo ? Math.round((currTo - prevTo) / prevTo * 100) : 0;
-  setTextAnimated("comparePrev", (diff >= 0 ? "+" : "") + diff + "%");
+  setText("comparePrev", (diff >= 0 ? "+" : "") + diff + "%");
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
 // ---- ГИСТОГРАММА «ПОСЛЕДНИЕ 7 ДНЕЙ» ---------------------------------------
@@ -313,6 +274,6 @@ async function buildComparisonBlock() {
   });
 
   window.allDataRows.forEach(r => table.appendChild(r));
-  container.innerHTML = "";
+  container.innerHTML = ""; // на случай повторной инициализации
   container.appendChild(table);
 }
