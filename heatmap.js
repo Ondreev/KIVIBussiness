@@ -42,7 +42,7 @@ function buildHeatmap() {
   const currentDay = today.getDate();
   const lastYear = currentYear - 1;
 
-  // БЫСТРЫЙ сбор данных (один проход)
+  // БЫСТРЫЙ сбор данных
   const revenueByDay = {};
   const targetYearMonth = `${lastYear}-${String(currentMonth + 1).padStart(2, '0')}`;
   
@@ -58,25 +58,16 @@ function buildHeatmap() {
     }
   }
 
-  // ПРАВИЛЬНАЯ цветовая шкала (на основе среднего)
+  // Цветовая шкала (на основе среднего)
   const revenues = Object.values(revenueByDay).filter(r => r > 0);
   const avgRevenue = revenues.length > 0 ? revenues.reduce((a, b) => a + b, 0) / revenues.length : 0;
 
-  console.log('📊 Средняя выручка прошлого года:', Math.round(avgRevenue));
-
   function getColor(revenue) {
-    if (!revenue || revenue === 0) return '#f0f0f0'; // нет данных
-    
-    // Пороги на основе среднего:
-    // Низкая: 0 - 80% от среднего
-    // Хорошая: 80% - 120% от среднего
-    // Отличная: 120%+ от среднего
-    
+    if (!revenue || revenue === 0) return '#f0f0f0';
     const ratio = revenue / avgRevenue;
-    
-    if (ratio < 0.8) return '#a8dadc'; // низкая (голубой)
-    if (ratio < 1.2) return '#90ee90'; // хорошая (светло-зелёный)
-    return '#2d6a4f'; // отличная (тёмно-зелёный)
+    if (ratio < 0.8) return '#a8dadc';
+    if (ratio < 1.2) return '#90ee90';
+    return '#2d6a4f';
   }
 
   // События для дня
@@ -92,7 +83,7 @@ function buildHeatmap() {
     document.querySelector('.container').appendChild(container);
   }
 
-  // БЫСТРАЯ генерация HTML
+  // Генерация HTML
   const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
   const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
   
@@ -124,12 +115,14 @@ function buildHeatmap() {
     const isToday = day === currentDay;
     const events = getEventsForDay(day);
     const hasEvents = events.length > 0;
-    const dotColor = hasEvents ? (events[0].type === 'payment' ? '#e74c3c' : '#9b59b6') : '';
+    
+    // Берём иконку первого события
+    const eventIcon = hasEvents ? events[0].icon : '';
 
     html += `
       <div class="heatmap-day" data-day="${day}" style="aspect-ratio:1;background:${bgColor};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,3.5vw,18px);font-weight:${isToday ? '900' : '600'};color:${bgColor === '#2d6a4f' ? 'white' : '#333'};cursor:pointer;transition:all 0.2s ease;position:relative;border:${isToday ? '3px solid #ff4081' : '2px solid transparent'};box-shadow:${isToday ? '0 0 12px rgba(255,64,129,0.5)' : 'none'};">
         ${day}
-        ${hasEvents ? `<div style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:${dotColor};border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>` : ''}
+        ${hasEvents ? `<div style="position:absolute;top:2px;right:2px;font-size:16px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">${eventIcon}</div>` : ''}
       </div>
     `;
   }
@@ -137,9 +130,10 @@ function buildHeatmap() {
   html += `
       </div>
       <div style="display:flex;justify-content:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;font-size:clamp(11px,2.8vw,13px);">
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#a8dadc;border-radius:4px;"></div><span style="color:#666;">Низкая</span></div>
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#90ee90;border-radius:4px;"></div><span style="color:#666;">Средняя</span></div>
-        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#2d6a4f;border-radius:4px;"></div><span style="color:#666;">Отличная</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#f0f0f0;border-radius:4px;"></div><span style="color:#666;">Нет данных</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#a8dadc;border-radius:4px;"></div><span style="color:#666;">Низкая (&lt;80%)</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#90ee90;border-radius:4px;"></div><span style="color:#666;">Средняя (80-120%)</span></div>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#2d6a4f;border-radius:4px;"></div><span style="color:#666;">Отличная (&gt;120%)</span></div>
       </div>
       <div id="eventsBlock" style="background:#f8f9fa;border-radius:12px;padding:16px;margin-top:16px;display:none;"></div>
     </div>
@@ -147,7 +141,7 @@ function buildHeatmap() {
 
   container.innerHTML = html;
 
-  // Обработчики кликов (делегирование)
+  // Обработчики кликов
   container.addEventListener('click', e => {
     const dayCell = e.target.closest('.heatmap-day');
     if (!dayCell) return;
