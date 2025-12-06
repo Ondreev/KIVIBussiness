@@ -30,10 +30,34 @@
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      /* === ОПТИМИЗАЦИЯ ПРОКРУТКИ === */
       overscroll-behavior: none;
       scroll-behavior: smooth;
     }
+
+    /* === АНИМАЦИЯ ПОЯВЛЕНИЯ БЛОКОВ === */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-on-scroll {
+      opacity: 0;
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    /* Задержки для каскадного эффекта */
+    .animate-on-scroll:nth-child(1) { animation-delay: 0.1s; }
+    .animate-on-scroll:nth-child(2) { animation-delay: 0.2s; }
+    .animate-on-scroll:nth-child(3) { animation-delay: 0.3s; }
+    .animate-on-scroll:nth-child(4) { animation-delay: 0.4s; }
+    .animate-on-scroll:nth-child(5) { animation-delay: 0.5s; }
+    .animate-on-scroll:nth-child(6) { animation-delay: 0.6s; }
 
     /* Заголовок */
     h1 {
@@ -48,10 +72,50 @@
       opacity: 0.9;
     }
 
-    /* Контейнер */
+    /* === АДАПТИВНЫЙ КОНТЕЙНЕР === */
     .container {
       width: 100%;
       max-width: 640px;
+    }
+
+    /* ДЕСКТОПНАЯ ВЕРСИЯ (2 колонки) */
+    @media (min-width: 768px) {
+      .container {
+        max-width: 1280px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+
+      /* Заголовок на всю ширину */
+      h1 {
+        grid-column: 1 / -1;
+        text-align: center;
+      }
+
+      /* Верхний блок на всю ширину */
+      .grid {
+        grid-column: 1 / -1;
+      }
+
+      /* График и Oracle рядом */
+      #chartContainer {
+        grid-column: 1 / 2;
+      }
+
+      #oracleContainer {
+        grid-column: 2 / 3;
+      }
+
+      /* История и сравнение рядом */
+      .history-block {
+        grid-column: 1 / 2;
+      }
+
+      .compare-block {
+        grid-column: 2 / 3;
+      }
     }
 
     /* Сводка (верхний блок) */
@@ -59,7 +123,6 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      /* УБРАН backdrop-filter — тормозит! */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 16px;
@@ -73,10 +136,8 @@
       border-radius: 14px;
       text-align: center;
       padding: 12px 8px;
-      /* УСКОРЕН transition */
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      /* ОПТИМИЗАЦИЯ */
       will-change: transform;
     }
 
@@ -102,7 +163,6 @@
 
     /* График */
     #chartContainer {
-      /* УБРАН backdrop-filter */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 16px;
@@ -150,13 +210,11 @@
     /* Оракул */
     #oracleContainer {
       width: 100%;
-      /* ОПТИМИЗАЦИЯ: не рендерим невидимое */
       content-visibility: auto;
     }
 
     /* Новый блок истории по годам */
     .history-block {
-      /* УБРАН backdrop-filter */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 20px;
@@ -180,7 +238,6 @@
       padding: 14px 18px;
       margin-bottom: 10px;
       cursor: pointer;
-      /* УСКОРЕН transition */
       transition: transform 0.2s ease, background 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
@@ -393,10 +450,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>KIVI <span>Business</span></h1>
+    <h1 class="animate-on-scroll">KIVI <span>Business</span></h1>
 
     <!-- Верхний блок -->
-    <div class="grid" id="summaryBlock">
+    <div class="grid animate-on-scroll" id="summaryBlock">
       <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План ТО</div></div>
       <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
       <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СР ЧЕК</div></div>
@@ -411,22 +468,22 @@
     </div>
 
     <!-- График -->
-    <div id="chartContainer">
+    <div id="chartContainer" class="animate-on-scroll">
       <canvas id="salesChart"></canvas>
       <div id="customLabels" class="custom-labels"></div>
     </div>
 
     <!-- Оракул -->
-    <div id="oracleContainer"></div>
+    <div id="oracleContainer" class="animate-on-scroll"></div>
 
-    <!-- НОВЫЙ БЛОК: История по годам -->
-    <div class="history-block">
+    <!-- История по годам -->
+    <div class="history-block animate-on-scroll">
       <h2>📊 История выручки</h2>
       <div id="historyYears"></div>
     </div>
 
     <!-- Сравнение с прошлым годом -->
-    <div class="compare-block">
+    <div class="compare-block animate-on-scroll">
       <h2>В сравнении с прошлым годом</h2>
       <div id="compareTable"></div>
       <button id="toggleRowsBtn" type="button">Показать все</button>
@@ -434,6 +491,26 @@
   </div>
 
   <script>
+    // === АНИМАЦИЯ ПОЯВЛЕНИЯ ПРИ ПРОКРУТКЕ (легковесная) ===
+    document.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-on-scroll');
+            observer.unobserve(entry.target); // Анимируем только 1 раз
+          }
+        });
+      }, {
+        threshold: 0.1, // Запускаем когда 10% элемента видно
+        rootMargin: '0px 0px -50px 0px' // Небольшая задержка для плавности
+      });
+
+      // Наблюдаем за всеми основными блоками
+      document.querySelectorAll('.grid, #chartContainer, #oracleContainer, .history-block, .compare-block').forEach(el => {
+        observer.observe(el);
+      });
+    });
+
     // Переключатель видимости строк таблицы сравнения
     let showingAll = false;
     function toggleRows() {
