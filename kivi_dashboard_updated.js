@@ -97,20 +97,45 @@ async function loadSummary() {
   const planTr = cleanNumber(planRow["План по трафику"]);
   const planAvg = planTo && planTr ? Math.round(planTo / planTr) : 0;
 
-  // Применяем к UI
-  setText("planTo",      planTo.toLocaleString("ru-RU") + "₽");
-  setText("planTraffic", `${planTr} чел.`);
-  setText("planAvg",     planAvg + "₽");
-
-  setText("factTo",      avgTo.toLocaleString("ru-RU") + "₽");
-  setText("factTraffic", `${avgTr} чел.`);
-  setText("factAvg",     avgCheck + "₽");
+  // Применяем к UI с анимацией
+  if (window.animateCounter) {
+    animateCounter(document.getElementById("planTo"), planTo.toLocaleString("ru-RU") + "₽");
+    animateCounter(document.getElementById("planTraffic"), `${planTr} чел.`);
+    animateCounter(document.getElementById("planAvg"), planAvg + "₽");
+    
+    animateCounter(document.getElementById("factTo"), avgTo.toLocaleString("ru-RU") + "₽");
+    animateCounter(document.getElementById("factTraffic"), `${avgTr} чел.`);
+    animateCounter(document.getElementById("factAvg"), avgCheck + "₽");
+  } else {
+    // Fallback без анимации
+    setText("planTo",      planTo.toLocaleString("ru-RU") + "₽");
+    setText("planTraffic", `${planTr} чел.`);
+    setText("planAvg",     planAvg + "₽");
+    
+    setText("factTo",      avgTo.toLocaleString("ru-RU") + "₽");
+    setText("factTraffic", `${avgTr} чел.`);
+    setText("factAvg",     avgCheck + "₽");
+  }
 
   // Рекорды
   const recTo = records.find(r => r["Показатель"]?.toString().toLowerCase().includes("выручка"));
   const recTr = records.find(r => r["Показатель"]?.toString().toLowerCase().includes("трафик"));
-  if (recTo) setText("recordTo",      cleanNumber(recTo.Значение).toLocaleString("ru-RU") + "₽");
-  if (recTr) setText("recordTraffic", cleanNumber(recTr.Значение).toLocaleString("ru-RU"));
+  if (recTo) {
+    const recordValue = cleanNumber(recTo.Значение).toLocaleString("ru-RU") + "₽";
+    if (window.animateCounter) {
+      animateCounter(document.getElementById("recordTo"), recordValue);
+    } else {
+      setText("recordTo", recordValue);
+    }
+  }
+  if (recTr) {
+    const recordValue = cleanNumber(recTr.Значение).toLocaleString("ru-RU");
+    if (window.animateCounter) {
+      animateCounter(document.getElementById("recordTraffic"), recordValue);
+    } else {
+      setText("recordTraffic", recordValue);
+    }
+  }
 
   // Сравнение с прошлым годом (%)
   const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(getCol(r, COLS.revenue)), 0);
