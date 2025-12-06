@@ -80,7 +80,7 @@
     }
 
     /* === ОСНОВНОЙ WRAPPER === */
-    .page-wrapper {
+    .container {
       width: 100%;
       max-width: 640px;
       padding: 16px;
@@ -88,7 +88,7 @@
 
     /* ДЕСКТОПНАЯ ВЕРСИЯ */
     @media (min-width: 768px) {
-      .page-wrapper {
+      .container {
         max-width: 1320px;
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -488,7 +488,7 @@
     <h1 class="animate-on-scroll">KIVI <span>Business</span></h1>
   </div>
 
-  <div class="page-wrapper">
+  <div class="container">
     <!-- ЛЕВАЯ КОЛОНКА -->
     <div class="left-column">
       <!-- БЛОК 1: Верхний блок (План/Факт/Рекорд) -->
@@ -530,21 +530,15 @@
         <button id="toggleRowsBtn" type="button">Показать все</button>
       </div>
 
-      <!-- КОНТЕЙНЕРЫ для других модулей (они сами создают блоки) -->
-      <div id="miniblocksContainer" data-order="5"></div>
-      <div id="next3monthsContainer" data-order="6"></div>
-      <div id="yearComparisonChartContainer" data-order="7"></div>
-      <div id="profitabilityContainer" data-order="8"></div>
-      <div id="purchaseContainer" data-order="9"></div>
+      <!-- ЭТИ БЛОКИ СОЗДАЮТСЯ ДИНАМИЧЕСКИ (модули ищут .left-column или .container) -->
     </div>
 
     <!-- ПРАВАЯ КОЛОНКА -->
     <div class="right-column">
-      <!-- Карта месяца (heatmap.js) -->
-      <div id="heatmapContainer" data-order="20"></div>
-      
-      <!-- Советник дня (advisor.js) -->
-      <div id="advisorContainer" data-order="21"></div>
+      <!-- ЭТИ БЛОКИ СОЗДАЮТСЯ ДИНАМИЧЕСКИ:
+           - heatmap.js создаст карту месяца
+           - advisor.js создаст советника дня
+      -->
       
       <!-- История выручки -->
       <div class="history-block animate-on-scroll" data-order="22">
@@ -629,7 +623,7 @@
       ].forEach(sel => document.querySelectorAll(sel).forEach(el => el.remove()));
     });
 
-    // Экспортируем функцию анимации для использования в других скриптах
+    // Экспортируем функцию анимации для использования в других скриптов
     window.animateCounter = animateCounter;
   </script>
 
