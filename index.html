@@ -600,25 +600,6 @@
       ['#loadingOverlay', '#loadingIndicator', '#loading', '#loader', '#preloader',
        '.loadingOverlay', '.loading-indicator', '.loading', '.loader', '.preloader'
       ].forEach(sel => document.querySelectorAll(sel).forEach(el => el.remove()));
-      
-      // 🔧 АВТОМАТИЧЕСКИЙ ПЕРЕНОС БЛОКОВ В ПРАВУЮ КОЛОНКУ
-      // Ждём 500ms чтобы все блоки успели создаться
-      setTimeout(() => {
-        const rightCol = document.querySelector('.right-column');
-        if (!rightCol) return;
-        
-        // Переносим Карту месяца
-        const heatmap = document.getElementById('heatmapMonth');
-        if (heatmap && heatmap.parentElement?.classList.contains('left-column')) {
-          rightCol.appendChild(heatmap);
-        }
-        
-        // Переносим Советника дня
-        const advisor = document.getElementById('advisorBlock');
-        if (advisor && advisor.parentElement?.classList.contains('left-column')) {
-          rightCol.appendChild(advisor);
-        }
-      }, 500);
     });
 
     window.animateCounter = animateCounter;
@@ -631,7 +612,7 @@
   <script src="oracle.js" defer></script>
   <script src="history.js" defer></script>
   
-  <!-- Доп. модули -->
+  <!-- ВАЖНО: Эти модули нужно обновить, чтобы вставлялись в правильные колонки -->
   <script src="miniblocks.js" defer></script>
   <script src="heatmap.js" defer></script>
   <script src="advisor.js" defer></script>
@@ -639,8 +620,5 @@
   <script src="yearComparisonChart.js" defer></script>
   <script src="profitability.js" defer></script>
   <script src="purchase.js" defer></script>
-  
-  <!-- 🔧 АВТОМАТИЧЕСКИЙ ПЕРЕНОСЧИК БЛОКОВ (подключается ПОСЛЕДНИМ!) -->
-  <script src="layoutFixer.js" defer></script>
 </body>
 </html>
