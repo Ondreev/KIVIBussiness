@@ -1,4 +1,17 @@
-<style>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <meta charset="UTF-8" />
+  <title>KIVI Business</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+  <!-- CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+
+  <style>
     * {
       margin: 0;
       padding: 0;
@@ -8,7 +21,7 @@
     body {
       margin: 0;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       color: white;
       display: flex;
       flex-direction: column;
@@ -17,25 +30,12 @@
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      /* ОПТИМИЗАЦИЯ ПРОКРУТКИ */
+      /* === ОПТИМИЗАЦИЯ ПРОКРУТКИ === */
       overscroll-behavior: none;
       scroll-behavior: smooth;
     }
 
-    /* SKELETON LOADER (плавное появление) */
-    .skeleton {
-      background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
-      background-size: 200% 100%;
-      animation: skeleton-loading 1.5s ease-in-out infinite;
-      border-radius: 14px;
-      min-height: 60px;
-    }
-
-    @keyframes skeleton-loading {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
+    /* Заголовок */
     h1 {
       font-size: clamp(24px, 6vw, 32px);
       font-weight: 900;
@@ -48,16 +48,18 @@
       opacity: 0.9;
     }
 
+    /* Контейнер */
     .container {
       width: 100%;
       max-width: 640px;
     }
 
-    /* ОПТИМИЗАЦИЯ: убрал backdrop-filter (тормозит!) */
+    /* Сводка (верхний блок) */
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
+      /* УБРАЛ backdrop-filter — сильно тормозит! */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 16px;
@@ -71,15 +73,17 @@
       border-radius: 14px;
       text-align: center;
       padding: 12px 8px;
+      /* СОКРАТИЛ transition — быстрее */
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      /* ОПТИМИЗАЦИЯ */
+      /* ОПТИМИЗАЦИЯ: говорим браузеру готовиться к трансформации */
       will-change: transform;
     }
 
     .cell:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
     }
 
     .big {
@@ -96,6 +100,7 @@
       font-weight: 500;
     }
 
+    /* График */
     #chartContainer {
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
@@ -141,12 +146,14 @@
       margin-top: 2px;
     }
 
+    /* Оракул */
     #oracleContainer {
       width: 100%;
-      /* ОПТИМИЗАЦИЯ: скрываем невидимый контент */
+      /* ОПТИМИЗАЦИЯ: браузер не рендерит невидимый контент */
       content-visibility: auto;
     }
 
+    /* Новый блок истории по годам */
     .history-block {
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
@@ -182,6 +189,7 @@
     .year-item:hover {
       transform: translateX(4px);
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .year-item.active {
@@ -292,6 +300,7 @@
       background: rgba(255, 255, 255, 0.1);
     }
 
+    /* Блок сравнения */
     .compare-block {
       background: rgba(255, 255, 255, 0.95);
       color: #333;
@@ -338,6 +347,7 @@
       font-weight: 600;
     }
 
+    /* Кнопка */
     button {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -354,12 +364,14 @@
 
     button:hover {
       transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
     }
 
     button:active {
       transform: translateY(0);
     }
 
+    /* Адаптация для маленьких экранов */
     @media (max-width: 360px) {
       .grid {
         gap: 8px;
@@ -374,23 +386,89 @@
         margin: 16px 0 20px;
       }
     }
-
-    /* СКЕЛЕТОНЫ при загрузке */
-    .grid.loading .cell {
-      background: none;
-    }
-    .grid.loading .cell .big,
-    .grid.loading .cell .small {
-      visibility: hidden;
-    }
-    .grid.loading .cell::before {
-      content: '';
-      display: block;
-      width: 100%;
-      height: 40px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
-      background-size: 200% 100%;
-      animation: skeleton-loading 1.5s ease-in-out infinite;
-      border-radius: 8px;
-    }
   </style>
+</head>
+<body>
+  <div class="container">
+    <h1>KIVI <span>Business</span></h1>
+
+    <!-- Верхний блок -->
+    <div class="grid" id="summaryBlock">
+      <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План ТО</div></div>
+      <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
+      <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СР ЧЕК</div></div>
+
+      <div class="cell"><div class="big" id="factTo">—</div><div class="small">Факт ТО</div></div>
+      <div class="cell"><div class="big" id="factTraffic">—</div><div class="small">Факт ТР</div></div>
+      <div class="cell"><div class="big" id="factAvg">—</div><div class="small">Факт СР ЧЕК</div></div>
+
+      <div class="cell"><div class="big" id="recordTo">—</div><div class="small">Рекорд ТО</div></div>
+      <div class="cell"><div class="big" id="recordTraffic">—</div><div class="small">Рекорд ТР</div></div>
+      <div class="cell"><div class="big" id="comparePrev">—</div><div class="small">прошл. год</div></div>
+    </div>
+
+    <!-- График -->
+    <div id="chartContainer">
+      <canvas id="salesChart"></canvas>
+      <div id="customLabels" class="custom-labels"></div>
+    </div>
+
+    <!-- Оракул -->
+    <div id="oracleContainer"></div>
+
+    <!-- НОВЫЙ БЛОК: История по годам -->
+    <div class="history-block">
+      <h2>📊 История выручки</h2>
+      <div id="historyYears"></div>
+    </div>
+
+    <!-- Сравнение с прошлым годом -->
+    <div class="compare-block">
+      <h2>В сравнении с прошлым годом</h2>
+      <div id="compareTable"></div>
+      <button id="toggleRowsBtn" type="button">Показать все</button>
+    </div>
+  </div>
+
+  <script>
+    // Переключатель видимости строк таблицы сравнения
+    let showingAll = false;
+    function toggleRows() {
+      if (!window.allDataRows || !window.allDataRows.length) return;
+      showingAll = !showingAll;
+      window.allDataRows.forEach((row, i) => {
+        if (row && row.classList) row.classList.toggle('hidden-row', !showingAll && i >= 6);
+      });
+      const btn = document.getElementById('toggleRowsBtn');
+      if (btn) btn.textContent = showingAll ? 'Скрыть' : 'Показать все';
+    }
+    document.getElementById('toggleRowsBtn')?.addEventListener('click', toggleRows);
+
+    // Убираем возможные оверлеи после загрузки
+    document.addEventListener('sheets-ready', () => {
+      ['#loadingOverlay', '#loadingIndicator', '#loading', '#loader', '#preloader',
+       '.loadingOverlay', '.loading-indicator', '.loading', '.loader', '.preloader'
+      ].forEach(sel => document.querySelectorAll(sel).forEach(el => el.remove()));
+    });
+  </script>
+
+  <!-- Скрипты проекта (порядок важен) -->
+  <script src="config.js" defer></script>
+  <script src="sheetsLoader.js" defer></script>
+
+  <script src="kivi_dashboard_updated.js" defer></script>
+  <script src="oracle.js" defer></script>
+  <script src="advisor.js" defer></script>
+
+  <!-- Новый модуль истории -->
+  <script src="history.js" defer></script>
+
+  <!-- Доп. модули -->
+  <script src="miniblocks.js" defer></script>
+  <script src="next3months.js" defer></script>
+  <script src="yearComparisonChart.js" defer></script>
+  <script src="profitability.js" defer></script>
+  <script src="purchase.js" defer></script>
+  <script src="heatmap.js" defer></script>
+</body>
+</html>
