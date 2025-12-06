@@ -1,6 +1,15 @@
-// miniblocks.js — 3 мини-блока с современным дизайном
+// miniblocks.js — 3 мини-блока с современным дизайном (ОПТИМИЗИРОВАНО)
 
-(async () => {
+document.addEventListener('sheets-ready', () => {
+  // === ИСПОЛЬЗУЕМ УЖЕ ЗАГРУЖЕННЫЕ ДАННЫЕ ===
+  const data = window.DATASETS?.data || [];
+  const leaders = window.DATASETS?.leaders || [];
+
+  if (!data.length) {
+    console.warn('⚠️ miniblocks: нет данных');
+    return;
+  }
+
   const container = document.createElement("div");
   container.style.cssText = `
     display: grid;
@@ -14,15 +23,6 @@
   document.querySelector('.container').appendChild(container);
 
   const cleanNumber = val => parseFloat((val || "0").replace(/\s/g, "").replace(",", "."));
-
-  const fetchCSV = async url => {
-    const res = await fetch(url);
-    const text = await res.text();
-    return Papa.parse(text, { header: true }).data;
-  };
-
-  const data = await fetchCSV(SHEETS.data);
-  const leaders = await fetchCSV(SHEETS.leaders);
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -53,7 +53,8 @@
       border-radius: 16px;
       padding: 16px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      will-change: transform;
     `;
     div.innerHTML = `
       <div style='font-weight:700;margin-bottom:12px;text-align:center;font-size:15px;'>${title}</div>
@@ -99,7 +100,8 @@
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    will-change: transform;
   `;
 
   rightCol.addEventListener('mouseenter', () => {
@@ -124,4 +126,6 @@
 
   container.appendChild(leftCol);
   container.appendChild(rightCol);
-})();
+
+  console.log('✅ miniblocks создан (из window.DATASETS)');
+});
