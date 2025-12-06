@@ -52,12 +52,14 @@
     }
 
     /* Задержки для каскадного эффекта */
-    .animate-on-scroll:nth-child(1) { animation-delay: 0.1s; }
-    .animate-on-scroll:nth-child(2) { animation-delay: 0.2s; }
-    .animate-on-scroll:nth-child(3) { animation-delay: 0.3s; }
-    .animate-on-scroll:nth-child(4) { animation-delay: 0.4s; }
-    .animate-on-scroll:nth-child(5) { animation-delay: 0.5s; }
-    .animate-on-scroll:nth-child(6) { animation-delay: 0.6s; }
+    .animate-on-scroll:nth-child(1) { animation-delay: 0.05s; }
+    .animate-on-scroll:nth-child(2) { animation-delay: 0.1s; }
+    .animate-on-scroll:nth-child(3) { animation-delay: 0.15s; }
+    .animate-on-scroll:nth-child(4) { animation-delay: 0.2s; }
+    .animate-on-scroll:nth-child(5) { animation-delay: 0.25s; }
+    .animate-on-scroll:nth-child(6) { animation-delay: 0.3s; }
+    .animate-on-scroll:nth-child(7) { animation-delay: 0.35s; }
+    .animate-on-scroll:nth-child(8) { animation-delay: 0.4s; }
 
     /* Заголовок */
     h1 {
@@ -66,6 +68,8 @@
       margin: 20px 0 24px;
       text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       letter-spacing: -0.5px;
+      width: 100%;
+      text-align: center;
     }
     h1 span {
       font-weight: 400;
@@ -76,45 +80,24 @@
     .container {
       width: 100%;
       max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
 
     /* ДЕСКТОПНАЯ ВЕРСИЯ (2 колонки) */
     @media (min-width: 768px) {
       .container {
-        max-width: 1280px;
+        max-width: 1320px;
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 24px;
         align-items: start;
-      }
-
-      /* Заголовок на всю ширину */
-      h1 {
-        grid-column: 1 / -1;
-        text-align: center;
       }
 
       /* Верхний блок на всю ширину */
       .grid {
         grid-column: 1 / -1;
-      }
-
-      /* График и Oracle рядом */
-      #chartContainer {
-        grid-column: 1 / 2;
-      }
-
-      #oracleContainer {
-        grid-column: 2 / 3;
-      }
-
-      /* История и сравнение рядом */
-      .history-block {
-        grid-column: 1 / 2;
-      }
-
-      .compare-block {
-        grid-column: 2 / 3;
       }
     }
 
@@ -211,6 +194,7 @@
     #oracleContainer {
       width: 100%;
       content-visibility: auto;
+      margin-bottom: 24px;
     }
 
     /* Новый блок истории по годам */
@@ -449,10 +433,10 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="animate-on-scroll">KIVI <span>Business</span></h1>
+  <h1 class="animate-on-scroll">KIVI <span>Business</span></h1>
 
-    <!-- Верхний блок -->
+  <div class="container">
+    <!-- Верхний блок (на всю ширину на десктопе) -->
     <div class="grid animate-on-scroll" id="summaryBlock">
       <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План ТО</div></div>
       <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
@@ -501,8 +485,8 @@
           }
         });
       }, {
-        threshold: 0.1, // Запускаем когда 10% элемента видно
-        rootMargin: '0px 0px -50px 0px' // Небольшая задержка для плавности
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
       });
 
       // Наблюдаем за всеми основными блоками
