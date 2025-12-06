@@ -1,4 +1,4 @@
-// sheetsLoader.js — Надежная загрузка для мобильных устройств
+// sheetsLoader.js — Надежная загрузка с правильным timing
 
 (async () => {
   try {
@@ -26,19 +26,20 @@
     window.DATASETS = {};
 
     // ===== БЕЗОПАСНЫЙ КЕШ =====
-    const CACHE_KEY = 'kivi_datasets_cache_v2'; // v2 = новая версия
+    const CACHE_KEY = 'kivi_datasets_cache_v2';
     const CACHE_TIME_KEY = 'kivi_cache_time_v2';
-    const CACHE_LIFETIME = 10 * 60 * 1000; // 10 минут (было 5)
+    const CACHE_LIFETIME = 10 * 60 * 1000; // 10 минут
 
     let useCache = false;
     try {
-      // Проверяем доступность sessionStorage
       sessionStorage.setItem('test', '1');
       sessionStorage.removeItem('test');
       useCache = true;
     } catch (e) {
-      console.warn("⚠️ sessionStorage недоступен (приватный режим?), кеш отключён");
+      console.warn("⚠️ sessionStorage недоступен, кеш отключён");
     }
+
+    let loadedFromCache = false;
 
     // Пробуем загрузить из кеша
     if (useCache) {
@@ -55,13 +56,13 @@
             // ПРОВЕРКА: есть ли данные?
             if (parsed.data && Array.isArray(parsed.data) && parsed.data.length > 0) {
               window.DATASETS = parsed;
+              window.DATASETS._isCached = true;
+              loadedFromCache = true;
               console.log("✅ Из кеша загружено:", {
                 data: parsed.data.length,
                 plans: parsed.plans?.length || 0,
                 records: parsed.records?.length || 0
               });
-              document.dispatchEvent(new Event('sheets-ready'));
-              return;
             } else {
               console.warn("⚠️ Кеш повреждён, загружаем заново");
               sessionStorage.removeItem(CACHE_KEY);
@@ -71,131 +72,146 @@
         }
       } catch (e) {
         console.warn("⚠️ Ошибка чтения кеша:", e);
-        sessionStorage.clear(); // Очищаем повреждённый кеш
+        sessionStorage.clear();
       }
     }
 
-    // ===== ЗАГРУЗКА С СЕРВЕРА =====
-    const loadSheet = async (name, url, desc) => {
-      console.log(`📥 Загружаем "${desc}"...`);
-      
-      const response = await fetch(url, {
-        cache: 'no-cache', // Важно для мобильных!
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+    // ===== ЗАГРУЗКА С СЕРВЕРА (если не из кеша) =====
+    if (!loadedFromCache) {
+      const loadSheet = async (name, url, desc) => {
+        console.log(`📥 Загружаем "${desc}"...`);
+        
+        const response = await fetch(url, {
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`${desc}: HTTP ${response.status}`);
         }
-      });
+        
+        const text = await response.text();
+        
+        if (!text || text.trim().length === 0) {
+          throw new Error(`${desc}: Пустой ответ от сервера`);
+        }
+        
+        const parsed = Papa.parse(text, { 
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false
+        });
+        
+        if (parsed.errors && parsed.errors.length > 0) {
+          console.warn(`⚠️ Предупреждения "${desc}":`, parsed.errors.slice(0, 3));
+        }
+        
+        const data = parsed.data.filter(row => {
+          return Object.values(row).some(value => value && String(value).trim());
+        });
+
+        if (data.length === 0) {
+          console.warn(`⚠️ "${desc}" пуст после фильтрации`);
+        }
+
+        console.log(`✅ "${desc}": ${data.length} строк`);
+        return { name, data, desc };
+      };
+
+      // Список листов
+      const sheetTasks = [
+        { name: 'data', url: SHEETS.data, desc: 'Данные' },
+        { name: 'plans', url: SHEETS.plans, desc: 'Планы' },
+        { name: 'records', url: SHEETS.records, desc: 'Рекорды' },
+        { name: 'settings', url: SHEETS.settings, desc: 'Настройки' },
+        { name: 'ebitda', url: SHEETS.ebitda, desc: 'EBITDA' },
+        { name: 'leaders', url: SHEETS.leaders, desc: 'Лидеры' },
+      ];
+
+      // ПАРАЛЛЕЛЬНАЯ загрузка с таймаутом
+      console.log("📡 Загружаем все листы...");
       
-      if (!response.ok) {
-        throw new Error(`${desc}: HTTP ${response.status}`);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: загрузка заняла больше 30 секунд')), 30000)
+      );
+
+      const loadPromise = Promise.allSettled(
+        sheetTasks.map(({ name, url, desc }) => loadSheet(name, url, desc))
+      );
+
+      const results = await Promise.race([loadPromise, timeoutPromise]);
+
+      // Проверяем результаты
+      const failed = results.filter(r => r.status === 'rejected');
+      const succeeded = results.filter(r => r.status === 'fulfilled');
+
+      if (failed.length > 0) {
+        console.error("❌ Не загружено:");
+        failed.forEach((result, idx) => {
+          const task = sheetTasks[results.indexOf(result)];
+          console.error(`- ${task?.desc}:`, result.reason?.message || result.reason);
+        });
       }
-      
-      const text = await response.text();
-      
-      if (!text || text.trim().length === 0) {
-        throw new Error(`${desc}: Пустой ответ от сервера`);
-      }
-      
-      const parsed = Papa.parse(text, { 
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: false // Всё как строки
-      });
-      
-      if (parsed.errors && parsed.errors.length > 0) {
-        console.warn(`⚠️ Предупреждения "${desc}":`, parsed.errors.slice(0, 3));
-      }
-      
-      const data = parsed.data.filter(row => {
-        return Object.values(row).some(value => value && String(value).trim());
-      });
 
-      if (data.length === 0) {
-        console.warn(`⚠️ "${desc}" пуст после фильтрации`);
+      if (succeeded.length === 0) {
+        throw new Error("Не удалось загрузить ни одного листа");
       }
 
-      console.log(`✅ "${desc}": ${data.length} строк`);
-      return { name, data, desc };
-    };
-
-    // Список листов
-    const sheetTasks = [
-      { name: 'data', url: SHEETS.data, desc: 'Данные' },
-      { name: 'plans', url: SHEETS.plans, desc: 'Планы' },
-      { name: 'records', url: SHEETS.records, desc: 'Рекорды' },
-      { name: 'settings', url: SHEETS.settings, desc: 'Настройки' },
-      { name: 'ebitda', url: SHEETS.ebitda, desc: 'EBITDA' },
-      { name: 'leaders', url: SHEETS.leaders, desc: 'Лидеры' },
-    ];
-
-    // ПАРАЛЛЕЛЬНАЯ загрузка с таймаутом
-    console.log("📡 Загружаем все листы...");
-    
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout: загрузка заняла больше 30 секунд')), 30000)
-    );
-
-    const loadPromise = Promise.allSettled(
-      sheetTasks.map(({ name, url, desc }) => loadSheet(name, url, desc))
-    );
-
-    const results = await Promise.race([loadPromise, timeoutPromise]);
-
-    // Проверяем результаты
-    const failed = results.filter(r => r.status === 'rejected');
-    const succeeded = results.filter(r => r.status === 'fulfilled');
-
-    if (failed.length > 0) {
-      console.error("❌ Не загружено:");
-      failed.forEach((result, idx) => {
-        const task = sheetTasks[results.indexOf(result)];
-        console.error(`- ${task?.desc}:`, result.reason?.message || result.reason);
+      // Складываем данные
+      console.log("✅ Загружено успешно:");
+      succeeded.forEach(result => {
+        const { name, data, desc } = result.value;
+        window.DATASETS[name] = data;
+        console.log(`- ${desc}: ${data.length} строк`);
       });
+
+      // Метаинформация
+      window.DATASETS._loadTime = new Date();
+      window.DATASETS._loadedSheets = succeeded.map(r => r.value.name);
+      window.DATASETS._isCached = false;
+
+      // Сохраняем в кеш (если доступен)
+      if (useCache) {
+        try {
+          const dataToCache = JSON.stringify(window.DATASETS);
+          if (dataToCache.length < 5 * 1024 * 1024) {
+            sessionStorage.setItem(CACHE_KEY, dataToCache);
+            sessionStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+            console.log("💾 Данные сохранены в кеш");
+          } else {
+            console.warn("⚠️ Данные слишком большие для кеша");
+          }
+        } catch (e) {
+          console.warn("⚠️ Не удалось сохранить в кеш:", e.message);
+        }
+      }
     }
-
-    if (succeeded.length === 0) {
-      throw new Error("Не удалось загрузить ни одного листа");
-    }
-
-    // Складываем данные
-    console.log("✅ Загружено успешно:");
-    succeeded.forEach(result => {
-      const { name, data, desc } = result.value;
-      window.DATASETS[name] = data;
-      console.log(`- ${desc}: ${data.length} строк`);
-    });
 
     // КРИТИЧЕСКАЯ ПРОВЕРКА
     if (!window.DATASETS.data || window.DATASETS.data.length === 0) {
       throw new Error("Основной лист 'Данные' пуст или не загрузился");
     }
 
-    // Метаинформация
-    window.DATASETS._loadTime = new Date();
-    window.DATASETS._loadedSheets = succeeded.map(r => r.value.name);
-    window.DATASETS._isCached = false;
-
-    // Сохраняем в кеш (если доступен)
-    if (useCache) {
-      try {
-        const dataToCache = JSON.stringify(window.DATASETS);
-        // Проверка размера (max ~5MB в sessionStorage)
-        if (dataToCache.length < 5 * 1024 * 1024) {
-          sessionStorage.setItem(CACHE_KEY, dataToCache);
-          sessionStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
-          console.log("💾 Данные сохранены в кеш");
-        } else {
-          console.warn("⚠️ Данные слишком большие для кеша");
-        }
-      } catch (e) {
-        console.warn("⚠️ Не удалось сохранить в кеш:", e.message);
-      }
+    // ===== ПРАВИЛЬНАЯ ОТПРАВКА СОБЫТИЯ =====
+    // ВАЖНО: Ждём, пока все модули загрузятся и подпишутся на событие!
+    
+    if (loadedFromCache) {
+      // Если из кеша (быстро), даём модулям время загрузиться
+      console.log("⏳ Ждём загрузки модулей (300ms)...");
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    // Отправляем событие
     console.log("📢 Отправляем 'sheets-ready'");
     document.dispatchEvent(new Event('sheets-ready'));
+
+    // ДОПОЛНИТЕЛЬНО: повторная отправка через 500ms (для медленных модулей)
+    setTimeout(() => {
+      console.log("📢 Повторная отправка 'sheets-ready' (для медленных модулей)");
+      document.dispatchEvent(new Event('sheets-ready'));
+    }, 500);
 
   } catch (error) {
     console.error("💥 КРИТИЧЕСКАЯ ОШИБКА:", error);
