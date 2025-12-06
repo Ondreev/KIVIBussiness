@@ -116,13 +116,20 @@ function buildHeatmap() {
     const events = getEventsForDay(day);
     const hasEvents = events.length > 0;
     
-    // Берём иконку первого события
-    const eventIcon = hasEvents ? events[0].icon : '';
+    // Генерируем звёздочки для ВСЕХ событий
+    let starsHtml = '';
+    if (hasEvents) {
+      const uniqueTypes = [...new Set(events.map(e => e.type))]; // уникальные типы
+      uniqueTypes.forEach(type => {
+        const color = type === 'payment' ? '#ff6b35' : '#9b59b6'; // оранжевый или фиолетовый
+        starsHtml += `<span style="color:${color};font-size:12px;line-height:1;">★</span>`;
+      });
+    }
 
     html += `
-      <div class="heatmap-day" data-day="${day}" style="aspect-ratio:1;background:${bgColor};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,3.5vw,18px);font-weight:${isToday ? '900' : '600'};color:${bgColor === '#2d6a4f' ? 'white' : '#333'};cursor:pointer;transition:all 0.2s ease;position:relative;border:${isToday ? '3px solid #ff4081' : '2px solid transparent'};box-shadow:${isToday ? '0 0 12px rgba(255,64,129,0.5)' : 'none'};">
-        ${day}
-        ${hasEvents ? `<div style="position:absolute;top:2px;right:2px;font-size:16px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">${eventIcon}</div>` : ''}
+      <div class="heatmap-day" data-day="${day}" style="aspect-ratio:1;background:${bgColor};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(14px,3.5vw,18px);font-weight:${isToday ? '900' : '600'};color:${bgColor === '#2d6a4f' ? 'white' : '#333'};cursor:pointer;transition:all 0.2s ease;position:relative;border:${isToday ? '3px solid #ff4081' : '2px solid transparent'};box-shadow:${isToday ? '0 0 12px rgba(255,64,129,0.5)' : 'none'};padding:4px;">
+        <div style="flex:1;display:flex;align-items:center;">${day}</div>
+        ${hasEvents ? `<div style="display:flex;gap:2px;margin-top:-2px;">${starsHtml}</div>` : ''}
       </div>
     `;
   }
@@ -134,6 +141,10 @@ function buildHeatmap() {
         <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#a8dadc;border-radius:4px;"></div><span style="color:#666;">Низкая (&lt;80%)</span></div>
         <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#90ee90;border-radius:4px;"></div><span style="color:#666;">Средняя (80-120%)</span></div>
         <div style="display:flex;align-items:center;gap:6px;"><div style="width:16px;height:16px;background:#2d6a4f;border-radius:4px;"></div><span style="color:#666;">Отличная (&gt;120%)</span></div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;font-size:clamp(11px,2.8vw,13px);">
+        <div style="display:flex;align-items:center;gap:4px;"><span style="color:#ff6b35;font-size:16px;">★</span><span style="color:#666;">Платежи</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><span style="color:#9b59b6;font-size:16px;">★</span><span style="color:#666;">Дни рождения</span></div>
       </div>
       <div id="eventsBlock" style="background:#f8f9fa;border-radius:12px;padding:16px;margin-top:16px;display:none;"></div>
     </div>
@@ -183,7 +194,7 @@ function buildHeatmap() {
 
     if (events.length) {
       events.forEach(event => {
-        const borderColor = event.type === 'payment' ? '#e74c3c' : '#9b59b6';
+        const borderColor = event.type === 'payment' ? '#ff6b35' : '#9b59b6';
         html += `
           <div style="background:white;border-left:4px solid ${borderColor};border-radius:8px;padding:12px;margin-bottom:8px;">
             <div style="font-size:clamp(14px,3.5vw,16px);font-weight:700;color:#333;margin-bottom:4px;">${event.icon} ${event.name}</div>
