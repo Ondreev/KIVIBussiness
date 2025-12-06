@@ -59,7 +59,7 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      /* УБРАЛ backdrop-filter — сильно тормозит! */
+      /* УБРАН backdrop-filter — тормозит! */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 16px;
@@ -73,10 +73,10 @@
       border-radius: 14px;
       text-align: center;
       padding: 12px 8px;
-      /* СОКРАТИЛ transition — быстрее */
+      /* УСКОРЕН transition */
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      /* ОПТИМИЗАЦИЯ: говорим браузеру готовиться к трансформации */
+      /* ОПТИМИЗАЦИЯ */
       will-change: transform;
     }
 
@@ -102,6 +102,7 @@
 
     /* График */
     #chartContainer {
+      /* УБРАН backdrop-filter */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 16px;
@@ -149,12 +150,13 @@
     /* Оракул */
     #oracleContainer {
       width: 100%;
-      /* ОПТИМИЗАЦИЯ: браузер не рендерит невидимый контент */
+      /* ОПТИМИЗАЦИЯ: не рендерим невидимое */
       content-visibility: auto;
     }
 
     /* Новый блок истории по годам */
     .history-block {
+      /* УБРАН backdrop-filter */
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 20px;
@@ -178,7 +180,8 @@
       padding: 14px 18px;
       margin-bottom: 10px;
       cursor: pointer;
-      transition: transform 0.2s ease;
+      /* УСКОРЕН transition */
+      transition: transform 0.2s ease, background 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       justify-content: space-between;
@@ -210,7 +213,7 @@
 
     .year-arrow {
       font-size: 20px;
-      transition: transform 0.3s ease;
+      transition: transform 0.2s ease;
     }
 
     .year-item.active .year-arrow {
@@ -220,7 +223,7 @@
     .months-container {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.4s ease-out;
+      transition: max-height 0.3s ease-out;
       padding-left: 12px;
       margin-top: 8px;
     }
@@ -235,7 +238,7 @@
       padding: 12px 16px;
       margin-bottom: 8px;
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, background 0.2s ease;
       border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       justify-content: space-between;
@@ -265,7 +268,7 @@
     .days-container {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.4s ease-out;
+      transition: max-height 0.3s ease-out;
       margin-top: 8px;
     }
 
@@ -358,7 +361,7 @@
       font-weight: 600;
       cursor: pointer;
       margin-top: 12px;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
