@@ -141,7 +141,13 @@ async function loadSummary() {
   const prevTo = lastYearRows.reduce((s, r) => s + cleanNumber(getCol(r, COLS.revenue)), 0);
   const currTo = totalTo;
   const diff = prevTo ? Math.round((currTo - prevTo) / prevTo * 100) : 0;
-  setText("comparePrev", (diff >= 0 ? "+" : "") + diff + "%");
+  const diffText = (diff >= 0 ? "+" : "") + diff + "%";
+  
+  if (window.animateCounter) {
+    animateCounter(document.getElementById("comparePrev"), diffText);
+  } else {
+    setText("comparePrev", diffText);
+  }
 }
 
 function setText(id, text) {
