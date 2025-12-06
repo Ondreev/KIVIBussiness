@@ -411,7 +411,10 @@
   `;
 
   container.innerHTML = html;
-  document.querySelector('.container').appendChild(container);
+  
+  // Вставляем в правую колонку (десктоп) или .container (мобильная)
+  const target = document.querySelector('.right-column') || document.querySelector('.container');
+  if (target) target.appendChild(container);
 
   console.log('✅ Умный советник создан (финал)');
 })();
