@@ -36,6 +36,20 @@
       }
     });
     
+    // Переносим историю выручки (это не ID, а класс!)
+    const historyBlock = document.querySelector('.history-block');
+    if (historyBlock && !rightCol.contains(historyBlock)) {
+      console.log('✅ Перенос .history-block в правую колонку');
+      rightCol.appendChild(historyBlock);
+    }
+    
+    // Переносим историю выручки (по классу, т.к. у неё нет ID)
+    const historyBlock = document.querySelector('.history-block');
+    if (historyBlock && !rightCol.contains(historyBlock)) {
+      console.log('✅ Перенос history-block в правую колонку');
+      rightCol.appendChild(historyBlock);
+    }
+    
     // === ЛЕВАЯ КОЛОНКА: всё остальное ===
     // Ищем все блоки которые НЕ в левой и НЕ в правой колонке
     const container = document.querySelector('.container');
