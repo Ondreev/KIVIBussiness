@@ -1,4 +1,4 @@
-// oracle.js — прогноз по тайм-слотам, средняя только ДО ВЧЕРА (как в старой логике)
+// oracle.js — прогноз по тайм-слотам, средняя только ДО ВЧЕРА (ОПТИМИЗИРОВАНО)
 (function () {
   // распределение выручки по слотам
   const percentByWeekday = {
@@ -34,8 +34,20 @@
   }
 
   document.addEventListener("sheets-ready", () => {
+    // === ЗАЩИТА ОТ ПОВТОРНОГО ЗАПУСКА ===
+    if (window.oracleInitialized) {
+      console.log('⚠️ Oracle уже инициализирован, пропускаем');
+      return;
+    }
+    window.oracleInitialized = true;
+
     const data  = window.DATASETS?.data  || [];
     const plans = window.DATASETS?.plans || [];
+
+    if (!data.length) {
+      console.warn('⚠️ oracle: нет данных');
+      return;
+    }
 
     const now = new Date();
     const Y = now.getFullYear(), M = now.getMonth()+1, D = now.getDate();
@@ -87,7 +99,10 @@
     const weekdayEn = now.toLocaleDateString("en-US",{weekday:"long"});
     const weekdayRu = now.toLocaleDateString("ru-RU",{weekday:"long"});
     const slots = percentByWeekday[weekdayEn];
-    if (!slots) return;
+    if (!slots) {
+      console.warn('⚠️ oracle: нет данных для дня недели', weekdayEn);
+      return;
+    }
 
     const chartContainer = document.getElementById("chartContainer");
     if (!chartContainer) return;
@@ -136,8 +151,10 @@
 
     renderOracle();
     chartContainer.insertAdjacentElement("afterend", container);
-    clearInterval(window.oracleInterval);
-    window.oracleInterval = setInterval(renderOracle, 5*60*1000);
+    
+    // === ОПТИМИЗАЦИЯ: интервал 10 минут вместо 5 ===
+    if (window.oracleInterval) clearInterval(window.oracleInterval);
+    window.oracleInterval = setInterval(renderOracle, 10 * 60 * 1000); // 10 минут
 
     console.log("✅ Oracle: planTo =", planTo, "| avgTo (до вчера) =", avgTo, "| factToday =", todayFactTo);
   });
