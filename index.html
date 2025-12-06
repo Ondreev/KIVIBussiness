@@ -93,20 +93,8 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 24px;
-        align-items: start;
+        /* УБРАЛ align-items: start — это создавало пустоту! */
         padding: 24px;
-      }
-
-      .left-column {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-      }
-
-      .right-column {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
       }
     }
 
@@ -483,16 +471,16 @@
   </style>
 </head>
 <body>
-  <!-- ЛОГОТИП (отдельный блок) -->
+  <!-- ЛОГОТИП -->
   <div class="logo-wrapper">
     <h1 class="animate-on-scroll">KIVI <span>Business</span></h1>
   </div>
 
   <div class="container">
-    <!-- ЛЕВАЯ КОЛОНКА -->
+    <!-- ===== ЛЕВАЯ КОЛОНКА ===== -->
     <div class="left-column">
-      <!-- БЛОК 1: Верхний блок (План/Факт/Рекорд) -->
-      <div class="grid animate-on-scroll" id="summaryBlock" data-order="1">
+      <!-- План/Факт/Рекорд -->
+      <div class="grid animate-on-scroll" id="summaryBlock">
         <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План ТО</div></div>
         <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
         <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СР ЧЕК</div></div>
@@ -514,42 +502,33 @@
         <div class="cell"><div class="big" id="comparePrev">—</div><div class="small">прошл. год</div></div>
       </div>
 
-      <!-- БЛОК 2: График -->
-      <div id="chartContainer" class="animate-on-scroll" data-order="2">
+      <!-- График -->
+      <div id="chartContainer" class="animate-on-scroll">
         <canvas id="salesChart"></canvas>
         <div id="customLabels" class="custom-labels"></div>
       </div>
 
-      <!-- БЛОК 3: Оракул -->
-      <div id="oracleContainer" class="animate-on-scroll" data-order="3"></div>
+      <!-- Оракул -->
+      <div id="oracleContainer" class="animate-on-scroll"></div>
 
-      <!-- БЛОК 4: Сравнение с прошлым годом -->
-      <div class="compare-block animate-on-scroll" data-order="4">
+      <!-- Сравнение -->
+      <div class="compare-block animate-on-scroll">
         <h2>В сравнении с прошлым годом</h2>
         <div id="compareTable"></div>
         <button id="toggleRowsBtn" type="button">Показать все</button>
       </div>
 
-      <!-- ЭТИ БЛОКИ СОЗДАЮТСЯ ДИНАМИЧЕСКИ (модули ищут .left-column или .container) -->
+      <!-- Остальные блоки добавятся сюда динамически -->
     </div>
 
-    <!-- ПРАВАЯ КОЛОНКА -->
+    <!-- ===== ПРАВАЯ КОЛОНКА ===== -->
     <div class="right-column">
-      <!-- ЭТИ БЛОКИ СОЗДАЮТСЯ ДИНАМИЧЕСКИ:
-           - heatmap.js создаст карту месяца
-           - advisor.js создаст советника дня
-      -->
-      
-      <!-- История выручки -->
-      <div class="history-block animate-on-scroll" data-order="22">
-        <h2>📊 История выручки</h2>
-        <div id="historyYears"></div>
-      </div>
+      <!-- СЮДА вставятся: heatmap → advisor → история -->
     </div>
   </div>
 
   <script>
-    // === ЭФФЕКТ ПЕРЕСЧЁТА ЦИФР (counter animation) ===
+    // === ЭФФЕКТ ПЕРЕСЧЁТА ЦИФР ===
     function animateCounter(element, finalValue, duration = 800) {
       if (!element || !finalValue) return;
       
@@ -584,7 +563,7 @@
       requestAnimationFrame(update);
     }
 
-    // === АНИМАЦИЯ ПОЯВЛЕНИЯ ПРИ ПРОКРУТКЕ ===
+    // === АНИМАЦИЯ ПОЯВЛЕНИЯ ===
     document.addEventListener('DOMContentLoaded', () => {
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -603,7 +582,7 @@
       });
     });
 
-    // Переключатель видимости строк таблицы сравнения
+    // Переключатель строк
     let showingAll = false;
     function toggleRows() {
       if (!window.allDataRows || !window.allDataRows.length) return;
@@ -616,34 +595,30 @@
     }
     document.getElementById('toggleRowsBtn')?.addEventListener('click', toggleRows);
 
-    // Убираем возможные оверлеи после загрузки
+    // Убираем оверлеи
     document.addEventListener('sheets-ready', () => {
       ['#loadingOverlay', '#loadingIndicator', '#loading', '#loader', '#preloader',
        '.loadingOverlay', '.loading-indicator', '.loading', '.loader', '.preloader'
       ].forEach(sel => document.querySelectorAll(sel).forEach(el => el.remove()));
     });
 
-    // Экспортируем функцию анимации для использования в других скриптов
     window.animateCounter = animateCounter;
   </script>
 
-  <!-- Скрипты проекта (порядок важен) -->
+  <!-- Скрипты -->
   <script src="config.js" defer></script>
   <script src="sheetsLoader.js" defer></script>
-
   <script src="kivi_dashboard_updated.js" defer></script>
   <script src="oracle.js" defer></script>
-  <script src="advisor.js" defer></script>
-
-  <!-- Новый модуль истории -->
   <script src="history.js" defer></script>
-
-  <!-- Доп. модули -->
+  
+  <!-- ВАЖНО: Эти модули нужно обновить, чтобы вставлялись в правильные колонки -->
   <script src="miniblocks.js" defer></script>
+  <script src="heatmap.js" defer></script>
+  <script src="advisor.js" defer></script>
   <script src="next3months.js" defer></script>
   <script src="yearComparisonChart.js" defer></script>
   <script src="profitability.js" defer></script>
   <script src="purchase.js" defer></script>
-  <script src="heatmap.js" defer></script>
 </body>
 </html>
