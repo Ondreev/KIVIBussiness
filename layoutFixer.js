@@ -47,15 +47,6 @@
       console.warn('⚠️ #advisorBlock не найден');
     }
     
-    // 3. История выручки
-    const history = document.querySelector('.history-block');
-    if (history && !rightCol.contains(history)) {
-      console.log('📦 Переношу .history-block в правую колонку');
-      rightCol.appendChild(history);
-    } else if (!history) {
-      console.warn('⚠️ .history-block не найден');
-    }
-    
     // === ЛЕВАЯ КОЛОНКА: всё остальное ===
     // Переносим все дочерние элементы .container (кроме h1 и колонок) в левую колонку
     const container = document.querySelector('.container');
@@ -76,8 +67,7 @@
         child === rightCol ||
         child.classList.contains('logo-wrapper') ||
         child.id === 'heatmapMonth' ||
-        child.id === 'advisorBlock' ||
-        child.classList.contains('history-block')
+        child.id === 'advisorBlock'
       ) {
         return;
       }
