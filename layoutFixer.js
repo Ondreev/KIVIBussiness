@@ -46,7 +46,16 @@
     } else if (!advisor) {
       console.warn('⚠️ #advisorBlock не найден');
     }
-    
+
+    // 3. Переносим блок истории
+const historyBlock = document.querySelector('.history-block');
+if (historyBlock && !rightCol.contains(historyBlock)) {
+  console.log('📦 Переношу .history-block в правую колонку');
+  rightCol.appendChild(historyBlock);
+} else if (!historyBlock) {
+  console.warn('⚠️ .history-block не найден');
+}
+
     // === ЛЕВАЯ КОЛОНКА: всё остальное ===
     // Переносим все дочерние элементы .container (кроме h1 и колонок) в левую колонку
     const container = document.querySelector('.container');
