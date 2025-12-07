@@ -1,16 +1,14 @@
-// miniblocks.js — 3 мини-блока с современным дизайном (ОПТИМИЗИРОВАНО)
+// miniblocks.js — 3 мини-блока с современным дизайном
 
-document.addEventListener('sheets-ready', () => {
-  // === ИСПОЛЬЗУЕМ УЖЕ ЗАГРУЖЕННЫЕ ДАННЫЕ ===
-  const data = window.DATASETS?.data || [];
-  const leaders = window.DATASETS?.leaders || [];
-
-  if (!data.length) {
-    console.warn('⚠️ miniblocks: нет данных');
+document.addEventListener('sheets-ready', async () => {
+  // Проверяем что блок ещё не создан (защита от дублей)
+  if (document.getElementById('miniblocksContainer')) {
+    console.log('⚠️ Miniblocks уже созданы, пропускаем');
     return;
   }
 
   const container = document.createElement("div");
+  container.id = 'miniblocksContainer';
   container.style.cssText = `
     display: grid;
     grid-template-columns: 1fr 1.25fr;
@@ -23,6 +21,15 @@ document.addEventListener('sheets-ready', () => {
   document.querySelector('.container').appendChild(container);
 
   const cleanNumber = val => parseFloat((val || "0").replace(/\s/g, "").replace(",", "."));
+
+  const fetchCSV = async url => {
+    const res = await fetch(url);
+    const text = await res.text();
+    return Papa.parse(text, { header: true }).data;
+  };
+
+  const data = await fetchCSV(SHEETS.data);
+  const leaders = await fetchCSV(SHEETS.leaders);
 
   const today = new Date();
   const ym = today.toISOString().slice(0, 7);
@@ -53,8 +60,7 @@ document.addEventListener('sheets-ready', () => {
       border-radius: 16px;
       padding: 16px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      will-change: transform;
+      transition: all 0.3s ease;
     `;
     div.innerHTML = `
       <div style='font-weight:700;margin-bottom:12px;text-align:center;font-size:15px;'>${title}</div>
@@ -100,8 +106,7 @@ document.addEventListener('sheets-ready', () => {
     border-radius: 16px;
     padding: 16px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    will-change: transform;
+    transition: all 0.3s ease;
   `;
 
   rightCol.addEventListener('mouseenter', () => {
@@ -126,6 +131,6 @@ document.addEventListener('sheets-ready', () => {
 
   container.appendChild(leftCol);
   container.appendChild(rightCol);
-
-  console.log('✅ miniblocks создан (из window.DATASETS)');
+  
+  console.log('✅ Miniblocks созданы');
 });
