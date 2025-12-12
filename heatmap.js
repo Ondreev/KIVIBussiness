@@ -68,16 +68,21 @@ function buildHeatmap() {
     
     const day = parseInt(dateStr.split('-')[2]);
     const revenue = parseFloat((data[i]["ТО"] || '0').replace(/\s/g, '').replace(',', '.'));
-    const plan = parseFloat((data[i]["План"] || '0').replace(/\s/g, '').replace(',', '.'));
+    const plan = parseFloat((data[i]["План на день"] || '0').replace(/\s/g, '').replace(',', '.'));
     
     if (!currentYearData[day]) currentYearData[day] = { revenue: 0, plan: 0 };
     
-    // Суммируем выручку и план
+    // Суммируем выручку
     if (revenue > 0) currentYearData[day].revenue += revenue;
-    if (plan > 0) currentYearData[day].plan += plan;
+    // Берём план (он одинаковый на весь день)
+    if (plan > 0) currentYearData[day].plan = plan;
   }
   
-  console.log('📊 Данные текущего года:', currentYearData);
+  console.log('📊 Данные текущего года (первые 3 дня):', {
+    1: currentYearData[1],
+    2: currentYearData[2],
+    3: currentYearData[3]
+  });
 
   // Цветовая шкала (на основе среднего)
   const revenues = Object.values(revenueByDay).filter(r => r > 0);
@@ -145,12 +150,13 @@ function buildHeatmap() {
       const dayData = currentYearData[day];
       if (dayData.plan > 0 && dayData.revenue > 0) {
         const isPlanMet = dayData.revenue >= dayData.plan;
-        const icon = isPlanMet ? '✅' : '❌';
-        planIndicator = `<div style="position:absolute;top:3px;right:3px;font-size:14px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));">${icon}</div>`;
+        const icon = isPlanMet ? '✔️' : '❌';
+        // Позиционируем ЗА ПРЕДЕЛАМИ кубика в правом верхнем углу
+        planIndicator = `<div style="position:absolute;top:-8px;right:-8px;font-size:18px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));z-index:10;">${icon}</div>`;
         
-        // Отладка
+        // Отладка первых 5 дней
         if (day <= 5) {
-          console.log(`День ${day}: выручка=${dayData.revenue.toFixed(0)}, план=${dayData.plan.toFixed(0)}, выполнен=${isPlanMet}`);
+          console.log(`День ${day}: выручка=${dayData.revenue.toFixed(0)}, план=${dayData.plan}, выполнен=${isPlanMet}`);
         }
       }
     }
@@ -166,7 +172,7 @@ function buildHeatmap() {
     }
 
     html += `
-      <div class="heatmap-day" data-day="${day}" style="aspect-ratio:1;background:${bgColor};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(14px,3.5vw,18px);font-weight:${isToday ? '900' : '600'};color:${bgColor === '#2d6a4f' ? 'white' : '#333'};cursor:pointer;transition:all 0.2s ease;position:relative;border:${isToday ? '3px solid #ff4081' : '2px solid transparent'};box-shadow:${isToday ? '0 0 12px rgba(255,64,129,0.5)' : 'none'};padding:4px;">
+      <div class="heatmap-day" data-day="${day}" style="aspect-ratio:1;background:${bgColor};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(14px,3.5vw,18px);font-weight:${isToday ? '900' : '600'};color:${bgColor === '#2d6a4f' ? 'white' : '#333'};cursor:pointer;transition:all 0.2s ease;position:relative;border:${isToday ? '3px solid #ff4081' : '2px solid transparent'};box-shadow:${isToday ? '0 0 12px rgba(255,64,129,0.5)' : 'none'};padding:4px;overflow:visible;">
         ${planIndicator}
         <div style="flex:1;display:flex;align-items:center;">${day}</div>
         ${hasEvents ? `<div style="display:flex;gap:2px;margin-top:-2px;">${starsHtml}</div>` : ''}
@@ -240,7 +246,7 @@ function buildHeatmap() {
       const isPlanMet = hasPlan && dayData.revenue >= dayData.plan;
       const planPercent = hasPlan ? Math.round(dayData.revenue / dayData.plan * 100) : 0;
       const statusColor = isPlanMet ? '#28a745' : (hasPlan ? '#dc3545' : '#999');
-      const statusIcon = isPlanMet ? '✅' : (hasPlan ? '❌' : '📊');
+      const statusIcon = isPlanMet ? '✔️' : (hasPlan ? '❌' : '📊');
       
       console.log(`Событие день ${day}:`, {
         revenue: dayData.revenue,
