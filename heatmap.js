@@ -70,12 +70,14 @@ function buildHeatmap() {
     const revenue = parseFloat((data[i]["ТО"] || '0').replace(/\s/g, '').replace(',', '.'));
     const plan = parseFloat((data[i]["План"] || '0').replace(/\s/g, '').replace(',', '.'));
     
-    if (revenue > 0) {
-      if (!currentYearData[day]) currentYearData[day] = { revenue: 0, plan: 0 };
-      currentYearData[day].revenue += revenue;
-      currentYearData[day].plan = plan > 0 ? plan : currentYearData[day].plan;
-    }
+    if (!currentYearData[day]) currentYearData[day] = { revenue: 0, plan: 0 };
+    
+    // Суммируем выручку и план
+    if (revenue > 0) currentYearData[day].revenue += revenue;
+    if (plan > 0) currentYearData[day].plan += plan;
   }
+  
+  console.log('📊 Данные текущего года:', currentYearData);
 
   // Цветовая шкала (на основе среднего)
   const revenues = Object.values(revenueByDay).filter(r => r > 0);
@@ -141,11 +143,15 @@ function buildHeatmap() {
     let planIndicator = '';
     if (currentYearData[day]) {
       const dayData = currentYearData[day];
-      if (dayData.plan > 0) {
+      if (dayData.plan > 0 && dayData.revenue > 0) {
         const isPlanMet = dayData.revenue >= dayData.plan;
         const icon = isPlanMet ? '✅' : '❌';
-        const color = isPlanMet ? '#28a745' : '#dc3545';
-        planIndicator = `<div style="position:absolute;top:2px;right:2px;font-size:10px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">${icon}</div>`;
+        planIndicator = `<div style="position:absolute;top:3px;right:3px;font-size:14px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));">${icon}</div>`;
+        
+        // Отладка
+        if (day <= 5) {
+          console.log(`День ${day}: выручка=${dayData.revenue.toFixed(0)}, план=${dayData.plan.toFixed(0)}, выполнен=${isPlanMet}`);
+        }
       }
     }
     
@@ -230,17 +236,26 @@ function buildHeatmap() {
 
     // Информация о текущем годе (план)
     if (hasCurrentYearData) {
-      const isPlanMet = dayData.plan > 0 && dayData.revenue >= dayData.plan;
-      const planPercent = dayData.plan > 0 ? Math.round(dayData.revenue / dayData.plan * 100) : 0;
-      const statusColor = isPlanMet ? '#28a745' : '#dc3545';
-      const statusIcon = isPlanMet ? '✅' : '❌';
+      const hasPlan = dayData.plan > 0;
+      const isPlanMet = hasPlan && dayData.revenue >= dayData.plan;
+      const planPercent = hasPlan ? Math.round(dayData.revenue / dayData.plan * 100) : 0;
+      const statusColor = isPlanMet ? '#28a745' : (hasPlan ? '#dc3545' : '#999');
+      const statusIcon = isPlanMet ? '✅' : (hasPlan ? '❌' : '📊');
+      
+      console.log(`Событие день ${day}:`, {
+        revenue: dayData.revenue,
+        plan: dayData.plan,
+        hasPlan,
+        isPlanMet,
+        planPercent
+      });
       
       html += `
         <div style="background:white;border-left:4px solid ${statusColor};border-radius:8px;padding:12px;margin-bottom:8px;">
           <div style="font-size:clamp(14px,3.5vw,16px);font-weight:700;color:#333;margin-bottom:4px;">${statusIcon} ${currentYear} год</div>
           <div style="font-size:clamp(13px,3.2vw,15px);color:#666;">
             Выручка: <strong style="color:#667eea;">${Math.round(dayData.revenue).toLocaleString('ru-RU')}₽</strong><br>
-            ${dayData.plan > 0 ? `План: <strong>${Math.round(dayData.plan).toLocaleString('ru-RU')}₽</strong> <span style="color:${statusColor};font-weight:600;">(${planPercent}%)</span>` : ''}
+            ${hasPlan ? `План: <strong>${Math.round(dayData.plan).toLocaleString('ru-RU')}₽</strong> <span style="color:${statusColor};font-weight:600;">(${planPercent}%)</span>` : 'План не задан'}
           </div>
         </div>
       `;
