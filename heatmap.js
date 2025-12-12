@@ -42,7 +42,7 @@ function buildHeatmap() {
   const currentDay = today.getDate();
   const lastYear = currentYear - 1;
 
-  // БЫСТРЫЙ сбор данных
+  // БЫСТРЫЙ сбор данных ПРОШЛОГО года
   const revenueByDay = {};
   const targetYearMonth = `${lastYear}-${String(currentMonth + 1).padStart(2, '0')}`;
   
@@ -55,6 +55,25 @@ function buildHeatmap() {
     
     if (revenue > 0) {
       revenueByDay[day] = (revenueByDay[day] || 0) + revenue;
+    }
+  }
+
+  // БЫСТРЫЙ сбор данных ТЕКУЩЕГО года (для проверки плана)
+  const currentYearData = {};
+  const currentYearMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  
+  for (let i = 0; i < data.length; i++) {
+    const dateStr = data[i]["Дата"];
+    if (!dateStr || !dateStr.startsWith(currentYearMonth)) continue;
+    
+    const day = parseInt(dateStr.split('-')[2]);
+    const revenue = parseFloat((data[i]["ТО"] || '0').replace(/\s/g, '').replace(',', '.'));
+    const plan = parseFloat((data[i]["План"] || '0').replace(/\s/g, '').replace(',', '.'));
+    
+    if (revenue > 0) {
+      if (!currentYearData[day]) currentYearData[day] = { revenue: 0, plan: 0 };
+      currentYearData[day].revenue += revenue;
+      currentYearData[day].plan = plan > 0 ? plan : currentYearData[day].plan;
     }
   }
 
@@ -118,6 +137,18 @@ function buildHeatmap() {
     const events = getEventsForDay(day);
     const hasEvents = events.length > 0;
     
+    // Проверка выполнения плана ТЕКУЩЕГО года
+    let planIndicator = '';
+    if (currentYearData[day]) {
+      const dayData = currentYearData[day];
+      if (dayData.plan > 0) {
+        const isPlanMet = dayData.revenue >= dayData.plan;
+        const icon = isPlanMet ? '✅' : '❌';
+        const color = isPlanMet ? '#28a745' : '#dc3545';
+        planIndicator = `<div style="position:absolute;top:2px;right:2px;font-size:10px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));">${icon}</div>`;
+      }
+    }
+    
     // Генерируем звёздочки для ВСЕХ событий
     let starsHtml = '';
     if (hasEvents) {
@@ -130,6 +161,7 @@ function buildHeatmap() {
 
     html += `
       <div class="heatmap-day" data-day="${day}" style="aspect-ratio:1;background:${bgColor};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(14px,3.5vw,18px);font-weight:${isToday ? '900' : '600'};color:${bgColor === '#2d6a4f' ? 'white' : '#333'};cursor:pointer;transition:all 0.2s ease;position:relative;border:${isToday ? '3px solid #ff4081' : '2px solid transparent'};box-shadow:${isToday ? '0 0 12px rgba(255,64,129,0.5)' : 'none'};padding:4px;">
+        ${planIndicator}
         <div style="flex:1;display:flex;align-items:center;">${day}</div>
         ${hasEvents ? `<div style="display:flex;gap:2px;margin-top:-2px;">${starsHtml}</div>` : ''}
       </div>
@@ -184,7 +216,10 @@ function buildHeatmap() {
     const block = document.getElementById('eventsBlock');
     if (!block) return;
 
-    if (!events.length && !revenue) {
+    const dayData = currentYearData[day];
+    const hasCurrentYearData = dayData && dayData.revenue > 0;
+
+    if (!events.length && !revenue && !hasCurrentYearData) {
       block.style.display = 'none';
       return;
     }
@@ -192,6 +227,24 @@ function buildHeatmap() {
     block.style.display = 'block';
     
     let html = `<div style="font-size:clamp(16px,4vw,18px);font-weight:700;color:#333;margin-bottom:12px;">📅 ${day} ${monthNames[currentMonth]}</div>`;
+
+    // Информация о текущем годе (план)
+    if (hasCurrentYearData) {
+      const isPlanMet = dayData.plan > 0 && dayData.revenue >= dayData.plan;
+      const planPercent = dayData.plan > 0 ? Math.round(dayData.revenue / dayData.plan * 100) : 0;
+      const statusColor = isPlanMet ? '#28a745' : '#dc3545';
+      const statusIcon = isPlanMet ? '✅' : '❌';
+      
+      html += `
+        <div style="background:white;border-left:4px solid ${statusColor};border-radius:8px;padding:12px;margin-bottom:8px;">
+          <div style="font-size:clamp(14px,3.5vw,16px);font-weight:700;color:#333;margin-bottom:4px;">${statusIcon} ${currentYear} год</div>
+          <div style="font-size:clamp(13px,3.2vw,15px);color:#666;">
+            Выручка: <strong style="color:#667eea;">${Math.round(dayData.revenue).toLocaleString('ru-RU')}₽</strong><br>
+            ${dayData.plan > 0 ? `План: <strong>${Math.round(dayData.plan).toLocaleString('ru-RU')}₽</strong> <span style="color:${statusColor};font-weight:600;">(${planPercent}%)</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
 
     if (events.length) {
       events.forEach(event => {
