@@ -150,7 +150,7 @@ function buildHeatmap() {
       const dayData = currentYearData[day];
       if (dayData.plan > 0 && dayData.revenue > 0) {
         const isPlanMet = dayData.revenue >= dayData.plan;
-        const icon = isPlanMet ? '✔️' : '🥺';
+        const icon = isPlanMet ? '❤️' : '🥺';
         // Позиционируем ЗА ПРЕДЕЛАМИ кубика в правом верхнем углу
         planIndicator = `<div style="position:absolute;top:-8px;right:-8px;font-size:18px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));z-index:10;">${icon}</div>`;
         
