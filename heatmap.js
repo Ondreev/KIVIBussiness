@@ -5,25 +5,25 @@
 // ====================================
 const EVENTS = [
   // Аренда (2 раза в месяц)
-  { type: 'payment', name: 'Аренда (1 часть)', day: 7, amount: 79000, icon: '💰' },
-  { type: 'payment', name: 'Аренда (2 часть)', day: 23, amount: 63000, icon: '💰' },
+  { type: 'payment', name: 'Аренда (1 часть)', day: 7, amount: 79000, icon: '💲' },
+  { type: 'payment', name: 'Аренда (2 часть)', day: 23, amount: 63000, icon: '💲' },
   
   // Кредиты
-  { type: 'payment', name: 'Кредит 1', day: 7, amount: 13100, icon: '🏦' },
-  { type: 'payment', name: 'Кредит 2', day: 23, amount: 14700, icon: '🏦' },
-  { type: 'payment', name: 'Кредит 3', day: 10, amount: 37700, icon: '🏦' },
-  { type: 'payment', name: 'Кредит 4', day: 19, amount: 20000, icon: '🏦' },
+  { type: 'payment', name: 'Кредит 1', day: 7, amount: 13100, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 2', day: 23, amount: 14700, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 3', day: 10, amount: 37700, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 4', day: 19, amount: 20000, icon: '✔️' },
   
   // Дни рождения (month: номер месяца, если null — каждый месяц)
-  { type: 'birthday', name: 'День рождения Виктора', day: 15, month: 5, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Кирилла', day: 20, month: 1, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Дмитрия', day: 17, month: 10, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Дениса', day: 11, month: 7, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Людмила', day: 15, month: 1, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Акбар', day: 16, month: 4, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Таня соседка', day: 7, month: 6, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Наташа соседка высокая', day: 22, month: 8, icon: '🎂' },
-  { type: 'birthday', name: 'День рождения Нугзар', day: 15, month: 8, icon: '🎂' },
+  { type: 'birthday', name: 'День рождения Виктора', day: 15, month: 5, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Кирилла', day: 20, month: 1, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Дмитрия', day: 17, month: 10, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Дениса', day: 11, month: 7, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Людмила', day: 15, month: 1, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Акбар', day: 16, month: 4, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Таня соседка', day: 7, month: 6, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Наташа соседка высокая', day: 22, month: 8, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Нугзар', day: 15, month: 8, icon: '🎉' },
 ];
 // ====================================
 
@@ -121,7 +121,7 @@ function buildHeatmap() {
 
   let html = `
     <div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;margin-bottom:24px;width:100%;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
-      <div style="font-size:clamp(20px,5vw,24px);font-weight:900;color:#333;margin-bottom:8px;text-align:center;">📅 Карта месяца</div>
+      <div style="font-size:clamp(20px,5vw,24px);font-weight:900;color:#333;margin-bottom:8px;text-align:center;"> Карта месяца</div>
       <div style="font-size:clamp(13px,3.2vw,15px);color:#666;margin-bottom:20px;text-align:center;">${monthNames[currentMonth]} ${lastYear} (прошлый год)</div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:20px;">
   `;
