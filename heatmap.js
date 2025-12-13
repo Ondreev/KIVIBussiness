@@ -246,7 +246,7 @@ function buildHeatmap() {
       const isPlanMet = hasPlan && dayData.revenue >= dayData.plan;
       const planPercent = hasPlan ? Math.round(dayData.revenue / dayData.plan * 100) : 0;
       const statusColor = isPlanMet ? '#28a745' : (hasPlan ? '#dc3545' : '#999');
-      const statusIcon = isPlanMet ? '✔️' : (hasPlan ? '🥺' : '📊');
+      const statusIcon = isPlanMet ? '❤️' : (hasPlan ? '🥺' : '📊');
       
       console.log(`Событие день ${day}:`, {
         revenue: dayData.revenue,
@@ -280,7 +280,7 @@ function buildHeatmap() {
 
       const totalPayments = events.filter(e => e.type === 'payment').reduce((sum, e) => sum + (e.amount || 0), 0);
       if (totalPayments) {
-        html += `<div style="background:#fff3cd;border-left:4px solid #f39c12;border-radius:8px;padding:12px;margin-top:8px;font-size:clamp(14px,3.5vw,16px);font-weight:700;color:#856404;">💸 Итого к оплате: ${totalPayments.toLocaleString('ru-RU')}₽</div>`;
+        html += `<div style="background:#fff3cd;border-left:4px solid #f39c12;border-radius:8px;padding:12px;margin-top:8px;font-size:clamp(14px,3.5vw,16px);font-weight:700;color:#856404;">💩 Итого к оплате: ${totalPayments.toLocaleString('ru-RU')}₽</div>`;
       }
     }
 
