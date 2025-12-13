@@ -167,7 +167,7 @@ function buildHeatmap() {
       const uniqueTypes = [...new Set(events.map(e => e.type))]; // уникальные типы
       uniqueTypes.forEach(type => {
         const color = type === 'payment' ? '#ff6b35' : '#9b59b6'; // оранжевый или фиолетовый
-        starsHtml += `<span style="color:${color};font-size:12px;line-height:1;">★</span>`;
+        starsHtml += `<span style="color:${color};font-size:14px;line-height:1;">★</span>`;
       });
     }
 
