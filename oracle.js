@@ -59,7 +59,8 @@
         todayFactTo += to;
         continue;
       }
-      if (p.d < D) {
+      if (p.d < D && to > 0) {
+        // Учитываем только дни где была выручка (пропускаем выходные)
         const prev = days.get(p.d) || { to: 0, tr: 0 };
         prev.to += to;
         prev.tr += tr;
