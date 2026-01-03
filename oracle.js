@@ -1,4 +1,4 @@
-// oracle.js — прогноз по тайм-слотам, средняя только ДО ВЧЕРА (ОПТИМИЗИРОВАНО)
+// oracle.js — прогноз по тайм-слотам, средняя только ДО ВЧЕРА (как в старой логике)
 (function () {
   // распределение выручки по слотам
   const percentByWeekday = {
@@ -34,20 +34,8 @@
   }
 
   document.addEventListener("sheets-ready", () => {
-    // === ЗАЩИТА ОТ ПОВТОРНОГО ЗАПУСКА ===
-    if (window.oracleInitialized) {
-      console.log('⚠️ Oracle уже инициализирован, пропускаем');
-      return;
-    }
-    window.oracleInitialized = true;
-
     const data  = window.DATASETS?.data  || [];
     const plans = window.DATASETS?.plans || [];
-
-    if (!data.length) {
-      console.warn('⚠️ oracle: нет данных');
-      return;
-    }
 
     const now = new Date();
     const Y = now.getFullYear(), M = now.getMonth()+1, D = now.getDate();
@@ -87,22 +75,32 @@
     const avgTo = Math.round(sumTo / dayCount);
     const avgTr = Math.round(sumTr / dayCount);
 
-    // --- цель = max(план, средняя_до_вчера) ---
+    // --- цель = max(план_на_день, средняя_до_вчера) ---
+    // Берём план на день из ДАННЫХ
+    const currentMonthRows = data.filter(r => {
+      const ds = val(r, ORACLE_COLS.date);
+      return isSameMonth(ds, Y, M);
+    });
+    
+    const rowWithPlan = currentMonthRows.find(r => r["План на день"] && clean(r["План на день"]) > 0);
+    const dailyPlanFromData = rowWithPlan ? clean(rowWithPlan["План на день"]) : 0;
+    
+    // Fallback на таблицу "Планы" (если нет в данных)
     const planRow = plans.find(r => r["Месяц"] === ym) || {};
-    const planToPlan = +planRow["План по выручке"] || 0;
-    const planTrPlan = +planRow["План по трафику"] || 0;
-
+    const planTrPlan = clean(planRow["План по трафику"]) || 0;
+    
+    const planToPlan = dailyPlanFromData > 0 ? dailyPlanFromData : (clean(planRow["План по выручке"]) || 0);
+    
     const planTo = Math.max(planToPlan, avgTo);
     const planTr = Math.max(planTrPlan, avgTr);
+    
+    console.log(`📊 Oracle: план на день = ${dailyPlanFromData}, цель = ${planTo}`);
 
     // --- отрисовка слотов ---
     const weekdayEn = now.toLocaleDateString("en-US",{weekday:"long"});
     const weekdayRu = now.toLocaleDateString("ru-RU",{weekday:"long"});
     const slots = percentByWeekday[weekdayEn];
-    if (!slots) {
-      console.warn('⚠️ oracle: нет данных для дня недели', weekdayEn);
-      return;
-    }
+    if (!slots) return;
 
     const chartContainer = document.getElementById("chartContainer");
     if (!chartContainer) return;
@@ -151,10 +149,8 @@
 
     renderOracle();
     chartContainer.insertAdjacentElement("afterend", container);
-    
-    // === ОПТИМИЗАЦИЯ: интервал 10 минут вместо 5 ===
-    if (window.oracleInterval) clearInterval(window.oracleInterval);
-    window.oracleInterval = setInterval(renderOracle, 10 * 60 * 1000); // 10 минут
+    clearInterval(window.oracleInterval);
+    window.oracleInterval = setInterval(renderOracle, 5*60*1000);
 
     console.log("✅ Oracle: planTo =", planTo, "| avgTo (до вчера) =", avgTo, "| factToday =", todayFactTo);
   });
