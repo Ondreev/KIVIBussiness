@@ -47,14 +47,24 @@
   
   // План на день из ДАННЫХ (а не из miniblocks!)
   let dailyPlan = 27000; // fallback
-  const currentMonthData = data.find(r => r["Дата"]?.startsWith(ym));
-  if (currentMonthData && currentMonthData["План на день"]) {
-    dailyPlan = clean(currentMonthData["План на день"]);
-    console.log('📅 План на день из данных:', dailyPlan);
+  
+  // Ищем среди ВСЕХ строк текущего месяца (любая строка с планом)
+  const currentMonthRows = data.filter(r => r["Дата"]?.startsWith(ym));
+  console.log(`📊 Найдено строк за ${ym}:`, currentMonthRows.length);
+  
+  // Берём первую строку где есть план
+  const rowWithPlan = currentMonthRows.find(r => r["План на день"] && clean(r["План на день"]) > 0);
+  
+  if (rowWithPlan) {
+    dailyPlan = clean(rowWithPlan["План на день"]);
+    console.log('✅ План на день из данных:', dailyPlan, '(строка:', rowWithPlan["Дата"], ')');
   } else if (planBlock) {
     dailyPlan = clean(planBlock.value);
-    console.log('📅 План на день из miniblocks:', dailyPlan);
+    console.log('⚠️ План на день из miniblocks (fallback):', dailyPlan);
+  } else {
+    console.warn('❌ План не найден! Используем fallback:', dailyPlan);
   }
+  
   console.log('📅 Итоговый план на день:', dailyPlan);
   
   // РОСТ от прошлого года (из блока)
