@@ -44,7 +44,18 @@
   
   let maxRevenue = recordRevenueBlock ? clean(recordRevenueBlock.value) : 0;
   let maxTraffic = recordTrafficBlock ? clean(recordTrafficBlock.value) : 0;
-  const dailyPlan = planBlock ? clean(planBlock.value) : 27000;
+  
+  // План на день из ДАННЫХ (а не из miniblocks!)
+  let dailyPlan = 27000; // fallback
+  const currentMonthData = data.find(r => r["Дата"]?.startsWith(ym));
+  if (currentMonthData && currentMonthData["План на день"]) {
+    dailyPlan = clean(currentMonthData["План на день"]);
+    console.log('📅 План на день из данных:', dailyPlan);
+  } else if (planBlock) {
+    dailyPlan = clean(planBlock.value);
+    console.log('📅 План на день из miniblocks:', dailyPlan);
+  }
+  console.log('📅 Итоговый план на день:', dailyPlan);
   
   // РОСТ от прошлого года (из блока)
   let growthPercent = 0;
@@ -416,7 +427,11 @@
   `;
 
   container.innerHTML = html;
-  document.querySelector('.container').appendChild(container);
+  container.id = 'advisorBlock';
+  
+  // Вставляем в правую колонку (десктоп) или .container (мобильная)
+  const target = document.querySelector('.right-column') || document.querySelector('.container');
+  if (target) target.appendChild(container);
 
   console.log('✅ Умный советник создан (финал)');
 })();
