@@ -76,25 +76,28 @@
     const avgTr = Math.round(sumTr / dayCount);
 
     // --- цель = max(план_на_день, средняя_до_вчера) ---
-    // Берём план на день из ДАННЫХ
+    // Берём план на день из ДАННЫХ (колонка "План на день")
     const currentMonthRows = data.filter(r => {
       const ds = val(r, ORACLE_COLS.date);
       return isSameMonth(ds, Y, M);
     });
     
+    // Ищем первую строку где есть план на день
     const rowWithPlan = currentMonthRows.find(r => r["План на день"] && clean(r["План на день"]) > 0);
     const dailyPlanFromData = rowWithPlan ? clean(rowWithPlan["План на день"]) : 0;
     
-    // Fallback на таблицу "Планы" (если нет в данных)
+    // Fallback: если нет в данных, пробуем таблицу "Планы"
     const planRow = plans.find(r => r["Месяц"] === ym) || {};
     const planTrPlan = clean(planRow["План по трафику"]) || 0;
     
+    // Используем план на день из данных или fallback на таблицу
     const planToPlan = dailyPlanFromData > 0 ? dailyPlanFromData : (clean(planRow["План по выручке"]) || 0);
     
+    // Цель = максимум из (план на день, средняя до вчера)
     const planTo = Math.max(planToPlan, avgTo);
     const planTr = Math.max(planTrPlan, avgTr);
     
-    console.log(`📊 Oracle: план на день = ${dailyPlanFromData}, цель = ${planTo}`);
+    console.log(`📊 Oracle: план на день из данных = ${dailyPlanFromData}, средняя = ${avgTo}, цель = ${planTo}`);
 
     // --- отрисовка слотов ---
     const weekdayEn = now.toLocaleDateString("en-US",{weekday:"long"});
