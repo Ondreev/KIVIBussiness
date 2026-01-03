@@ -30,6 +30,10 @@
   const dayNames = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
   const todayName = dayNames[dayOfWeek];
   const isWeekend = [0, 6].includes(dayOfWeek);
+  
+  // Название текущего месяца (родительный падеж)
+  const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  const currentMonthName = monthNames[today.getMonth()];
 
   // РЕКОРДЫ
   const miniblocks = window.DATASETS?.miniblocks || [];
@@ -157,7 +161,7 @@
 
   // === ПРИВЕТСТВИЕ ===
   if (timeOfDay === 'утро') {
-    cashierSection.push(`👋 Доброе утро, **${cashierToday}**! Сегодня **${todayName}**, ${currentDay} декабря.`);
+    cashierSection.push(`👋 Доброе утро, **${cashierToday}**! Сегодня **${todayName}**, ${currentDay} ${currentMonthName}.`);
   } else if (timeOfDay === 'день') {
     cashierSection.push(`👋 **${cashierToday}**, добрый день! Как проходит смена?`);
   } else {
@@ -188,7 +192,8 @@
   // === АНАЛИЗ ПРОШЛОГО ГОДА ===
   if (lastYearSameDayRevenue > 0) {
     const diff = lastYearSameDayName && lastYearSameDayName !== todayName ? ` (был **${lastYearSameDayName}**)` : '';
-    cashierSection.push(`\n📅 **${currentDay}.12.${lastYear}:** ${Math.round(lastYearSameDayRevenue).toLocaleString('ru-RU')}₽${diff}`);
+    const currentMonthNumber = String(today.getMonth() + 1).padStart(2, '0');
+    cashierSection.push(`\n📅 **${currentDay}.${currentMonthNumber}.${lastYear}:** ${Math.round(lastYearSameDayRevenue).toLocaleString('ru-RU')}₽${diff}`);
     if (targetRevenue > lastYearSameDayRevenue) {
       cashierSection.push(`Сегодня цель выше — отличный шанс показать рост! 📈`);
     }
@@ -411,10 +416,7 @@
   `;
 
   container.innerHTML = html;
-  
-  // Вставляем в правую колонку (десктоп) или .container (мобильная)
-  const target = document.querySelector('.right-column') || document.querySelector('.container');
-  if (target) target.appendChild(container);
+  document.querySelector('.container').appendChild(container);
 
   console.log('✅ Умный советник создан (финал)');
 })();
