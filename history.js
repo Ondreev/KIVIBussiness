@@ -63,7 +63,8 @@ function buildHistoryBlock() {
     const revenue = cleanNumber(getCol(row, HISTORY_COLS.revenue));
     const traffic = cleanNumber(getCol(row, HISTORY_COLS.traffic));
 
-    if (revenue === 0) return;
+    // УБРАЛ проверку if (revenue === 0) return;
+    // Теперь показываем ВСЕ дни, включая выходные с нулевой выручкой
 
     const { y, m, d } = p;
 
