@@ -55,6 +55,9 @@ function buildHistoryBlock() {
   // Собираем данные по годам → месяцам → дням
   const structure = {}; // year -> month -> day -> {revenue, traffic}
 
+  // 🔍 ОТЛАДКА: считаем строки по месяцам
+  const debugCount = {};
+
   data.forEach(row => {
     const dateStr = getCol(row, HISTORY_COLS.date);
     const p = parseYMD(dateStr);
@@ -67,6 +70,13 @@ function buildHistoryBlock() {
     // Теперь показываем ВСЕ дни, включая выходные с нулевой выручкой
 
     const { y, m, d } = p;
+    
+    // 🔍 ОТЛАДКА: считаем строки декабря 2025
+    if (y === 2025 && m === 12) {
+      const key = `${y}-${m}`;
+      if (!debugCount[key]) debugCount[key] = [];
+      debugCount[key].push(d);
+    }
 
     // ✅ ИСПРАВЛЕНИЕ: для прошлых лет показываем ВСЕ дни
     // Для текущего года показываем только до сегодняшнего дня
@@ -79,6 +89,12 @@ function buildHistoryBlock() {
 
     structure[y][m][d].revenue += revenue;
     structure[y][m][d].traffic += traffic;
+  });
+  
+  // 🔍 ОТЛАДКА: выводим дни декабря 2025
+  Object.keys(debugCount).forEach(key => {
+    const days = debugCount[key].sort((a, b) => a - b);
+    console.log(`🔍 Декабрь 2025: найдено ${days.length} дней:`, days);
   });
 
   // Сортируем годы (от новых к старым)
