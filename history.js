@@ -76,6 +76,11 @@ function buildHistoryBlock() {
       const key = `${y}-${m}`;
       if (!debugCount[key]) debugCount[key] = [];
       debugCount[key].push(d);
+      
+      // Детальный лог для дней 1-5
+      if (d <= 5) {
+        console.log(`🔍 День ${d} декабря 2025: выручка=${revenue}, трафик=${traffic}, dateStr="${dateStr}"`);
+      }
     }
 
     // ✅ ИСПРАВЛЕНИЕ: для прошлых лет показываем ВСЕ дни
@@ -96,6 +101,12 @@ function buildHistoryBlock() {
     const days = debugCount[key].sort((a, b) => a - b);
     console.log(`🔍 Декабрь 2025: найдено ${days.length} дней:`, days);
   });
+  
+  // 🔍 ОТЛАДКА: проверяем structure для декабря 2025
+  if (structure[2025] && structure[2025][12]) {
+    const dec2025Days = Object.keys(structure[2025][12]).map(Number).sort((a, b) => a - b);
+    console.log(`🔍 В structure[2025][12]:`, dec2025Days);
+  }
 
   // Сортируем годы (от новых к старым)
   const years = Object.keys(structure).map(Number).sort((a, b) => b - a);
