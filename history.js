@@ -291,6 +291,19 @@ function buildHistoryBlock() {
           <td style='padding:10px 4px;text-align:right;padding-right:8px;color:#333;'><strong>${Math.round(dayData.revenue).toLocaleString('ru-RU')}₽</strong></td>
           <td style='padding:10px 4px;text-align:center;color:#666;'>${Math.round(dayData.traffic)}</td>
         `;
+        
+        // 🔴 ТЕСТОВЫЙ МАРКЕР для дней 1-5 декабря в СРАВНИВАЕМЫХ годах
+        if (month === 12 && day <= 5 && (year === 2023 || year === 2024 || year === 2025)) {
+          row.style.background = '#ff0000 !important'; // КРАСНЫЙ ФОН
+          row.style.color = '#fff !important';
+          row.style.fontWeight = '900 !important';
+          row.innerHTML = `
+            <td style='padding:10px 4px;text-align:center;color:#fff !important;background:#ff0000 !important;'><strong>🔴 ${day} 🔴</strong></td>
+            <td style='padding:10px 4px;text-align:center;color:#fff !important;'>${weekday}</td>
+            <td style='padding:10px 4px;text-align:right;padding-right:8px;color:#fff !important;'><strong>${Math.round(dayData.revenue).toLocaleString('ru-RU')}₽</strong></td>
+            <td style='padding:10px 4px;text-align:center;color:#fff !important;'>${Math.round(dayData.traffic)}</td>
+          `;
+        }
 
         row.addEventListener('mouseenter', () => {
           row.style.background = '#e7f3ff';
