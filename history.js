@@ -248,8 +248,18 @@ function buildHistoryBlock() {
 
       const tbody = table.querySelector('tbody');
 
+      // 🔍 ОТЛАДКА: логируем какие дни отрисовываем для декабря 2025
+      if (year === 2025 && month === 12) {
+        console.log(`🔍 Отрисовка декабря 2025: дней в массиве = ${days.length}`, days);
+      }
+
       // Сортируем дни от последнего к первому
       days.sort((a, b) => b - a).forEach(day => {
+        // 🔍 ОТЛАДКА: логируем первые 5 дней декабря 2025
+        if (year === 2025 && month === 12 && day <= 5) {
+          console.log(`🔍 Отрисовка декабря 2025, день ${day}:`, monthData[day]);
+        }
+        
         const dayData = monthData[day];
         const weekday = getWeekday(year, month, day);
         const isWeekend = ['сб', 'вс'].includes(weekday.toLowerCase());
