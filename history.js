@@ -230,7 +230,6 @@ function buildHistoryBlock() {
         font-size: clamp(11px, 2.8vw, 13px);
         background: #fff;
         border-radius: 12px;
-        overflow: hidden;
         border: 1px solid #e0e0e0;
       `;
       
