@@ -26,8 +26,9 @@
     window.DATASETS = {};
 
     // ===== БЕЗОПАСНЫЙ КЕШ =====
-    const CACHE_KEY = 'kivi_datasets_cache_v2';
-    const CACHE_TIME_KEY = 'kivi_cache_time_v2';
+    // ВЕРСИЯ ИЗМЕНЕНА для сброса старого кеша с проблемой декабря
+    const CACHE_KEY = 'kivi_datasets_cache_v3'; // было v2 → стало v3
+    const CACHE_TIME_KEY = 'kivi_cache_time_v3'; // было v2 → стало v3
     const CACHE_LIFETIME = 10 * 60 * 1000; // 10 минут
 
     let useCache = false;
