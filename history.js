@@ -28,6 +28,21 @@ function parseYMD(str) {
   if (!str) return null;
   const s = String(str).trim().replace(/\u00A0/g, " ").replace(/[^\d-]/g, "");
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  
+  // 🔍 ДЕТАЛЬНАЯ ОТЛАДКА для декабря 2023-2025
+  const originalStr = String(str).trim();
+  if (originalStr.includes('-12-') && originalStr.includes('202')) {
+    const day = originalStr.split('-')[2];
+    if (day && parseInt(day) <= 5) {
+      console.log(`🔍 parseYMD для декабря день ${day}:`, {
+        original: str,
+        cleaned: s,
+        matched: !!m,
+        result: m ? { y: +m[1], m: +m[2], d: +m[3] } : null
+      });
+    }
+  }
+  
   if (!m) return null;
   return { y: +m[1], m: +m[2], d: +m[3] };
 }
