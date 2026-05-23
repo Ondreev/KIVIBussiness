@@ -5,14 +5,15 @@
 // ====================================
 const EVENTS = [
   // Аренда (2 раза в месяц)
-  { type: 'payment', name: 'Аренда (1 часть)', day: 7, amount: 79000, icon: '💲' },
-  { type: 'payment', name: 'Аренда (2 часть)', day: 23, amount: 63000, icon: '💲' },
+  { type: 'payment', name: 'Коммуналка', day: 2, amount: 6000, icon: '💲' },
+  { type: 'payment', name: 'Аренда', day: 18, amount: 70000, icon: '💲' },
   
   // Кредиты
-  { type: 'payment', name: 'Кредит 1', day: 7, amount: 13100, icon: '✔️' },
-  { type: 'payment', name: 'Кредит 2', day: 23, amount: 14700, icon: '✔️' },
-  { type: 'payment', name: 'Кредит 3', day: 10, amount: 37700, icon: '✔️' },
-  { type: 'payment', name: 'Кредит 4', day: 19, amount: 20000, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 1', day: 6, amount: 25600, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 2', day: 20, amount: 20000, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 3', day: 7, amount: 10000, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 4', day: 10, amount: 27200, icon: '✔️' },
+  { type: 'payment', name: 'Кредит 4', day: 13, amount: 6000, icon: '✔️' },
   
   // Дни рождения (month: номер месяца, если null — каждый месяц)
   { type: 'birthday', name: 'День рождения Виктора', day: 15, month: 5, icon: '🎉' },
