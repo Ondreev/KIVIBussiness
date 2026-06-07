@@ -25,6 +25,7 @@ const EVENTS = [
   { type: 'birthday', name: 'День рождения Таня соседка', day: 7, month: 6, icon: '🎉' },
   { type: 'birthday', name: 'День рождения Наташа соседка высокая', day: 22, month: 8, icon: '🎉' },
   { type: 'birthday', name: 'День рождения Нугзар', day: 15, month: 8, icon: '🎉' },
+  { type: 'birthday', name: 'День рождения Ирина', day: 18, month: 7, icon: '🎉' },
 ];
 // ====================================
 
