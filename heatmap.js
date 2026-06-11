@@ -122,10 +122,10 @@ function buildHeatmap() {
   const startDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
   let html = `
-    <div style="background:rgba(255,255,255,0.95);border-radius:20px;padding:24px;margin-bottom:24px;width:100%;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
-      <div style="font-size:clamp(20px,5vw,24px);font-weight:900;color:#333;margin-bottom:8px;text-align:center;"> Карта месяца</div>
-      <div style="font-size:clamp(13px,3.2vw,15px);color:#666;margin-bottom:20px;text-align:center;">${monthNames[currentMonth]} ${lastYear} (прошлый год)</div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:20px;">
+    <div class="card-light">
+      <div class="card-title">🗓 Карта месяца</div>
+      <div class="card-subtitle">${monthNames[currentMonth]} ${lastYear} (прошлый год)</div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:20px;">
   `;
 
   // Заголовки дней

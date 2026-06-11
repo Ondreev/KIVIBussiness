@@ -112,12 +112,13 @@
     document.getElementById("oracleBlock")?.remove();
     const container = document.createElement("div");
     container.id = "oracleBlock";
-    container.style.cssText = "background:transparent;color:#fff;border-radius:16px;padding:16px;margin:20px auto;width:95%;max-width:600px;font-family:sans-serif;box-sizing:border-box;";
+    container.className = "oracle-card";
+    container.style.color = "#fff";
 
     function renderOracle() {
       const now = new Date();
-      let html = `<div style="font-weight:900;font-size:24px;text-align:center;margin-bottom:12px;">📌 Сегодня ${weekdayRu[0].toUpperCase()+weekdayRu.slice(1)}</div>`;
-      html += `<div style="margin-bottom:20px;text-align:center;font-size:16px;">Цель на день: <b style="font-size:20px;">${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTr}</b></div>`;
+      let html = `<div class="card-title">📌 Сегодня ${weekdayRu[0].toUpperCase()+weekdayRu.slice(1)}</div>`;
+      html += `<div class="card-subtitle" style="opacity:0.9;">Цель на день: <b>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTr}</b></div>`;
 
       const maxShare = Math.max(...Object.values(slots));
       const factTo = todayFactTo; // факт только за сегодня
@@ -139,13 +140,13 @@
         const mark   = met ? "✔️" : "—";
 
         html += `
-          <div style="background:${bg};margin-bottom:12px;padding:12px 16px;border-radius:12px;border:${border};display:flex;justify-content:space-between;align-items:center;color:#000;width:100%;max-width:600px;box-sizing:border-box;">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;width:100%;font-size:15px;">
-              <div style="font-weight:600">${period}</div>
-              <div><div>${partTo.toLocaleString("ru-RU")}₽</div><div style="text-decoration:underline;font-size:13px;">${cumTo.toLocaleString("ru-RU")}₽</div></div>
-              <div><div>${partTr} трафик</div><div style="text-decoration:underline;font-size:13px;">${cumTr} трафик</div></div>
+          <div class="oracle-slot" style="background:${bg};border:${border};">
+            <div class="oracle-slot-grid">
+              <div style="font-weight:700;">${period}</div>
+              <div><div>${partTo.toLocaleString("ru-RU")}₽</div><div style="text-decoration:underline;font-size:0.85em;opacity:0.8;">${cumTo.toLocaleString("ru-RU")}₽</div></div>
+              <div><div>${partTr} трафик</div><div style="text-decoration:underline;font-size:0.85em;opacity:0.8;">${cumTr} трафик</div></div>
             </div>
-            <div style="font-size:22px;padding-left:10px;">${mark}</div>
+            <div style="font-size:20px;flex:0 0 auto;">${mark}</div>
           </div>`;
       }
       container.innerHTML = html;

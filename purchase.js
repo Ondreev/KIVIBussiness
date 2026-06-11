@@ -27,30 +27,10 @@
   const maxPurchase = recommended + 5000;
 
   const block = document.createElement("div");
-  block.style.cssText = `
-    background: rgba(255, 255, 255, 0.95);
-    color: #333;
-    border-radius: 20px;
-    padding: 20px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 640px;
-    box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-  `;
-
-  block.addEventListener('mouseenter', () => {
-    block.style.transform = 'translateY(-2px)';
-    block.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.25)';
-  });
-  block.addEventListener('mouseleave', () => {
-    block.style.transform = 'translateY(0)';
-    block.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
-  });
+  block.className = "card-light";
 
   block.innerHTML = `
-    <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;margin-bottom:16px;text-align:center;'>📦 Рекомендация по закупке</div>
+    <div class='card-title'>📦 Рекомендация по закупке</div>
     
     <!-- Основная сумма -->
     <div style='background:linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.2));border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;'>

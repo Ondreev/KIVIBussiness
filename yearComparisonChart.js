@@ -40,24 +40,11 @@
 
   // Контейнер для графика
   const container = document.createElement("div");
-  container.style.cssText = `
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 20px;
-    padding: 24px 20px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 640px;
-    box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  `;
+  container.className = "card-light";
 
   container.innerHTML = `
-    <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;margin-bottom:16px;text-align:center;color:#333;'>
-      📈 Сравнение по годам
-    </div>
-    <div style='font-size:clamp(12px, 3vw, 14px);color:#666;margin-bottom:20px;text-align:center;'>
-      Средняя выручка по месяцам
-    </div>
+    <div class='card-title'>📈 Сравнение по годам</div>
+    <div class='card-subtitle'>Средняя выручка по месяцам</div>
   `;
 
   const canvas = document.createElement("canvas");
