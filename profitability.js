@@ -49,33 +49,13 @@
   const ebitdaPercent = avgRevenue ? Math.round((ebitda / avgRevenue) * 100) : 0;
 
   const block = document.createElement("div");
-  block.style.cssText = `
-    background: rgba(255, 255, 255, 0.95);
-    color: #333;
-    border-radius: 20px;
-    padding: 20px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 640px;
-    box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-  `;
-
-  block.addEventListener('mouseenter', () => {
-    block.style.transform = 'translateY(-2px)';
-    block.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.25)';
-  });
-  block.addEventListener('mouseleave', () => {
-    block.style.transform = 'translateY(0)';
-    block.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
-  });
+  block.className = "card-light";
 
   // ASP блок
   const aspColor = asp >= 250 ? '#28a745' : asp >= 200 ? '#ffc107' : '#dc3545';
-  
+
   block.innerHTML = `
-    <div style='font-size:clamp(18px, 4.5vw, 22px);font-weight:700;margin-bottom:16px;text-align:center;'>💰 Расчёт EBITDA</div>
+    <div class='card-title'>💰 Расчёт EBITDA</div>
     
     <!-- ASP -->
     <div style='background:linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;'>

@@ -9,14 +9,7 @@ document.addEventListener('sheets-ready', async () => {
 
   const container = document.createElement("div");
   container.id = 'miniblocksContainer';
-  container.style.cssText = `
-    display: grid;
-    grid-template-columns: 1fr 1.25fr;
-    gap: 12px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 640px;
-  `;
+  container.className = 'mini-grid';
 
   document.querySelector('.container').appendChild(container);
 
@@ -46,7 +39,7 @@ document.addEventListener('sheets-ready', async () => {
   const sumTo = rows => rows.reduce((sum, r) => sum + cleanNumber(r["ТО"]), 0);
 
   const factTo = sumTo(thisMonth);
-  const avgPerDay = factTo / thisMonth.length;
+  const avgPerDay = factTo / (thisMonth.length || 1);
   const forecast = Math.round(avgPerDay * daysInMonth);
 
   const prevTo = sumTo(lastMonth);
@@ -54,83 +47,46 @@ document.addEventListener('sheets-ready', async () => {
 
   const makeBlock = (title, value) => {
     const div = document.createElement("div");
-    div.style.cssText = `
-      background: rgba(255, 255, 255, 0.95);
-      color: #333;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
-    `;
+    div.className = 'mini-card';
     div.innerHTML = `
-      <div style='font-weight:700;margin-bottom:12px;text-align:center;font-size:15px;'>${title}</div>
+      <div class='mini-title'>${title}</div>
       ${value}
     `;
-    
-    div.addEventListener('mouseenter', () => {
-      div.style.transform = 'translateY(-2px)';
-      div.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
-    });
-    div.addEventListener('mouseleave', () => {
-      div.style.transform = 'translateY(0)';
-      div.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
-    });
-    
     return div;
   };
 
   const leftCol = document.createElement("div");
-  leftCol.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  `;
+  leftCol.className = 'mini-col';
 
   leftCol.appendChild(makeBlock(
     "Этот месяц",
-    `<div style='text-align:center;font-size:13px;margin-bottom:4px;'>по накоплению</div>
-     <div style='font-size:24px;font-weight:900;text-align:center;background:linear-gradient(135deg, #667eea, #764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;'>${factTo.toLocaleString("ru-RU")}₽</div>
-     <div style='margin-top:8px;text-align:center;font-size:13px;'>Прогноз:</div>
-     <div style='font-size:22px;font-weight:700;text-align:center;color:#555;'>${forecast.toLocaleString("ru-RU")}₽</div>`
+    `<div style='text-align:center;font-size:13px;color:#666;margin-bottom:4px;'>по накоплению</div>
+     <div class='mini-value' style='background:linear-gradient(135deg, #667eea, #764ba2);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;'>${factTo.toLocaleString("ru-RU")}₽</div>
+     <div style='margin-top:8px;text-align:center;font-size:13px;color:#666;'>Прогноз:</div>
+     <div class='mini-value' style='font-size:clamp(16px,4.5vw,22px);font-weight:700;color:#555;'>${forecast.toLocaleString("ru-RU")}₽</div>`
   ));
 
   leftCol.appendChild(makeBlock(
     "От прошл. года",
-    `<div style='font-size:24px;font-weight:900;text-align:center;color:${diffRub >= 0 ? '#28a745' : '#dc3545'};'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`
+    `<div class='mini-value' style='color:${diffRub >= 0 ? '#28a745' : '#dc3545'};'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`
   ));
 
   const rightCol = document.createElement("div");
-  rightCol.style.cssText = `
-    background: rgba(255, 255, 255, 0.95);
-    color: #333;
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-  `;
-
-  rightCol.addEventListener('mouseenter', () => {
-    rightCol.style.transform = 'translateY(-2px)';
-    rightCol.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
-  });
-  rightCol.addEventListener('mouseleave', () => {
-    rightCol.style.transform = 'translateY(0)';
-    rightCol.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
-  });
+  rightCol.className = 'mini-card';
 
   const top10 = leaders
     .filter(r => r["Лидеры продаж"])
     .map(r => r["Лидеры продаж"])
     .slice(0, 7);
 
-  rightCol.innerHTML = `<div style='font-weight:700;margin-bottom:12px;text-align:center;font-size:15px;'>🏆 Лидеры продаж</div>`;
+  rightCol.innerHTML = `<div class='mini-title'>🏆 Лидеры продаж</div>`;
   top10.forEach((name, index) => {
     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '•';
-    rightCol.innerHTML += `<div style='margin-bottom:6px;font-size:13px;padding:4px 0;'>${medal} ${name}</div>`;
+    rightCol.innerHTML += `<div style='margin-bottom:6px;font-size:clamp(12px,3vw,13px);padding:4px 0;line-height:1.4;'>${medal} ${name}</div>`;
   });
 
   container.appendChild(leftCol);
   container.appendChild(rightCol);
-  
+
   console.log('✅ Miniblocks созданы');
 });

@@ -1,4 +1,5 @@
-// next3months.js — следующие 3 месяца с современным дизайном
+// next3months.js — следующие 3 месяца по данным прошлого года
+// Десктоп: 3 колонки, мобильная: 3 компактные строки (ничего не выходит за края)
 
 (async () => {
   const url = SHEETS.data;
@@ -6,15 +7,15 @@
   const text = await res.text();
   const data = Papa.parse(text, { header: true }).data;
 
-  const container = document.createElement("div");
-  container.style.cssText = `
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 640px;
+  const card = document.createElement("div");
+  card.className = "card-light";
+  card.innerHTML = `
+    <div class="card-title">🗓️ Следующие 3 месяца</div>
+    <div class="card-subtitle">средние показатели за прошлый год</div>
   `;
+
+  const grid = document.createElement("div");
+  grid.className = "next3-grid";
 
   const today = new Date();
   const currentYear = today.getFullYear() - 1;
@@ -32,40 +33,24 @@
 
     const sumTo = rows.reduce((s, r) => s + clean(r["ТО"]), 0);
     const sumTr = rows.reduce((s, r) => s + clean(r["ТР"]), 0);
-    const avgTo = Math.round(sumTo / rows.length);
-    const avgTr = Math.round(sumTr / rows.length);
+    const avgTo = rows.length ? Math.round(sumTo / rows.length) : 0;
+    const avgTr = rows.length ? Math.round(sumTr / rows.length) : 0;
     const avgCheck = avgTr ? Math.round(avgTo / avgTr) : 0;
 
-    const block = document.createElement("div");
-    block.style.cssText = `
-      background: rgba(255, 255, 255, 0.95);
-      color: #333;
-      border-radius: 16px;
-      padding: 16px 12px;
-      text-align: center;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s ease;
-      cursor: pointer;
-    `;
-
-    block.addEventListener('mouseenter', () => {
-      block.style.transform = 'translateY(-4px)';
-      block.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)';
-    });
-    block.addEventListener('mouseleave', () => {
-      block.style.transform = 'translateY(0)';
-      block.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
-    });
-
     const monthName = new Date(2000, monthIndex).toLocaleString('ru-RU', { month: 'long' });
-    block.innerHTML = `
-      <div style='font-weight:700;margin-bottom:8px;font-size:14px;color:#555;'>${monthName.charAt(0).toUpperCase() + monthName.slice(1)}</div>
-      <div style='font-size:22px;font-weight:900;background:linear-gradient(135deg, #667eea, #764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;'>${avgTo.toLocaleString('ru-RU')}₽</div>
-      <div style='font-size:12px;color:#777;'>${avgTr} • ${avgCheck}₽ СРЧ</div>
-    `;
 
-    container.appendChild(block);
+    const item = document.createElement("div");
+    item.className = "next3-item";
+    item.innerHTML = `
+      <div class="next3-month">${monthName}</div>
+      <div class="next3-meta">
+        <div class="next3-value">${avgTo ? avgTo.toLocaleString('ru-RU') + '₽' : '—'}</div>
+        <div class="next3-sub">${avgTr ? `${avgTr} чел • ср. чек ${avgCheck}₽` : 'нет данных'}</div>
+      </div>
+    `;
+    grid.appendChild(item);
   }
 
-  document.querySelector('.container').appendChild(container);
+  card.appendChild(grid);
+  document.querySelector('.container').appendChild(card);
 })();

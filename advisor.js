@@ -353,31 +353,16 @@
 
   // 🎨 РЕНДЕРИНГ
   const container = document.createElement("div");
-  container.style.cssText = `
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-    color: white;
-    border-radius: 20px;
-    padding: 24px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 640px;
-    box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  `;
+  container.className = "card-dark";
 
   let html = `
-    <div style='font-size:clamp(20px, 5vw, 24px);font-weight:900;margin-bottom:8px;text-align:center;'>
-      🧠 Советник дня
-    </div>
-    <div style='font-size:clamp(11px, 2.8vw, 13px);opacity:0.8;text-align:center;margin-bottom:20px;'>
-      KIVI Market • ${timeOfDay} • ${cashierToday}
-    </div>
+    <div class='card-title'>🧠 Советник дня</div>
+    <div class='card-subtitle'>KIVI Market • ${timeOfDay} • ${cashierToday}</div>
   `;
 
   // Метрики
   html += `
-    <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;'>
+    <div style='display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px;'>
       <div style='background:rgba(255,255,255,0.1);border-radius:12px;padding:12px;text-align:center;'>
         <div style='font-size:clamp(10px,2.5vw,12px);opacity:0.7;margin-bottom:4px;'>Цена товара</div>
         <div style='font-size:clamp(18px,4.5vw,22px);font-weight:900;'>${asp}₽</div>

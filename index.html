@@ -32,6 +32,7 @@
       -moz-osx-font-smoothing: grayscale;
       overscroll-behavior: none;
       scroll-behavior: smooth;
+      overflow-x: hidden;
     }
 
     /* === АНИМАЦИЯ ПОЯВЛЕНИЯ БЛОКОВ === */
@@ -84,6 +85,9 @@
       width: 100%;
       max-width: 640px;
       padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
 
     /* ДЕСКТОПНАЯ ВЕРСИЯ */
@@ -102,17 +106,22 @@
     .right-column {
       display: flex;
       flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+    }
+
+    .right-column:empty {
+      display: none;
     }
 
     /* === УЛУЧШЕННЫЙ БЛОК ПЛАНОВ === */
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
       background: rgba(255, 255, 255, 0.18);
       border-radius: 24px;
       padding: 20px;
-      margin-bottom: 24px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
@@ -127,6 +136,7 @@
       will-change: transform;
       position: relative;
       overflow: hidden;
+      min-width: 0;
     }
 
     .cell::before {
@@ -152,12 +162,14 @@
     }
 
     .big {
-      font-size: clamp(22px, 5vw, 28px);
+      font-size: clamp(15px, 4.3vw, 26px);
       font-weight: 800;
       color: #fff;
       margin-bottom: 6px;
       text-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
       letter-spacing: -0.5px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
     }
 
     .small {
@@ -183,7 +195,6 @@
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 16px;
-      margin-bottom: 24px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.18);
     }
@@ -224,19 +235,11 @@
       margin-top: 2px;
     }
 
-    /* Оракул */
-    #oracleContainer {
-      width: 100%;
-      content-visibility: auto;
-      margin-bottom: 24px;
-    }
-
     /* История выручки */
     .history-block {
       background: rgba(255, 255, 255, 0.15);
       border-radius: 20px;
       padding: 20px;
-      margin-bottom: 24px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.18);
       content-visibility: auto;
@@ -384,7 +387,6 @@
       color: #333;
       border-radius: 20px;
       padding: 20px;
-      margin-bottom: 24px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       content-visibility: auto;
     }
@@ -436,6 +438,7 @@
       font-weight: 600;
       cursor: pointer;
       margin-top: 12px;
+      width: 100%;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
@@ -457,15 +460,229 @@
       margin-top: 2px;
     }
 
+    /* ============================================
+       ДИЗАЙН-СИСТЕМА КАРТОЧЕК (общая для модулей)
+       ============================================ */
+    .card-light {
+      background: rgba(255, 255, 255, 0.96);
+      color: #333;
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      overflow-wrap: break-word;
+      min-width: 0;
+    }
+
+    .card-light:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-dark {
+      background: linear-gradient(160deg, #28303f 0%, #34495e 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow-wrap: break-word;
+      min-width: 0;
+    }
+
+    .card-title {
+      font-size: clamp(17px, 4.2vw, 21px);
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 14px;
+      letter-spacing: -0.3px;
+    }
+
+    .card-subtitle {
+      font-size: clamp(12px, 3vw, 14px);
+      opacity: 0.65;
+      text-align: center;
+      margin: -10px 0 16px;
+    }
+
+    /* === СЛЕДУЮЩИЕ 3 МЕСЯЦА === */
+    .next3-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .next3-item {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+      border: 1px solid rgba(102, 126, 234, 0.18);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+      min-width: 0;
+    }
+
+    .next3-month {
+      font-size: clamp(12px, 3vw, 14px);
+      font-weight: 700;
+      color: #555;
+      text-transform: capitalize;
+      margin-bottom: 6px;
+    }
+
+    .next3-value {
+      font-size: clamp(15px, 4vw, 22px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .next3-sub {
+      font-size: clamp(11px, 2.8vw, 12px);
+      color: #777;
+    }
+
+    /* Мобильная версия: месяцы строками, ничего не вылезает */
+    @media (max-width: 480px) {
+      .next3-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .next3-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        text-align: left;
+        padding: 12px 14px;
+      }
+
+      .next3-month {
+        margin-bottom: 0;
+        flex: 0 0 auto;
+      }
+
+      .next3-meta {
+        text-align: right;
+        min-width: 0;
+      }
+
+      .next3-value {
+        margin-bottom: 2px;
+      }
+    }
+
+    /* === МИНИ-БЛОКИ === */
+    .mini-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+      gap: 12px;
+      width: 100%;
+    }
+
+    @media (max-width: 440px) {
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mini-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mini-card {
+      background: rgba(255, 255, 255, 0.96);
+      color: #333;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      min-width: 0;
+      overflow-wrap: anywhere;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .mini-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .mini-title {
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-align: center;
+      font-size: clamp(14px, 3.5vw, 15px);
+    }
+
+    .mini-value {
+      font-size: clamp(18px, 5vw, 24px);
+      font-weight: 900;
+      text-align: center;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* === ОРАКУЛ (план на день по слотам) === */
+    .oracle-card {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      min-width: 0;
+    }
+
+    .oracle-slot {
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #1a1a1a;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .oracle-slot:last-child {
+      margin-bottom: 0;
+    }
+
+    .oracle-slot-grid {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+      font-size: clamp(12px, 3.2vw, 15px);
+      font-variant-numeric: tabular-nums;
+    }
+
     /* Адаптация для маленьких экранов */
     @media (max-width: 360px) {
       .grid {
-        gap: 10px;
-        padding: 16px;
+        gap: 8px;
+        padding: 14px;
       }
 
       .cell {
-        padding: 14px 8px;
+        padding: 14px 6px;
       }
     }
   </style>
@@ -507,9 +724,6 @@
         <canvas id="salesChart"></canvas>
         <div id="customLabels" class="custom-labels"></div>
       </div>
-
-      <!-- Оракул -->
-      <div id="oracleContainer" class="animate-on-scroll"></div>
 
       <!-- Сравнение -->
       <div class="compare-block animate-on-scroll">
@@ -583,7 +797,7 @@
         rootMargin: '0px 0px -50px 0px'
       });
 
-      document.querySelectorAll('.grid, #chartContainer, #oracleContainer, .history-block, .compare-block').forEach(el => {
+      document.querySelectorAll('.grid, #chartContainer, .history-block, .compare-block').forEach(el => {
         observer.observe(el);
       });
     });
