@@ -40,7 +40,7 @@
     const monthName = new Date(2000, monthIndex).toLocaleString('ru-RU', { month: 'long' });
 
     const item = document.createElement("div");
-    item.className = "next3-item";
+    item.className = `next3-item next3-item--${i}`;
     item.innerHTML = `
       <div class="next3-month">${monthName}</div>
       <div class="next3-meta">

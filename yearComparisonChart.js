@@ -136,7 +136,7 @@
             boxWidth: 24,
             boxHeight: 4,
             padding: 14,
-            color: '#333',
+            color: '#334155',
             font: {
               weight: '700',
               size: window.innerWidth < 480 ? 13 : 15,
@@ -197,7 +197,7 @@
             drawTicks: false
           },
           ticks: {
-            color: '#666',
+            color: '#64748b',
             font: {
               size: window.innerWidth < 480 ? 13 : 15,  // ✅ Чуть крупнее цифры
               weight: '700'

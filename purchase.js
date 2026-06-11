@@ -34,21 +34,21 @@
     
     <!-- Основная сумма -->
     <div style='background:linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(255, 152, 0, 0.2));border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;'>
-      <div style='font-size:clamp(12px, 3vw, 14px);color:#666;margin-bottom:8px;'>Оптимальная сумма закупки</div>
+      <div style='font-size:clamp(12px, 3vw, 14px);color:#64748b;margin-bottom:8px;'>Оптимальная сумма закупки</div>
       <div style='font-size:clamp(32px, 8vw, 42px);font-weight:900;background:linear-gradient(135deg, #ff6b35, #f7931e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;'>${recommended.toLocaleString('ru-RU')}₽</div>
-      <div style='font-size:clamp(11px, 2.8vw, 13px);color:#666;'>Диапазон: ${minPurchase.toLocaleString('ru-RU')}₽ — ${maxPurchase.toLocaleString('ru-RU')}₽</div>
+      <div style='font-size:clamp(11px, 2.8vw, 13px);color:#64748b;'>Диапазон: ${minPurchase.toLocaleString('ru-RU')}₽ — ${maxPurchase.toLocaleString('ru-RU')}₽</div>
     </div>
 
     <!-- Важное предупреждение -->
-    <div style='background:linear-gradient(135deg, rgba(255, 82, 82, 0.1), rgba(252, 92, 125, 0.1));border-left:4px solid #dc3545;border-radius:8px;padding:12px;margin-bottom:12px;'>
-      <div style='font-size:clamp(11px, 2.8vw, 13px);color:#721c24;line-height:1.5;'>
+    <div style='background:linear-gradient(135deg, rgba(255, 82, 82, 0.1), rgba(252, 92, 125, 0.1));border-left:4px solid #ef4444;border-radius:8px;padding:12px;margin-bottom:12px;'>
+      <div style='font-size:clamp(11px, 2.8vw, 13px);color:#b91c1c;line-height:1.5;'>
         <strong>⚠️ Важно:</strong> Никогда не превышайте максимальную сумму — это негативно скажется на показателях!
       </div>
     </div>
 
     <!-- Совет -->
-    <div style='background:linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(72, 199, 116, 0.1));border-left:4px solid #28a745;border-radius:8px;padding:12px;'>
-      <div style='font-size:clamp(11px, 2.8vw, 13px);color:#155724;line-height:1.5;'>
+    <div style='background:linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(72, 199, 116, 0.1));border-left:4px solid #10b981;border-radius:8px;padding:12px;'>
+      <div style='font-size:clamp(11px, 2.8vw, 13px);color:#047857;line-height:1.5;'>
         <strong>💡 Совет:</strong> Следуйте рекомендациям для поддержания оптимальной рентабельности. Отклонение ±5000₽ допустимо.
       </div>
     </div>
