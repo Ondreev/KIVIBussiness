@@ -18,11 +18,25 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --ink: #0f172a;
+      --sub: #64748b;
+      --faint: #94a3b8;
+      --line: rgba(15, 23, 42, 0.07);
+      --indigo: #6366f1;
+      --violet: #a855f7;
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --card-shadow: 0 10px 30px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(15, 23, 42, 0.04);
+      --radius: 22px;
+    }
+
     body {
       margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      color: white;
+      background: #eef0f6;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--ink);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -33,61 +47,96 @@
       overscroll-behavior: none;
       scroll-behavior: smooth;
       overflow-x: hidden;
+      font-variant-numeric: tabular-nums;
     }
 
-    /* === АНИМАЦИЯ ПОЯВЛЕНИЯ БЛОКОВ === */
+    /* Воздушный фон с цветными подсветками (iOS aurora) */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(640px 420px at 88% -6%, rgba(99, 102, 241, 0.16), transparent 62%),
+        radial-gradient(540px 400px at -12% 22%, rgba(168, 85, 247, 0.12), transparent 62%),
+        radial-gradient(720px 520px at 55% 112%, rgba(14, 165, 233, 0.11), transparent 62%);
+    }
+
+    /* === АНИМАЦИИ === */
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    .animate-on-scroll {
-      opacity: 0;
-      animation: fadeInUp 0.6s ease-out forwards;
+    @keyframes pulseRing {
+      0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.35); }
+      70%  { box-shadow: 0 0 0 9px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
     }
 
-    /* === СОВРЕМЕННЫЙ ЛОГОТИП === */
+    @keyframes fillX {
+      from { transform: scaleX(0); }
+      to   { transform: scaleX(1); }
+    }
+
+    @keyframes counterUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Каскадное появление карточек */
+    .left-column > *, .right-column > *, .container > * {
+      animation: fadeInUp 0.55s ease-out both;
+    }
+    .left-column > *:nth-child(2), .right-column > *:nth-child(2) { animation-delay: 0.06s; }
+    .left-column > *:nth-child(3), .right-column > *:nth-child(3) { animation-delay: 0.12s; }
+    .left-column > *:nth-child(4), .right-column > *:nth-child(4) { animation-delay: 0.18s; }
+    .left-column > *:nth-child(5), .right-column > *:nth-child(5) { animation-delay: 0.24s; }
+    .left-column > *:nth-child(n+6), .right-column > *:nth-child(n+6) { animation-delay: 0.3s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+    /* === ШАПКА: тонкая, стеклянная, липкая === */
     .logo-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 50;
       width: 100%;
-      background: rgba(0, 0, 0, 0.15);
-      padding: 24px 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    @media (min-width: 768px) {
-      .logo-wrapper {
-        padding: 32px 24px;
-      }
+      background: rgba(255, 255, 255, 0.72);
+      -webkit-backdrop-filter: blur(20px) saturate(1.8);
+      backdrop-filter: blur(20px) saturate(1.8);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: center;
     }
 
     h1 {
-      font-size: clamp(32px, 7vw, 48px);
+      font-size: clamp(20px, 5vw, 26px);
       font-weight: 900;
       margin: 0;
-      text-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-      letter-spacing: -1px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--indigo), var(--violet));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
       text-align: center;
     }
     h1 span {
-      font-weight: 300;
-      opacity: 0.95;
-      letter-spacing: 0;
+      font-weight: 400;
     }
 
     /* === ОСНОВНОЙ WRAPPER === */
     .container {
       width: 100%;
       max-width: 640px;
-      padding: 16px;
+      padding: 14px 12px 28px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 14px;
     }
 
     /* ДЕСКТОПНАЯ ВЕРСИЯ */
@@ -96,8 +145,7 @@
         max-width: 1320px;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        /* УБРАЛ align-items: start — это создавало пустоту! */
+        gap: 20px;
         padding: 24px;
       }
     }
@@ -106,108 +154,156 @@
     .right-column {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 14px;
       min-width: 0;
+    }
+
+    @media (min-width: 768px) {
+      .left-column, .right-column { gap: 20px; }
     }
 
     .right-column:empty {
       display: none;
     }
 
-    /* === УЛУЧШЕННЫЙ БЛОК ПЛАНОВ === */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      background: rgba(255, 255, 255, 0.18);
-      border-radius: 24px;
-      padding: 20px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-    }
-
-    .cell {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.12) 100%);
-      border-radius: 16px;
-      text-align: center;
-      padding: 16px 10px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      will-change: transform;
-      position: relative;
-      overflow: hidden;
+    /* ============================================
+       ДИЗАЙН-СИСТЕМА КАРТОЧЕК
+       ============================================ */
+    .card-light {
+      background: #fff;
+      color: var(--ink);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      overflow-wrap: break-word;
       min-width: 0;
     }
 
-    .cell::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
+    .card-light:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .card-dark {
+      background: linear-gradient(160deg, #171e2e 0%, #232c40 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 18px 16px;
       width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      box-sizing: border-box;
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.32);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      overflow-wrap: break-word;
+      min-width: 0;
     }
 
-    .cell:hover::before {
-      opacity: 1;
+    .card-title {
+      font-size: clamp(18px, 4.6vw, 22px);
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: -0.4px;
     }
 
-    .cell:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.17) 100%);
+    .card-subtitle {
+      font-size: clamp(12px, 3.2vw, 14px);
+      color: var(--sub);
+      text-align: center;
+      margin: -8px 0 14px;
     }
+
+    .card-dark .card-subtitle { color: rgba(255, 255, 255, 0.6); }
+
+    .chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      vertical-align: middle;
+    }
+
+    /* === СВОДКА: ПЛАН / ФАКТ / РЕКОРД === */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+
+    .cell {
+      border-radius: 16px;
+      text-align: center;
+      padding: 14px 6px 12px;
+      transition: transform 0.2s ease;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .cell:active { transform: scale(0.97); }
+
+    /* Тонировка рядов: план / факт / рекорд */
+    .cell:nth-child(-n+3) { background: #eef2ff; }
+    .cell:nth-child(-n+3) .small { color: #6366f1; }
+    .cell:nth-child(n+4):nth-child(-n+6) { background: #ecfdf5; }
+    .cell:nth-child(n+4):nth-child(-n+6) .small { color: #059669; }
+    .cell:nth-child(n+7) { background: #fffbeb; }
+    .cell:nth-child(n+7) .small { color: #d97706; }
 
     .big {
-      font-size: clamp(15px, 4.3vw, 26px);
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 6px;
-      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-      letter-spacing: -0.5px;
+      font-size: clamp(16px, 4.6vw, 28px);
+      font-weight: 850;
+      color: var(--ink);
+      margin-bottom: 4px;
+      letter-spacing: -0.6px;
       white-space: nowrap;
-      font-variant-numeric: tabular-nums;
     }
 
     .small {
-      font-size: clamp(11px, 2.5vw, 13px);
-      color: rgba(255, 255, 255, 0.95);
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
 
-    /* Эффект пересчёта цифр */
-    @keyframes counterUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .big.counting { animation: counterUp 0.3s ease-out; }
+
+    .record-date {
+      font-size: 9px;
+      color: var(--faint);
+      font-weight: 600;
+      margin-top: -2px;
+      margin-bottom: 2px;
     }
 
-    .big.counting {
-      animation: counterUp 0.3s ease-out;
-    }
-
-    /* График */
+    /* === ГРАФИК 7 ДНЕЙ === */
     #chartContainer {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 16px 14px 12px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
     }
 
     canvas {
       width: 100% !important;
-      height: 140px !important;
+      height: 150px !important;
     }
 
     .custom-labels {
       display: flex;
       justify-content: space-between;
-      margin-top: 12px;
+      margin-top: 10px;
       gap: 4px;
     }
 
@@ -218,340 +314,270 @@
     }
 
     .revenue {
-      font-size: clamp(11px, 2.8vw, 13px);
-      font-weight: 700;
-      color: #fff;
+      font-size: clamp(11px, 2.9vw, 13px);
+      font-weight: 800;
+      color: var(--ink);
       letter-spacing: -0.3px;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .date {
-      font-size: clamp(10px, 2.5vw, 12px);
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.85);
+      font-size: clamp(10px, 2.6vw, 12px);
+      font-weight: 600;
+      color: var(--faint);
       margin-top: 2px;
     }
 
-    /* История выручки */
+    /* === ОРАКУЛ: цель дня + тайм-слоты === */
+    .oracle-progress-wrap {
+      margin-bottom: 16px;
+    }
+
+    .oracle-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 13px;
+      color: var(--sub);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .oracle-progress-meta b {
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .oracle-bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #eef1f7;
+      overflow: hidden;
+    }
+
+    .oracle-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--indigo), var(--violet));
+      transform-origin: left;
+      animation: fillX 0.9s ease-out both;
+    }
+
+    .oracle-slot {
+      background: #f8fafc;
+      border: 1px solid #eef2f7;
+      border-radius: 16px;
+      padding: 13px 14px;
+      margin-bottom: 9px;
+    }
+
+    .oracle-slot:last-child { margin-bottom: 0; }
+
+    .oracle-slot.done {
+      background: #ecfdf5;
+      border-color: #bbf2db;
+    }
+
+    .oracle-slot.now {
+      background: #eef2ff;
+      border-color: rgba(99, 102, 241, 0.55);
+      animation: pulseRing 2.2s ease-out infinite;
+    }
+
+    .oracle-slot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .oracle-chips {
+      display: inline-flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .oracle-time {
+      font-size: clamp(14px, 3.8vw, 16px);
+      font-weight: 800;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .oracle-target {
+      font-size: clamp(16px, 4.4vw, 19px);
+      font-weight: 850;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .oracle-slot.done .oracle-target { color: #059669; }
+
+    .oracle-slot-sub {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: clamp(11px, 3vw, 12.5px);
+      color: var(--sub);
+      font-weight: 600;
+    }
+
+    .chip-now { background: var(--indigo); color: #fff; }
+    .chip-peak { background: #fef3c7; color: #b45309; }
+    .chip-done { background: #d1fae5; color: #047857; }
+
+    /* === ИСТОРИЯ ВЫРУЧКИ === */
     .history-block {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 18px 14px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
       content-visibility: auto;
     }
 
     .history-block h2 {
-      font-size: clamp(18px, 4.5vw, 22px);
-      font-weight: 700;
+      font-size: clamp(18px, 4.6vw, 22px);
+      font-weight: 800;
       text-align: center;
-      margin-bottom: 16px;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      margin-bottom: 12px;
+      letter-spacing: -0.4px;
     }
 
-    .year-item {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
-      border-radius: 14px;
-      padding: 14px 18px;
-      margin-bottom: 10px;
-      cursor: pointer;
-      transition: transform 0.2s ease, background 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      will-change: transform;
-    }
-
-    .year-item:hover {
-      transform: translateX(4px);
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .year-item.active {
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.2) 100%);
-      border-color: rgba(255, 215, 0, 0.4);
-    }
-
-    .year-title {
-      font-size: clamp(16px, 4vw, 18px);
-      font-weight: 700;
-    }
-
-    .year-stats {
-      font-size: clamp(12px, 3vw, 14px);
-      opacity: 0.9;
-      font-weight: 500;
-    }
-
-    .year-arrow {
-      font-size: 20px;
-      transition: transform 0.2s ease;
-    }
-
-    .year-item.active .year-arrow {
-      transform: rotate(90deg);
-    }
-
-    .months-container {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-      padding-left: 12px;
-      margin-top: 8px;
-    }
-
-    .months-container.open {
-      max-height: 2000px;
-    }
-
-    .month-item {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: transform 0.2s ease, background 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      will-change: transform;
-    }
-
-    .month-item:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateX(4px);
-    }
-
-    .month-item.active {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
-    }
-
-    .month-name {
-      font-size: clamp(14px, 3.5vw, 16px);
-      font-weight: 600;
-    }
-
-    .month-stats {
-      font-size: clamp(11px, 2.8vw, 13px);
-      opacity: 0.9;
-    }
-
-    .days-container {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-      margin-top: 8px;
-    }
-
-    .days-container.open {
-      max-height: 1500px;
-    }
-
-    .days-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: clamp(11px, 2.8vw, 13px);
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .days-table th {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 10px 6px;
-      font-weight: 600;
-      text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .days-table td {
-      padding: 8px 6px;
-      text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .days-table tr:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Блок сравнения */
+    /* === БЛОК СРАВНЕНИЯ === */
     .compare-block {
-      background: rgba(255, 255, 255, 0.95);
-      color: #333;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      background: #fff;
+      color: var(--ink);
+      border-radius: var(--radius);
+      padding: 18px 14px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
       content-visibility: auto;
     }
 
     .compare-block h2 {
-      font-size: clamp(16px, 4vw, 18px);
-      font-weight: 700;
+      font-size: clamp(17px, 4.4vw, 20px);
+      font-weight: 800;
       text-align: center;
-      margin-bottom: 16px;
-      color: #333;
+      margin-bottom: 12px;
+      letter-spacing: -0.4px;
     }
 
     #compareTable table {
       width: 100%;
       border-collapse: collapse;
-      font-size: clamp(11px, 2.8vw, 13px);
+      font-size: clamp(12px, 3.2vw, 13.5px);
     }
 
     #compareTable th,
     #compareTable td {
       padding: 10px 6px;
-      border-bottom: 1px solid #e0e0e0;
+      border-bottom: 1px solid #f1f5f9;
       text-align: center;
     }
 
     #compareTable th {
-      background: #f5f5f5;
-      font-weight: 600;
-      color: #555;
+      background: transparent;
+      border-bottom: 2px solid #eef2f7;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--faint);
     }
 
-    .hidden-row {
-      display: none;
-    }
+    .hidden-row { display: none; }
 
     .highlight {
-      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-      font-weight: 600;
+      background: #ecfdf5;
+      font-weight: 700;
     }
 
     /* Кнопка */
     button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--indigo), var(--violet));
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 12px;
+      padding: 13px 24px;
+      border-radius: 14px;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       margin-top: 12px;
       width: 100%;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
     }
 
     button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 10px 22px rgba(99, 102, 241, 0.4);
     }
 
-    button:active {
-      transform: translateY(0);
-    }
+    button:active { transform: translateY(0) scale(0.98); }
 
-    /* Дата рекорда */
-    .record-date {
-      font-size: clamp(9px, 2vw, 10px);
-      color: rgba(255, 255, 255, 0.75);
-      font-weight: 500;
-      margin-top: 2px;
-    }
-
-    /* ============================================
-       ДИЗАЙН-СИСТЕМА КАРТОЧЕК (общая для модулей)
-       ============================================ */
-    .card-light {
-      background: rgba(255, 255, 255, 0.96);
-      color: #333;
-      border-radius: 20px;
-      padding: 20px;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      overflow-wrap: break-word;
-      min-width: 0;
-    }
-
-    .card-light:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-    }
-
-    .card-dark {
-      background: linear-gradient(160deg, #28303f 0%, #34495e 100%);
-      color: #fff;
-      border-radius: 20px;
-      padding: 20px;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      overflow-wrap: break-word;
-      min-width: 0;
-    }
-
-    .card-title {
-      font-size: clamp(17px, 4.2vw, 21px);
-      font-weight: 800;
-      text-align: center;
-      margin-bottom: 14px;
-      letter-spacing: -0.3px;
-    }
-
-    .card-subtitle {
-      font-size: clamp(12px, 3vw, 14px);
-      opacity: 0.65;
-      text-align: center;
-      margin: -10px 0 16px;
-    }
-
-    /* === СЛЕДУЮЩИЕ 3 МЕСЯЦА === */
+    /* === СЛЕДУЮЩИЕ 3 МЕСЯЦА: градиентные карточки === */
     .next3-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 10px;
     }
 
     .next3-item {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
-      border: 1px solid rgba(102, 126, 234, 0.18);
-      border-radius: 14px;
-      padding: 14px 10px;
+      border-radius: 18px;
+      padding: 16px 12px;
       text-align: center;
       min-width: 0;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.28);
+      transition: transform 0.2s ease;
     }
 
+    .next3-item:hover { transform: translateY(-3px) scale(1.02); }
+
+    .next3-item::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(120px 70px at 80% -10%, rgba(255, 255, 255, 0.35), transparent 70%);
+      pointer-events: none;
+    }
+
+    .next3-item--1 { background: linear-gradient(150deg, #6366f1, #8b5cf6); }
+    .next3-item--2 { background: linear-gradient(150deg, #8b5cf6, #d946ef); box-shadow: 0 8px 20px rgba(168, 85, 247, 0.28); }
+    .next3-item--3 { background: linear-gradient(150deg, #0ea5e9, #6366f1); box-shadow: 0 8px 20px rgba(14, 165, 233, 0.28); }
+
     .next3-month {
-      font-size: clamp(12px, 3vw, 14px);
-      font-weight: 700;
-      color: #555;
-      text-transform: capitalize;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.85);
       margin-bottom: 6px;
     }
 
     .next3-value {
-      font-size: clamp(15px, 4vw, 22px);
+      font-size: clamp(19px, 5.2vw, 26px);
       font-weight: 900;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
       margin-bottom: 4px;
       white-space: nowrap;
-      font-variant-numeric: tabular-nums;
     }
 
     .next3-sub {
-      font-size: clamp(11px, 2.8vw, 12px);
-      color: #777;
+      font-size: clamp(10px, 2.8vw, 12px);
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
     }
 
-    /* Мобильная версия: месяцы строками, ничего не вылезает */
+    /* Мобильная версия: карточки-строки, крупная цифра справа */
     @media (max-width: 480px) {
       .next3-grid {
         grid-template-columns: 1fr;
@@ -564,52 +590,36 @@
         justify-content: space-between;
         gap: 10px;
         text-align: left;
-        padding: 12px 14px;
+        padding: 16px;
       }
 
-      .next3-month {
-        margin-bottom: 0;
-        flex: 0 0 auto;
-      }
-
-      .next3-meta {
-        text-align: right;
-        min-width: 0;
-      }
-
-      .next3-value {
-        margin-bottom: 2px;
-      }
+      .next3-month { margin-bottom: 0; flex: 0 0 auto; font-size: 13px; }
+      .next3-meta { text-align: right; min-width: 0; }
+      .next3-value { margin-bottom: 2px; font-size: clamp(21px, 6vw, 26px); }
     }
 
-    /* === МИНИ-БЛОКИ === */
+    /* === МИНИ-БЛОКИ (всегда 2 колонки) === */
     .mini-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 10px;
       width: 100%;
-    }
-
-    @media (max-width: 440px) {
-      .mini-grid {
-        grid-template-columns: 1fr;
-      }
     }
 
     .mini-col {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       min-width: 0;
     }
 
     .mini-card {
-      background: rgba(255, 255, 255, 0.96);
-      color: #333;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 18px;
+      padding: 14px 12px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
       min-width: 0;
       overflow-wrap: anywhere;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -617,87 +627,140 @@
 
     .mini-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
     }
 
     .mini-title {
-      font-weight: 700;
-      margin-bottom: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
       text-align: center;
-      font-size: clamp(14px, 3.5vw, 15px);
+      font-size: clamp(13px, 3.4vw, 15px);
     }
 
     .mini-value {
-      font-size: clamp(18px, 5vw, 24px);
+      font-size: clamp(19px, 5.4vw, 26px);
       font-weight: 900;
       text-align: center;
       white-space: nowrap;
-      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
     }
 
-    /* === ОРАКУЛ (план на день по слотам) === */
-    .oracle-card {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 20px;
-      padding: 20px;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      min-width: 0;
+    .mini-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--faint);
     }
 
-    .oracle-slot {
-      border-radius: 14px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #1a1a1a;
-      box-sizing: border-box;
-      width: 100%;
-    }
-
-    .oracle-slot:last-child {
-      margin-bottom: 0;
-    }
-
-    .oracle-slot-grid {
+    /* === ТЕПЛОВАЯ КАРТА МЕСЯЦА === */
+    .hm-grid {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
-      gap: 10px;
-      align-items: center;
-      width: 100%;
-      min-width: 0;
-      font-size: clamp(12px, 3.2vw, 15px);
-      font-variant-numeric: tabular-nums;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      margin-bottom: 12px;
     }
 
-    /* Адаптация для маленьких экранов */
-    @media (max-width: 360px) {
-      .grid {
-        gap: 8px;
-        padding: 14px;
-      }
+    .hm-wd {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--faint);
+      text-align: center;
+      padding: 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
 
-      .cell {
-        padding: 14px 6px;
-      }
+    .hm-day {
+      aspect-ratio: 1;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      font-size: clamp(12px, 3.4vw, 15px);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      min-width: 0;
+    }
+
+    .hm-day:hover { transform: scale(1.1); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18); z-index: 2; }
+
+    .hm-day.today {
+      outline: 2.5px solid var(--indigo);
+      outline-offset: 1.5px;
+      animation: pulseRing 2.2s ease-out infinite;
+      font-weight: 900;
+    }
+
+    .hm-dots {
+      position: absolute;
+      bottom: 3px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      pointer-events: none;
+    }
+
+    .hm-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+    }
+
+    .hm-badge {
+      position: absolute;
+      top: 1px;
+      right: 2px;
+      font-size: 9px;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .hm-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px 14px;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--sub);
+    }
+
+    .hm-legend i {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: -1px;
+      font-style: normal;
+    }
+
+    /* Адаптация для самых маленьких экранов */
+    @media (max-width: 360px) {
+      .container { padding: 12px 10px 24px; }
+      .grid { gap: 6px; padding: 10px; }
+      .cell { padding: 12px 4px 10px; }
     }
   </style>
 </head>
 <body>
   <!-- ЛОГОТИП -->
   <div class="logo-wrapper">
-    <h1 class="animate-on-scroll">KIVI <span>Business</span></h1>
+    <h1>KIVI <span>Business</span></h1>
   </div>
 
   <div class="container">
     <!-- ===== ЛЕВАЯ КОЛОНКА ===== -->
     <div class="left-column">
       <!-- План/Факт/Рекорд -->
-      <div class="grid animate-on-scroll" id="summaryBlock">
+      <div class="grid" id="summaryBlock">
         <div class="cell"><div class="big" id="planTo">0₽</div><div class="small">План ТО</div></div>
         <div class="cell"><div class="big" id="planTraffic">0 чел.</div><div class="small">План ТР</div></div>
         <div class="cell"><div class="big" id="planAvg">0₽</div><div class="small">План СР ЧЕК</div></div>
@@ -720,20 +783,20 @@
       </div>
 
       <!-- График -->
-      <div id="chartContainer" class="animate-on-scroll">
+      <div id="chartContainer">
         <canvas id="salesChart"></canvas>
         <div id="customLabels" class="custom-labels"></div>
       </div>
 
       <!-- Сравнение -->
-      <div class="compare-block animate-on-scroll">
+      <div class="compare-block">
         <h2>В сравнении с прошлым годом</h2>
         <div id="compareTable"></div>
         <button id="toggleRowsBtn" type="button">Показать все</button>
       </div>
 
       <!-- История выручки -->
-      <div class="history-block animate-on-scroll">
+      <div class="history-block">
         <h2>📊 История выручки</h2>
         <div id="historyYears"></div>
       </div>
@@ -751,7 +814,7 @@
     // === ЭФФЕКТ ПЕРЕСЧЁТА ЦИФР ===
     function animateCounter(element, finalValue, duration = 800) {
       if (!element || !finalValue) return;
-      
+
       const isNumber = /^\d/.test(finalValue);
       if (!isNumber) {
         element.textContent = finalValue;
@@ -766,13 +829,13 @@
       function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
+
         const easeOutQuart = 1 - Math.pow(1 - progress, 4);
         const current = Math.floor(startValue + (numericValue - startValue) * easeOutQuart);
-        
+
         element.textContent = current.toLocaleString('ru-RU') + suffix;
         element.classList.add('counting');
-        
+
         if (progress < 1) {
           requestAnimationFrame(update);
         } else {
@@ -782,25 +845,6 @@
 
       requestAnimationFrame(update);
     }
-
-    // === АНИМАЦИЯ ПОЯВЛЕНИЯ ===
-    document.addEventListener('DOMContentLoaded', () => {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('animate-on-scroll');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-      });
-
-      document.querySelectorAll('.grid, #chartContainer, .history-block, .compare-block').forEach(el => {
-        observer.observe(el);
-      });
-    });
 
     // Переключатель строк
     let showingAll = false;
@@ -820,19 +864,19 @@
       ['#loadingOverlay', '#loadingIndicator', '#loading', '#loader', '#preloader',
        '.loadingOverlay', '.loading-indicator', '.loading', '.loader', '.preloader'
       ].forEach(sel => document.querySelectorAll(sel).forEach(el => el.remove()));
-      
+
       // 🔧 АВТОМАТИЧЕСКИЙ ПЕРЕНОС БЛОКОВ В ПРАВУЮ КОЛОНКУ
       // Ждём 500ms чтобы все блоки успели создаться
       setTimeout(() => {
         const rightCol = document.querySelector('.right-column');
         if (!rightCol) return;
-        
+
         // Переносим Карту месяца
         const heatmap = document.getElementById('heatmapMonth');
         if (heatmap && heatmap.parentElement?.classList.contains('left-column')) {
           rightCol.appendChild(heatmap);
         }
-        
+
         // Переносим Советника дня
         const advisor = document.getElementById('advisorBlock');
         if (advisor && advisor.parentElement?.classList.contains('left-column')) {
@@ -850,7 +894,7 @@
   <script src="kivi_dashboard_updated.js" defer></script>
   <script src="oracle.js" defer></script>
   <script src="history.js" defer></script>
-  
+
   <!-- Доп. модули -->
   <script src="miniblocks.js" defer></script>
   <script src="heatmap.js" defer></script>
@@ -859,7 +903,7 @@
   <script src="yearComparisonChart.js" defer></script>
   <script src="profitability.js" defer></script>
   <script src="purchase.js" defer></script>
-  
+
   <!-- 🔧 АВТОМАТИЧЕСКИЙ ПЕРЕНОСЧИК БЛОКОВ (подключается ПОСЛЕДНИМ!) -->
   <script src="layoutFixer.js" defer></script>
 </body>

@@ -60,15 +60,15 @@ document.addEventListener('sheets-ready', async () => {
 
   leftCol.appendChild(makeBlock(
     "Этот месяц",
-    `<div style='text-align:center;font-size:13px;color:#666;margin-bottom:4px;'>по накоплению</div>
-     <div class='mini-value' style='background:linear-gradient(135deg, #667eea, #764ba2);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;'>${factTo.toLocaleString("ru-RU")}₽</div>
-     <div style='margin-top:8px;text-align:center;font-size:13px;color:#666;'>Прогноз:</div>
-     <div class='mini-value' style='font-size:clamp(16px,4.5vw,22px);font-weight:700;color:#555;'>${forecast.toLocaleString("ru-RU")}₽</div>`
+    `<div class='mini-label'>по накоплению</div>
+     <div class='mini-value' style='background:linear-gradient(135deg, #6366f1, #a855f7);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;'>${factTo.toLocaleString("ru-RU")}₽</div>
+     <div class='mini-label' style='margin-top:8px;'>прогноз</div>
+     <div class='mini-value' style='font-size:clamp(15px,4.2vw,20px);color:#475569;'>${forecast.toLocaleString("ru-RU")}₽</div>`
   ));
 
   leftCol.appendChild(makeBlock(
     "От прошл. года",
-    `<div class='mini-value' style='color:${diffRub >= 0 ? '#28a745' : '#dc3545'};'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`
+    `<div class='mini-value' style='color:${diffRub >= 0 ? '#10b981' : '#ef4444'};'>${diffRub >= 0 ? "+" : ""}${diffRub.toLocaleString("ru-RU")}₽</div>`
   ));
 
   const rightCol = document.createElement("div");
@@ -82,7 +82,8 @@ document.addEventListener('sheets-ready', async () => {
   rightCol.innerHTML = `<div class='mini-title'>🏆 Лидеры продаж</div>`;
   top10.forEach((name, index) => {
     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '•';
-    rightCol.innerHTML += `<div style='margin-bottom:6px;font-size:clamp(12px,3vw,13px);padding:4px 0;line-height:1.4;'>${medal} ${name}</div>`;
+    const topStyle = index < 3 ? 'font-weight:700;color:#0f172a;' : 'color:#64748b;';
+    rightCol.innerHTML += `<div style='margin-bottom:4px;font-size:clamp(12px,3.1vw,13px);padding:4px 0;line-height:1.4;${topStyle}'>${medal} ${name}</div>`;
   });
 
   container.appendChild(leftCol);

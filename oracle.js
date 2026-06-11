@@ -112,16 +112,28 @@
     document.getElementById("oracleBlock")?.remove();
     const container = document.createElement("div");
     container.id = "oracleBlock";
-    container.className = "oracle-card";
-    container.style.color = "#fff";
+    container.className = "card-light";
 
     function renderOracle() {
       const now = new Date();
-      let html = `<div class="card-title">📌 Сегодня ${weekdayRu[0].toUpperCase()+weekdayRu.slice(1)}</div>`;
-      html += `<div class="card-subtitle" style="opacity:0.9;">Цель на день: <b>${planTo.toLocaleString("ru-RU")}₽</b>, трафик: <b>${planTr}</b></div>`;
+      const factTo = todayFactTo; // факт только за сегодня
+      const dayPercent = planTo ? Math.round(factTo / planTo * 100) : 0;
+      const barPercent = Math.min(100, dayPercent);
+
+      let html = `<div class="card-title">🎯 Цель дня — ${weekdayRu[0].toUpperCase()+weekdayRu.slice(1)}</div>`;
+
+      // Прогресс дня (геймификация: факт против цели)
+      html += `
+        <div class="oracle-progress-wrap">
+          <div class="oracle-progress-meta">
+            <span>Факт: <b>${Math.round(factTo).toLocaleString("ru-RU")}₽</b></span>
+            <span style="${dayPercent >= 100 ? 'color:#059669;font-weight:800;' : ''}">${dayPercent >= 100 ? '🏆 ' : ''}${dayPercent}%</span>
+            <span>Цель: <b>${planTo.toLocaleString("ru-RU")}₽</b> · ${planTr} чел</span>
+          </div>
+          <div class="oracle-bar"><div class="oracle-fill" style="width:${barPercent}%${dayPercent >= 100 ? ';background:linear-gradient(90deg,#10b981,#34d399)' : ''}"></div></div>
+        </div>`;
 
       const maxShare = Math.max(...Object.values(slots));
-      const factTo = todayFactTo; // факт только за сегодня
 
       let cumTo = 0, cumTr = 0;
       for (const [period, share] of Object.entries(slots)) {
@@ -133,20 +145,23 @@
         const peak    = share === maxShare;
         const met     = factTo >= cumTo;
 
-        const bg = met ? (peak ? "#ffc400" : "#ff6e9c")
-                       : (peak ? (nowHere ? "#ffd200" : "#ffee99")
-                               : (nowHere ? "#ff70a1" : "#ffc2d1"));
-        const border = nowHere ? "3px solid white" : "none";
-        const mark   = met ? "✔️" : "—";
+        const stateClass = met ? "done" : (nowHere ? "now" : "");
+        const chips =
+          (nowHere ? `<span class="chip chip-now">сейчас</span>` : "") +
+          (peak ? `<span class="chip chip-peak">🔥 пик</span>` : "") +
+          (met ? `<span class="chip chip-done">✓ есть</span>` : "");
 
         html += `
-          <div class="oracle-slot" style="background:${bg};border:${border};">
-            <div class="oracle-slot-grid">
-              <div style="font-weight:700;">${period}</div>
-              <div><div>${partTo.toLocaleString("ru-RU")}₽</div><div style="text-decoration:underline;font-size:0.85em;opacity:0.8;">${cumTo.toLocaleString("ru-RU")}₽</div></div>
-              <div><div>${partTr} трафик</div><div style="text-decoration:underline;font-size:0.85em;opacity:0.8;">${cumTr} трафик</div></div>
+          <div class="oracle-slot ${stateClass}">
+            <div class="oracle-slot-top">
+              <div class="oracle-time">${period}</div>
+              <span class="oracle-chips">${chips}</span>
+              <div class="oracle-target" style="margin-left:auto;">${partTo.toLocaleString("ru-RU")}₽</div>
             </div>
-            <div style="font-size:20px;flex:0 0 auto;">${mark}</div>
+            <div class="oracle-slot-sub">
+              <span>накопит. ${cumTo.toLocaleString("ru-RU")}₽</span>
+              <span>${partTr} чел (всего ${cumTr})</span>
+            </div>
           </div>`;
       }
       container.innerHTML = html;

@@ -204,7 +204,7 @@ async function loadChart() {
       labels,
       datasets: [{
         data: revenues,
-        backgroundColor: highlight.map(done => (done ? "#FFD700" : "#FFFFFF")),
+        backgroundColor: highlight.map(done => (done ? "#f59e0b" : "#6366f1")),
         borderRadius: 10,
         barPercentage: 0.8,
         categoryPercentage: 0.8
@@ -224,7 +224,7 @@ async function loadChart() {
           max: yMax,
           ticks: { display: false },
           grid: {
-            color: ctx => (ctx.tick.value % 10000 === 0 ? "rgba(255,255,255,0.5)" : "transparent")
+            color: ctx => (ctx.tick.value % 10000 === 0 ? "rgba(15,23,42,0.07)" : "transparent")
           }
         },
         x: { ticks: { display: false }, grid: { display: false } }
