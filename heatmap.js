@@ -146,28 +146,29 @@ function buildHeatmap() {
     const events = getEventsForDay(day);
     const hasEvents = events.length > 0;
 
-    // Проверка выполнения плана ТЕКУЩЕГО года — маленький бейдж в углу
+    // Проверка выполнения плана ТЕКУЩЕГО года — стильный бейдж ✓/✕
     let planIndicator = '';
     if (currentYearData[day]) {
       const dayData = currentYearData[day];
       if (dayData.plan > 0 && dayData.revenue > 0) {
         const isPlanMet = dayData.revenue >= dayData.plan;
-        planIndicator = `<div class="hm-badge">${isPlanMet ? '❤️' : '🥺'}</div>`;
+        planIndicator = `<div class="hm-mark ${isPlanMet ? 'win' : 'miss'}">${isPlanMet ? '✓' : '✕'}</div>`;
       }
     }
 
-    // Точки событий внизу ячейки
+    // Маркеры событий: ромб — платёж, точка — день рождения
     let dotsHtml = '';
     if (hasEvents) {
       const uniqueTypes = [...new Set(events.map(e => e.type))];
       dotsHtml = `<div class="hm-dots">${uniqueTypes.map(type =>
-        `<span class="hm-dot" style="background:${type === 'payment' ? '#f97316' : '#a855f7'};"></span>`
+        `<span class="hm-dot ${type === 'payment' ? 'hm-dot--pay' : 'hm-dot--bday'}"></span>`
       ).join('')}</div>`;
     }
 
-    const textColor = bgColor === '#10b981' ? '#fff' : '#0f172a';
+    const isHot = bgColor === '#10b981';
+    const textColor = isHot ? '#fff' : '#0f172a';
     html += `
-      <div class="heatmap-day hm-day${isToday ? ' today' : ''}" data-day="${day}" style="background:${bgColor};color:${textColor};">
+      <div class="heatmap-day hm-day${isToday ? ' today' : ''}${isHot ? ' hot' : ''}" data-day="${day}" style="background-color:${bgColor};color:${textColor};">
         ${planIndicator}
         <span>${day}</span>
         ${dotsHtml}
@@ -181,8 +182,8 @@ function buildHeatmap() {
         <span><i style="background:#dbeafe;"></i>Низкая</span>
         <span><i style="background:#a7f3d0;"></i>Средняя</span>
         <span><i style="background:#10b981;"></i>Отличная</span>
-        <span><i style="background:#f97316;border-radius:50%;width:7px;height:7px;"></i>Платежи</span>
-        <span><i style="background:#a855f7;border-radius:50%;width:7px;height:7px;"></i>Дни рождения</span>
+        <span><i class="hm-dot--pay" style="width:7px;height:7px;border-radius:2px;transform:rotate(45deg);margin-right:6px;"></i>Платежи</span>
+        <span><i class="hm-dot--bday" style="width:7px;height:7px;border-radius:50%;"></i>Дни рождения</span>
       </div>
       <div id="eventsBlock" style="background:#f8fafc;border:1px solid #eef2f7;border-radius:14px;padding:14px;margin-top:12px;display:none;"></div>
     </div>
