@@ -57,10 +57,10 @@
         <div class="qu-panel active" data-panel="revenue">
           <div class="sub">${new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })} · сегодня</div>
           <div class="qu-error" id="quError"></div>
-          <div class="qu-field"><label>Выручка (ТО), ₽</label><input type="number" step="any" inputmode="decimal" id="quRevenue" value="${row['ТО'] ? clean(row['ТО']) : ''}"></div>
-          <div class="qu-field"><label>Трафик (ТР), чел</label><input type="number" step="any" inputmode="decimal" id="quTraffic" value="${row['ТР'] ? clean(row['ТР']) : ''}"></div>
-          <div class="qu-field"><label>Средний чек (СРЧ), ₽</label><input type="number" step="any" inputmode="decimal" id="quCheck" value="${row['СРЧ'] ? clean(row['СРЧ']) : ''}"></div>
-          <div class="qu-field"><label>Расчёт ASP</label><input type="number" step="any" inputmode="decimal" id="quAsp" value="${row['расчет ASP'] ? clean(row['расчет ASP']) : ''}"></div>
+          <div class="qu-field"><label>Выручка (ТО), ₽</label><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="quRevenue" value="${row['ТО'] ? clean(row['ТО']) : ''}"></div>
+          <div class="qu-field"><label>Трафик (ТР), чел</label><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="quTraffic" value="${row['ТР'] ? clean(row['ТР']) : ''}"></div>
+          <div class="qu-field"><label>Средний чек (СРЧ), ₽</label><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="quCheck" value="${row['СРЧ'] ? clean(row['СРЧ']) : ''}"></div>
+          <div class="qu-field"><label>Расчёт ASP</label><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" id="quAsp" value="${row['расчет ASP'] ? clean(row['расчет ASP']) : ''}"></div>
           <div class="qu-actions">
             <button type="button" class="qu-cancel" data-close>Отмена</button>
             <button type="button" id="quSubmit">Отправить</button>
@@ -106,9 +106,20 @@
     overlay.querySelector('#quSubmit').addEventListener('click', () => submitRevenue(overlay));
     overlay.querySelector('#quLeadersSubmit').addEventListener('click', () => submitLeaders(overlay));
 
+    // Значение поля сразу выделяется при переходе в него — можно просто
+    // начать печатать новое число, не выделяя старое мышкой вручную.
+    // Делегирование на overlay покрывает и поля вкладки «План», которые
+    // подставляются в DOM позже, при разблокировке.
+    overlay.addEventListener('focusin', e => {
+      if (e.target.matches('input[type="text"], input[type="tel"], textarea')) {
+        e.target.select();
+      }
+    });
+
     // Автофокус на первое пустое поле вкладки «Выручка» (открыта по умолчанию)
     const firstEmpty = overlay.querySelector('.qu-panel[data-panel="revenue"] input:not([value])') || overlay.querySelector('#quRevenue');
     firstEmpty?.focus({ preventScroll: true });
+    firstEmpty?.select();
   }
 
   // ==================== Общая отправка на сервер ====================
@@ -269,9 +280,9 @@
       return `
         <div class="qu-month-row" data-month="${key}">
           <div class="qu-month-name">${name.slice(0, 3)}</div>
-          <input type="number" step="any" inputmode="decimal" data-f="revenue" value="${revenue}">
-          <input type="number" step="any" inputmode="decimal" data-f="traffic" value="${traffic}">
-          <input type="number" step="any" inputmode="decimal" data-f="avgCheck" value="${avgCheck}">
+          <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" data-f="revenue" value="${revenue}">
+          <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" data-f="traffic" value="${traffic}">
+          <input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" data-f="avgCheck" value="${avgCheck}">
         </div>`;
     }).join('');
 
