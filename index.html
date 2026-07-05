@@ -129,6 +129,204 @@
       font-weight: 400;
     }
 
+    /* === КНОПКА БЫСТРОГО ВВОДА ДАННЫХ === */
+    .qu-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin: 0;
+      padding: 0;
+    }
+
+    .qu-btn:hover {
+      transform: translateY(-50%) scale(1.08);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+    }
+
+    .qu-btn:active { transform: translateY(-50%) scale(0.95); }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      transform: none !important;
+    }
+
+    .qu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      -webkit-backdrop-filter: blur(3px);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      z-index: 200;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      animation: fadeInUp 0.25s ease-out both;
+    }
+
+    .qu-modal {
+      background: #fff;
+      border-radius: 22px;
+      padding: 22px 20px;
+      width: 100%;
+      max-width: 380px;
+      margin: 6vh auto;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.3);
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 380px) {
+      .qu-modal { margin-top: 16px; padding: 20px 16px; }
+    }
+
+    .qu-modal h3 {
+      font-size: 18px;
+      font-weight: 850;
+      text-align: center;
+      margin-bottom: 2px;
+    }
+
+    .qu-modal .sub {
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--sub);
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .qu-field { margin-bottom: 12px; }
+
+    .qu-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--faint);
+      margin-bottom: 5px;
+    }
+
+    .qu-field input {
+      width: 100%;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      font-family: inherit;
+      transition: border-color 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .qu-field input:focus {
+      outline: none;
+      border-color: var(--indigo);
+    }
+
+    .qu-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .qu-actions button {
+      flex: 1;
+      margin-top: 0;
+    }
+
+    .qu-cancel {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+      box-shadow: none !important;
+    }
+
+    .qu-close {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: var(--faint);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      width: auto;
+      box-shadow: none;
+    }
+
+    .qu-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      font-size: 12.5px;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .qu-error.show { display: block; }
+
+    /* Штамп успеха */
+    .qu-stamp-wrap {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 210;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .qu-stamp {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #34d399);
+      display: grid;
+      place-items: center;
+      font-size: 46px;
+      color: #fff;
+      box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.25), 0 20px 50px rgba(16, 185, 129, 0.4);
+      animation: stampIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes stampIn {
+      0%   { transform: scale(2.2) rotate(-18deg); opacity: 0; }
+      60%  { transform: scale(0.92) rotate(4deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .qu-stamp-text {
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      text-align: center;
+      padding: 0 30px;
+      animation: fadeInUp 0.4s ease-out 0.15s both;
+    }
+
     /* === ОСНОВНОЙ WRAPPER === */
     .container {
       width: 100%;
@@ -1121,6 +1319,7 @@
 <body>
   <!-- ЛОГОТИП -->
   <div class="logo-wrapper">
+    <button id="quickUpdateBtn" class="qu-btn" type="button" aria-label="Внести данные">✏️</button>
     <h1>KIVI <span>Business</span></h1>
   </div>
 
@@ -1272,6 +1471,8 @@
   <script src="yearComparisonChart.js" defer></script>
   <script src="profitability.js" defer></script>
   <script src="purchase.js" defer></script>
+
+  <script src="quickUpdate.js" defer></script>
 
   <!-- 🔧 АВТОМАТИЧЕСКИЙ ПЕРЕНОСЧИК БЛОКОВ (подключается ПОСЛЕДНИМ!) -->
   <script src="layoutFixer.js" defer></script>

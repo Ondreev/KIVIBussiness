@@ -9,6 +9,11 @@ const SHEETS = {
   settings: csvUrl(251925978),
   ebitda: csvUrl(567373639),
   leaders: csvUrl(1406705679),
+
+  // URL веб-приложения Apps Script для кнопки «Внести данные» (см. apps-script.gs).
+  // Deploy → New deployment → Web app → Execute as: Me → Who has access: Anyone.
+  // Вставьте сюда адрес вида https://script.google.com/macros/s/XXXX/exec
+  updateUrl: "",
 };
 
 window.SHEETS = SHEETS; // чтобы был доступ из любых скриптов

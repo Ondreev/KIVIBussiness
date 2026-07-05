@@ -70,11 +70,27 @@
     });
   }
 
-  // Текущий месяц
-  const thisMonthData = data.filter(r => {
-    const d = new Date(r["Дата"]);
-    return r["Дата"]?.startsWith(ym) && d <= today && clean(r["ТО"]) > 0;
+  // Только ЗАВЕРШЁННЫЕ дни (без сегодняшнего частичного) — иначе средняя, а
+  // значит и «амбициозная» цель дня, занижается недобранной за неполные
+  // сутки выручкой и почти не отличается от обычного плана
+  const parseYMD = str => {
+    const m = String(str || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? { y: +m[1], mo: +m[2], d: +m[3] } : null;
+  };
+
+  let thisMonthData = data.filter(r => {
+    const p = parseYMD(r["Дата"]);
+    return p && p.y === currentYear && p.mo === today.getMonth() + 1 && p.d < currentDay && clean(r["ТО"]) > 0;
   });
+  if (!thisMonthData.length) {
+    // Начало месяца: завершённых дней ещё нет — берём последние 30 дней истории
+    const todayMidnight = new Date(currentYear, today.getMonth(), currentDay);
+    thisMonthData = data.filter(r => {
+      const p = parseYMD(r["Дата"]);
+      if (!p) return false;
+      return new Date(p.y, p.mo - 1, p.d) < todayMidnight && clean(r["ТО"]) > 0;
+    }).slice(-30);
+  }
   if (!thisMonthData.length) return;
 
   // Прошлый год, тот же день
