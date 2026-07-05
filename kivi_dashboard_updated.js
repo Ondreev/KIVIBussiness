@@ -185,11 +185,14 @@ async function loadChart() {
   });
 
   const revenues  = last7.map(row => cleanNumber(getCol(row, COLS.revenue)));
-  const highlight = last7.map(row =>
-    String(row["Выполнение плана (Да/Нет)"] || "")
-      .trim()
-      .toLowerCase() === "да"
-  );
+  // Считаем выполнение плана сами (ТО vs "План на день"), а не читаем
+  // готовую колонку из таблицы — та нередко хранится как ARRAYFORMULA,
+  // и любая внешняя запись в лист рискует её сломать. Так дашборд от
+  // неё вообще не зависит (то же самое уже делает heatmap.js).
+  const highlight = last7.map(row => {
+    const plan = cleanNumber(row["План на день"]);
+    return plan > 0 && cleanNumber(getCol(row, COLS.revenue)) >= plan;
+  });
 
   const yMax = Math.ceil(Math.max(...revenues) / 10000) * 10000;
   const chartEl = document.getElementById("salesChart");
