@@ -143,7 +143,12 @@ function doPost(e) {
             const pHeaders = pValues[0];
             const pCol = name => pHeaders.indexOf(name);
             const pMonth = pCol('Месяц'), pRevenue = pCol('План по выручке');
-            const monthRow = pMonth > -1 && pValues.find((r, i) => i > 0 && String(r[pMonth]).trim() === ym);
+            // "Месяц" в листе "Планы" хранится как настоящая дата (не текст) —
+            // сравниваем по году/месяцу, а не строкой, иначе совпадения не будет
+            const monthKey = raw => raw instanceof Date
+              ? Utilities.formatDate(raw, tz, 'yyyy-MM')
+              : String(raw || '').trim().slice(0, 7);
+            const monthRow = pMonth > -1 && pValues.find((r, i) => i > 0 && monthKey(r[pMonth]) === ym);
             if (monthRow) {
               const daysInMonth = new Date(y, m, 0).getDate();
               dailyPlan = Math.round(Number(monthRow[pRevenue]) / daysInMonth);
