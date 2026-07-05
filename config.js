@@ -11,9 +11,7 @@ const SHEETS = {
   leaders: csvUrl(1406705679),
 
   // URL веб-приложения Apps Script для кнопки «Внести данные» (см. apps-script.gs).
-  // Deploy → New deployment → Web app → Execute as: Me → Who has access: Anyone.
-  // Вставьте сюда адрес вида https://script.google.com/macros/s/XXXX/exec
-  updateUrl: "",
+  updateUrl: "https://script.google.com/macros/s/AKfycbwLHdsiLT4NImpOZ8mq0Oj_oFkes8DcnmtmYxMUBQlvvXFfhJsePDNvpX96xlR94bX2/exec",
 };
 
 window.SHEETS = SHEETS; // чтобы был доступ из любых скриптов
