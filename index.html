@@ -1,10 +1,20 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <link rel="icon" type="image/png" href="/favicon.ico">
+  <link rel="icon" type="image/png" href="favicon.ico">
   <meta charset="UTF-8" />
   <title>KIVI Business</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+  <!-- PWA: манифест + иконки, чтобы "Добавить на главный экран" сохраняло
+       приложение с логотипом KIVI, а не общей иконкой браузера -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KIVI Business">
+  <meta name="mobile-web-app-capable" content="yes">
 
   <!-- CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -1586,6 +1596,14 @@
     });
 
     window.animateCounter = animateCounter;
+
+    // Регистрация service worker — нужна только для того, чтобы Chrome/Android
+    // считал приложение устанавливаемым. Сам SW ничего не кеширует (см. sw.js).
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
   </script>
 
   <!-- Скрипты -->
