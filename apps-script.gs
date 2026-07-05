@@ -79,8 +79,8 @@ function doPost(e) {
     const col = name => headers.indexOf(name);
 
     const cDate = col('Дата'), cDay = col('День'), cTo = col('ТО'), cTr = col('ТР'),
-          cCheck = col('СРЧ'), cPlan = col('План на день'),
-          cDone = col('Выполнение плана (Да/Нет)'), cAsp = col('расчет ASP');
+          cCheck = col('СРЧ'), cPlan = col('План на день'), cAsp = col('расчет ASP');
+    // "Выполнение плана (Да/Нет)" сознательно не трогаем — см. комментарий ниже
 
     if (cDate === -1) return jsonOutput({ ok: false, error: 'Колонка "Дата" не найдена' });
 
@@ -154,14 +154,11 @@ function doPost(e) {
       }
     }
 
-    // Выполнение плана (Да/Нет) — пересчитываем по итоговому факту/плану
-    if (cDone > -1 && cTo > -1 && cPlan > -1) {
-      const finalTo = Number(sheet.getRange(rowIndex, cTo + 1).getValue()) || 0;
-      const finalPlan = Number(sheet.getRange(rowIndex, cPlan + 1).getValue()) || 0;
-      if (finalTo > 0 && finalPlan > 0) {
-        sheet.getRange(rowIndex, cDone + 1).setValue(finalTo >= finalPlan ? 'Да' : 'Нет');
-      }
-    }
+    // ВАЖНО: колонку "Выполнение плана (Да/Нет)" сюда НЕ пишем — она обычно
+    // заполнена формулой (нередко ARRAYFORMULA на весь столбец), а любая
+    // запись через setValue() в отдельную ячейку внутри диапазона такой
+    // формулы удаляет её целиком, стирая значения во всех остальных строках.
+    // Формула в самом листе пересчитает Да/Нет сама после обновления ТО.
 
     return jsonOutput({ ok: true, row: rowIndex, date: targetDate, weekday: weekday, created: isNewRow });
   } catch (err) {
