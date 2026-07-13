@@ -124,13 +124,24 @@
 
   // ==================== Общая отправка на сервер ====================
 
-  async function postToSheet(payload) {
-    const res = await fetch(window.SHEETS.updateUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // избегаем CORS-preflight
-      body: JSON.stringify(payload),
-    });
-    return res.json();
+  async function postToSheet(payload, retries = 2) {
+    let lastErr;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(window.SHEETS.updateUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // избегаем CORS-preflight
+          body: JSON.stringify(payload),
+        });
+        return await res.json();
+      } catch (err) {
+        lastErr = err;
+        // CORS/сеть иногда моргают у Apps Script сами по себе (особенно
+        // сразу после редеплоя) — обычно вторая попытка проходит нормально
+        if (attempt < retries) await new Promise(r => setTimeout(r, 900 * (attempt + 1)));
+      }
+    }
+    throw lastErr;
   }
 
   // Резервная отправка через скрытую форму (только для вкладки «Выручка» —
@@ -162,8 +173,32 @@
       const finish = () => { if (done) return; done = true; form.remove(); resolve(); };
       iframe.addEventListener('load', finish, { once: true });
       form.submit();
-      setTimeout(finish, 2500); // защита, если onload не сработает
+      setTimeout(finish, 6000); // защита, если onload не сработает (Apps Script бывает медленный)
     });
+  }
+
+  // Ни успешный ответ fetch, ни факт отправки резервной формы не значат,
+  // что данные РЕАЛЬНО долетели и записались (именно это и подвело один
+  // раз — форма показала "Отправлено!", а строка в таблице осталась
+  // пустой). Поэтому для выручки честно перечитываем CSV с самими
+  // данными и ждём, пока там не появится то же число, прежде чем
+  // сказать пользователю, что всё сохранено.
+  async function fetchFreshRow(dateStr) {
+    const res = await fetch(`${window.SHEETS.data}&_=${Date.now()}`, { cache: 'no-cache' });
+    const text = await res.text();
+    const rows = Papa.parse(text, { header: true }).data;
+    return rows.find(r => String(r['Дата'] || '').trim().startsWith(dateStr));
+  }
+
+  async function verifyRevenueSaved(expected, dateStr, attempts = 5) {
+    for (let i = 0; i < attempts; i++) {
+      await new Promise(r => setTimeout(r, 1300));
+      try {
+        const row = await fetchFreshRow(dateStr);
+        if (row && Math.abs(clean(row['ТО']) - expected) < 1) return true;
+      } catch (e) { /* сеть могла моргнуть — пробуем ещё раз */ }
+    }
+    return false;
   }
 
   function showStamp(confirmed, label) {
@@ -189,10 +224,11 @@
     const errEl = overlay.querySelector('#quError');
     errEl.classList.remove('show');
 
+    const revenueVal = overlay.querySelector('#quRevenue').value || null;
     const payload = {
       action: 'revenue',
       date: todayStr(),
-      revenue: overlay.querySelector('#quRevenue').value || null,
+      revenue: revenueVal,
       traffic: overlay.querySelector('#quTraffic').value || null,
       avgCheck: overlay.querySelector('#quCheck').value || null,
       asp: overlay.querySelector('#quAsp').value || null,
@@ -208,24 +244,40 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Отправка…';
 
+    let serverConfirmedOk = false;
     try {
       const json = await postToSheet(payload);
       if (!json.ok) throw new Error(json.error || 'Ошибка сохранения');
-      overlay._close();
-      showStamp(true);
+      serverConfirmedOk = true;
     } catch (err) {
       // Сеть/CORS могли помешать прочитать ответ, но запрос на сервер мог
       // всё же дойти — пробуем понадёжнее через скрытую форму
       try {
         await fallbackFormPost(payload);
-        overlay._close();
-        showStamp(false);
       } catch (fallbackErr) {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Отправить';
-        errEl.textContent = 'Не удалось сохранить: ' + err.message;
+        errEl.textContent = 'Не удалось отправить: ' + err.message;
         errEl.classList.add('show');
+        return;
       }
+    }
+
+    // Не верим ответу на слово — реально перечитываем таблицу и ждём,
+    // пока там не появится наше число, прежде чем говорить "готово"
+    submitBtn.textContent = 'Проверяем…';
+    const confirmed = revenueVal
+      ? await verifyRevenueSaved(clean(revenueVal), payload.date)
+      : serverConfirmedOk;
+
+    if (confirmed) {
+      overlay._close();
+      showStamp(true);
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Отправить';
+      errEl.textContent = 'Не смогли подтвердить сохранение — попробуйте ещё раз или проверьте таблицу вручную.';
+      errEl.classList.add('show');
     }
   }
 
