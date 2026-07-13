@@ -64,6 +64,13 @@ function doPost(e) {
       payload = JSON.parse(e.postData.contents);
     } catch (parseErr) {
       payload = e.parameter; // резервный путь: обычная HTML-форма (без CORS)
+      // Массивы/объекты (items, months) форма передаёт как JSON-строки —
+      // разворачиваем обратно, раз обычный JSON.parse всего тела не сработал
+      ['items', 'months'].forEach(key => {
+        if (typeof payload[key] === 'string') {
+          try { payload[key] = JSON.parse(payload[key]); } catch (e2) { /* оставляем как есть */ }
+        }
+      });
     }
 
     if (UPDATE_SECRET && payload.secret !== UPDATE_SECRET) {
