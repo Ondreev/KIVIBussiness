@@ -123,30 +123,26 @@
   }
 
   // ==================== Общая отправка на сервер ====================
+  //
+  // fetch() к Apps Script с этого домена стабильно упирается в CORS
+  // (Apps Script не всегда шлёт Access-Control-Allow-Origin для POST) —
+  // это не разовый глюк, а системное поведение, так что полагаться на
+  // fetch() как на основной путь нельзя. Пробуем его один раз как быстрый
+  // путь, а по-настоящему полагаемся на отправку через скрытую форму —
+  // так браузер отправляет запрос всегда, независимо от CORS (мы просто
+  // не читаем ответ). Итог — сохранилось или нет — в любом случае
+  // проверяем отдельным (уже обычным, GET) запросом к самим данным.
 
-  async function postToSheet(payload, retries = 2) {
-    let lastErr;
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const res = await fetch(window.SHEETS.updateUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // избегаем CORS-preflight
-          body: JSON.stringify(payload),
-        });
-        return await res.json();
-      } catch (err) {
-        lastErr = err;
-        // CORS/сеть иногда моргают у Apps Script сами по себе (особенно
-        // сразу после редеплоя) — обычно вторая попытка проходит нормально
-        if (attempt < retries) await new Promise(r => setTimeout(r, 900 * (attempt + 1)));
-      }
-    }
-    throw lastErr;
+  async function postToSheet(payload) {
+    const res = await fetch(window.SHEETS.updateUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // избегаем CORS-preflight
+      body: JSON.stringify(payload),
+    });
+    return res.json();
   }
 
-  // Резервная отправка через скрытую форму (только для вкладки «Выручка» —
-  // там плоский набор полей, который переживает form-urlencoded кодирование)
-  function fallbackFormPost(payload) {
+  function formPost(payload) {
     return new Promise(resolve => {
       let iframe = document.getElementById('quHiddenFrame');
       if (!iframe) {
@@ -165,7 +161,9 @@
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = k;
-        input.value = v;
+        // Массивы/объекты (items, months) через form-urlencoded не передать
+        // напрямую — кодируем в JSON-строку, сервер это ожидает и разбирает
+        input.value = (typeof v === 'object') ? JSON.stringify(v) : v;
         form.appendChild(input);
       });
       document.body.appendChild(form);
@@ -177,25 +175,66 @@
     });
   }
 
-  // Ни успешный ответ fetch, ни факт отправки резервной формы не значат,
-  // что данные РЕАЛЬНО долетели и записались (именно это и подвело один
-  // раз — форма показала "Отправлено!", а строка в таблице осталась
-  // пустой). Поэтому для выручки честно перечитываем CSV с самими
-  // данными и ждём, пока там не появится то же число, прежде чем
-  // сказать пользователю, что всё сохранено.
-  async function fetchFreshRow(dateStr) {
-    const res = await fetch(`${window.SHEETS.data}&_=${Date.now()}`, { cache: 'no-cache' });
+  // Пробуем быстрый путь (fetch), при неудаче — надёжный (форма). Что бы
+  // из этого ни "сработало", это не гарантия — реальную проверку делает
+  // вызывающий код через verify*Saved() ниже.
+  async function submitPayload(payload) {
+    try {
+      const json = await postToSheet(payload);
+      if (json.ok) return;
+      throw new Error(json.error || 'Ошибка сохранения');
+    } catch (err) {
+      await formPost(payload); // не бросает — просто отправляет и ждёт как может
+    }
+  }
+
+  // Ни успешный ответ fetch, ни факт отправки формы не значат, что данные
+  // РЕАЛЬНО долетели и записались (именно это и подвело один раз — форма
+  // показала "Отправлено!", а строка в таблице осталась пустой). Поэтому
+  // честно перечитываем CSV с самими данными и ждём, пока там не появится
+  // то же значение, прежде чем сказать пользователю, что всё сохранено.
+  async function fetchCsv(url) {
+    const res = await fetch(`${url}&_=${Date.now()}`, { cache: 'no-cache' });
     const text = await res.text();
-    const rows = Papa.parse(text, { header: true }).data;
-    return rows.find(r => String(r['Дата'] || '').trim().startsWith(dateStr));
+    return Papa.parse(text, { header: true }).data;
   }
 
   async function verifyRevenueSaved(expected, dateStr, attempts = 5) {
     for (let i = 0; i < attempts; i++) {
       await new Promise(r => setTimeout(r, 1300));
       try {
-        const row = await fetchFreshRow(dateStr);
+        const rows = await fetchCsv(window.SHEETS.data);
+        const row = rows.find(r => String(r['Дата'] || '').trim().startsWith(dateStr));
         if (row && Math.abs(clean(row['ТО']) - expected) < 1) return true;
+      } catch (e) { /* сеть могла моргнуть — пробуем ещё раз */ }
+    }
+    return false;
+  }
+
+  async function verifyLeadersSaved(expectedItems, attempts = 5) {
+    for (let i = 0; i < attempts; i++) {
+      await new Promise(r => setTimeout(r, 1300));
+      try {
+        const rows = await fetchCsv(window.SHEETS.leaders);
+        const got = rows.map(r => r['Лидеры продаж']).filter(Boolean);
+        if (got.length === expectedItems.length && got.every((v, i2) => v === expectedItems[i2])) return true;
+      } catch (e) { /* сеть могла моргнуть — пробуем ещё раз */ }
+    }
+    return false;
+  }
+
+  async function verifyPlanSaved(months, attempts = 5) {
+    const toCheck = months.filter(m => m.revenue != null && m.revenue !== '');
+    if (!toCheck.length) return true;
+    for (let i = 0; i < attempts; i++) {
+      await new Promise(r => setTimeout(r, 1300));
+      try {
+        const rows = await fetchCsv(window.SHEETS.plans);
+        const allMatch = toCheck.every(m => {
+          const row = rows.find(r => String(r['Месяц'] || '').trim() === m.month);
+          return row && Math.abs(clean(row['План по выручке']) - clean(m.revenue)) < 1;
+        });
+        if (allMatch) return true;
       } catch (e) { /* сеть могла моргнуть — пробуем ещё раз */ }
     }
     return false;
@@ -244,31 +283,12 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Отправка…';
 
-    let serverConfirmedOk = false;
-    try {
-      const json = await postToSheet(payload);
-      if (!json.ok) throw new Error(json.error || 'Ошибка сохранения');
-      serverConfirmedOk = true;
-    } catch (err) {
-      // Сеть/CORS могли помешать прочитать ответ, но запрос на сервер мог
-      // всё же дойти — пробуем понадёжнее через скрытую форму
-      try {
-        await fallbackFormPost(payload);
-      } catch (fallbackErr) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Отправить';
-        errEl.textContent = 'Не удалось отправить: ' + err.message;
-        errEl.classList.add('show');
-        return;
-      }
-    }
+    await submitPayload(payload);
 
     // Не верим ответу на слово — реально перечитываем таблицу и ждём,
     // пока там не появится наше число, прежде чем говорить "готово"
     submitBtn.textContent = 'Проверяем…';
-    const confirmed = revenueVal
-      ? await verifyRevenueSaved(clean(revenueVal), payload.date)
-      : serverConfirmedOk;
+    const confirmed = revenueVal ? await verifyRevenueSaved(clean(revenueVal), payload.date) : true;
 
     if (confirmed) {
       overlay._close();
@@ -305,15 +325,18 @@
     btn.disabled = true;
     btn.textContent = 'Сохранение…';
 
-    try {
-      const json = await postToSheet({ action: 'leaders', items });
-      if (!json.ok) throw new Error(json.error || 'Ошибка сохранения');
+    await submitPayload({ action: 'leaders', items });
+
+    btn.textContent = 'Проверяем…';
+    const confirmed = await verifyLeadersSaved(items);
+
+    if (confirmed) {
       overlay._close();
       showStamp(true, 'Список лидеров обновлён!');
-    } catch (err) {
+    } else {
       btn.disabled = false;
       btn.textContent = 'Сохранить список';
-      errEl.textContent = 'Не удалось сохранить: ' + err.message;
+      errEl.textContent = 'Не смогли подтвердить сохранение — попробуйте ещё раз или проверьте таблицу вручную.';
       errEl.classList.add('show');
     }
   }
@@ -422,15 +445,18 @@
     btn.disabled = true;
     btn.textContent = 'Сохранение…';
 
-    try {
-      const json = await postToSheet({ action: 'plan', login: planAuth.login, password: planAuth.password, months });
-      if (!json.ok) throw new Error(json.error || 'Ошибка сохранения');
+    await submitPayload({ action: 'plan', login: planAuth.login, password: planAuth.password, months });
+
+    btn.textContent = 'Проверяем…';
+    const confirmed = await verifyPlanSaved(months);
+
+    if (confirmed) {
       overlay._close();
       showStamp(true, 'План обновлён!');
-    } catch (err) {
+    } else {
       btn.disabled = false;
       btn.textContent = 'Сохранить план';
-      errEl.textContent = 'Не удалось сохранить: ' + err.message;
+      errEl.textContent = 'Не смогли подтвердить сохранение — попробуйте ещё раз или проверьте таблицу вручную.';
       errEl.classList.add('show');
     }
   }
