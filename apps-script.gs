@@ -132,15 +132,18 @@ function handleRevenue(payload) {
   const isNewRow = rowIndex === -1;
 
   if (isNewRow) {
-    // Строки на эту дату нет (месяц не подготовили заранее) — создаём.
-    // getLastRow() — а не values.length из уже прочитанного снапшота —
-    // потому что на листах с включённой функцией "Таблицы" в Google Sheets
-    // фактическая граница данных иногда не совпадает с тем, что вернул
-    // getDataRange() чуть раньше.
-    rowIndex = sheet.getLastRow() + 1;
+    // Строки на эту дату нет (месяц не подготовили заранее) — добавляем
+    // через appendRow(), а не ручным расчётом индекса + записью в Range()
+    // за пределами текущих строк: на листах с включённой функцией "Таблицы"
+    // в Google Sheets именно appendRow() надёжно расширяет границу таблицы,
+    // тогда как прямая запись в ячейку по номеру строки за её пределами
+    // вела к странным сбоям при следующей записи.
+    const newRow = new Array(headers.length).fill('');
+    if (cDate > -1) newRow[cDate] = targetDate;
+    if (cDay > -1) newRow[cDay] = weekday;
+    sheet.appendRow(newRow);
+    rowIndex = sheet.getLastRow();
     if (cDate > -1) sheet.getRange(rowIndex, cDate + 1).setNumberFormat('@').setValue(targetDate);
-    if (cDay > -1) sheet.getRange(rowIndex, cDay + 1).setValue(weekday);
-    SpreadsheetApp.flush(); // фиксируем строку сразу, до записи остальных колонок
   }
 
   if (payload.revenue !== '' && payload.revenue != null && cTo > -1)
@@ -185,7 +188,6 @@ function handleRevenue(payload) {
   // формулы удаляет её целиком, стирая значения во всех остальных строках.
   // Формула в самом листе пересчитает Да/Нет сама после обновления ТО.
 
-  SpreadsheetApp.flush(); // гарантируем, что все записи ушли в лист до ответа клиенту
   return jsonOutput({ ok: true, row: rowIndex, date: targetDate, weekday: weekday, created: isNewRow });
 }
 
