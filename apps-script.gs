@@ -172,11 +172,14 @@ function handleRevenue(payload) {
         }
       }
       if (!dailyPlan) {
+        // "План по выручке" в листе "Планы" — это уже ДНЕВНОЙ план на весь
+        // месяц (обычно ~20-24 тыс., как и "План на день" в "Данные"), а НЕ
+        // сумма за месяц целиком — делить на число дней в месяце не нужно.
+        // Раньше тут было деление, из-за чего план на день превращался в
+        // мизерную цифру (~700₽), и любая обычная выручка выглядела как
+        // многократное перевыполнение плана.
         const monthRow = findPlanMonthRow(ss, ym);
-        if (monthRow) {
-          const daysInMonth = new Date(y, m, 0).getDate();
-          dailyPlan = Math.round(monthRow.revenue / daysInMonth);
-        }
+        if (monthRow) dailyPlan = monthRow.revenue;
       }
       if (dailyPlan) sheet.getRange(rowIndex, cPlan + 1).setValue(dailyPlan);
     }
