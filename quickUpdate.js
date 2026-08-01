@@ -383,7 +383,7 @@
 
     const year = new Date().getFullYear();
     return `
-      <div class="qu-hint" style="margin-top:0;text-align:center;">План на ${year} год</div>
+      <div class="qu-hint" style="margin-top:0;text-align:center;">План на ${year} год · цифры дневные (не сумма за месяц)</div>
       <div class="qu-error" id="quPlanError"></div>
       <div class="qu-body-scroll">${buildPlanMonthsHtml(year)}</div>
       <button type="button" id="quPlanSaveBtn" style="width:100%;margin-top:12px;">Сохранить план</button>
