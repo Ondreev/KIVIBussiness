@@ -101,8 +101,13 @@ function handleRevenue(payload) {
   const sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) return jsonOutput({ ok: false, error: `Лист "${SHEET_NAME}" не найден` });
 
-  const values = sheet.getDataRange().getValues();
-  const headers = values[0];
+  // Читаем только заголовок (1 строка), а не весь лист — "Данные" уже
+  // разросся до 1500+ строк, и полный getDataRange().getValues() по всем
+  // ~9 колонкам на каждый чих заметно тяжелее, чем нужно. Ниже читаем
+  // точечно только те колонки, которые реально требуются.
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const col = name => headers.indexOf(name);
 
   const cDate = col('Дата'), cDay = col('День'), cTo = col('ТО'), cTr = col('ТР'),
@@ -121,9 +126,12 @@ function handleRevenue(payload) {
     ? Utilities.formatDate(raw, tz, 'yyyy-MM-dd')
     : String(raw || '').trim().slice(0, 10);
 
+  // Только колонка "Дата" — один точечный столбец вместо всей таблицы
+  const dateColumn = lastRow > 1 ? sheet.getRange(2, cDate + 1, lastRow - 1, 1).getValues() : [];
+
   let rowIndex = -1;
-  for (let i = 1; i < values.length; i++) {
-    if (dateAsStr(values[i][cDate]) === targetDate) { rowIndex = i + 1; break; }
+  for (let i = 0; i < dateColumn.length; i++) {
+    if (dateAsStr(dateColumn[i][0]) === targetDate) { rowIndex = i + 2; break; }
   }
 
   const [y, m, d] = targetDate.split('-').map(Number);
@@ -157,17 +165,16 @@ function handleRevenue(payload) {
 
   // План на день: если пуст — подставляем. Берём план из другой строки
   // этого же месяца (обычно план одинаков весь месяц), а если в этом
-  // месяце вообще нет строк с планом — считаем месячный план ÷ число
-  // дней в месяце (грубая оценка, стоит проверить вручную)
+  // месяце вообще нет строк с планом — берём из листа "Планы"
   if (cPlan > -1) {
-    const existingRow = isNewRow ? null : values[rowIndex - 1];
-    const existingPlan = existingRow ? Number(existingRow[cPlan]) || 0 : 0;
+    const existingPlan = isNewRow ? 0 : (Number(sheet.getRange(rowIndex, cPlan + 1).getValue()) || 0);
     if (!existingPlan) {
       let dailyPlan = 0;
       const ym = targetDate.slice(0, 7);
-      for (let i = 1; i < values.length; i++) {
-        if (dateAsStr(values[i][cDate]).startsWith(ym)) {
-          const v = Number(values[i][cPlan]) || 0;
+      const planColumn = lastRow > 1 ? sheet.getRange(2, cPlan + 1, lastRow - 1, 1).getValues() : [];
+      for (let i = 0; i < dateColumn.length; i++) {
+        if (dateAsStr(dateColumn[i][0]).startsWith(ym)) {
+          const v = Number(planColumn[i] ? planColumn[i][0] : 0) || 0;
           if (v > 0) { dailyPlan = v; break; }
         }
       }
