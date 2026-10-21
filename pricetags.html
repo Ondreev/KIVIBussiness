@@ -188,6 +188,23 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   .top-in{flex-wrap:wrap}
 }
 
+/* ---------- быстрый ввод и правка в таблице ---------- */
+.quick{padding:14px 16px;margin-bottom:12px}
+.q-t{font-weight:700;font-size:13px;margin-bottom:10px}
+.q-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.q-f label.l{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.q-f .inp{font-size:16px;font-weight:600;padding:9px 11px}
+.inp.cell{border-color:transparent;background:transparent;padding:7px 9px;font-weight:600;font-variant-numeric:tabular-nums}
+.inp.cell:hover{border-color:var(--line2)}
+.inp.cell:focus{background:var(--card)}
+.inp.cell.bad{color:var(--bad);border-color:var(--bad)}
+.btn.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.done:hover{filter:brightness(1.08);color:#fff;border-color:var(--ok)}
+.seg .cnt{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:99px;font-size:11px;background:color-mix(in srgb,currentColor 16%,transparent);text-align:center}
+td .bcwarn{margin:0 0 0 9px}
+.inp.qin{border:1px solid var(--line2);background:var(--card);border-radius:9px;padding:9px 11px;outline:none;width:100%}
+.inp.qin:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+
 </style>
 <style id="pageStyle"></style>
 </head>
@@ -339,6 +356,8 @@ const ICON = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6M3.5 13A9 9 0 1 0 6 6.3"/></svg>',
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>',
 };
 
@@ -364,7 +383,7 @@ const DEFAULT_TPL = {
     blocks: {
       caption: blk({ text: 'САМАЯ НИЗКАЯ ЦЕНА!', size: 6.5, weight: 700 }),
       old: blk({ show: true, size: 6, weight: 600 }),
-      price: blk({ size: 60, weight: 900, style: 'kop', thousands: true, fill: true, font: 'black' }),
+      price: blk({ size: 60, weight: 900, style: 'kop', thousands: true, fill: true, stretch: 100, font: 'black' }),
       name: blk({ show: false, size: 6, weight: 700, lines: 2 }),
       barcode: blk({ h: 6.5, wpct: 100, hrt: false, type: 'auto' }),
       itemline: blk({ prefix: 'item:', size: 7.5, weight: 700 }),
@@ -378,7 +397,7 @@ const DEFAULT_TPL = {
         text: 'Скачай новое приложение KARAT mall - там все магазины РЕУТОВА и услуги. Скидки, акции, промокод. Промокод SVOE15 - скидка 15% на товары с плашкой "Промокод"' }),
       caption: blk({ text: 'САМАЯ НИЗКАЯ ЦЕНА!', size: 15, weight: 900, font: 'black' }),
       old: blk({ show: true, size: 12, weight: 600 }),
-      price: blk({ size: 150, weight: 900, style: 'sign', thousands: true, fill: true, font: 'black' }),
+      price: blk({ size: 150, weight: 900, style: 'sign', thousands: true, fill: true, stretch: 200, font: 'black' }),
       footer: blk({ text: 'Акция в КИВИ Маркет', size: 9, weight: 700 }),
       name: blk({ show: false, size: 10, weight: 700, lines: 2 }),
       barcode: blk({ h: 14, wpct: 100, hrt: false, type: 'auto' }),
@@ -428,9 +447,15 @@ function normalizeState(raw) {
   if (Array.isArray(raw.log)) s.log = raw.log.slice(-200);
   return s;
 }
+function guessSec(x) {
+  if (x.brand || x.composition || x.article || x.country) return 'label';
+  const pr = x.printed || {};
+  if (pr['price-l'] && !pr['price-s']) return 'price-l';
+  return 'price-s';
+}
 function normItem(x) {
   return {
-    id: x.id || uid(), item: String(x.item || '').trim(), name: x.name || '', price: x.price == null ? '' : String(x.price),
+    id: x.id || uid(), sec: TPL_IDS.includes(x.sec) ? x.sec : guessSec(x), item: String(x.item || '').trim(), name: x.name || '', price: x.price == null ? '' : String(x.price),
     oldPrice: x.oldPrice == null ? '' : String(x.oldPrice), barcode: x.barcode || '', brand: x.brand || '', composition: x.composition || '',
     article: x.article || '', country: x.country || '', qty: Math.max(1, parseInt(x.qty, 10) || 1),
     printed: (x.printed && typeof x.printed === 'object') ? x.printed : {}, created: x.created || Date.now(),
@@ -509,7 +534,7 @@ function priceBlock(c, b, it) {
   if (b.style === 'kop') inner = `<span class="pr-n">${n}</span><span class="pr-k"><b>${p.kop}</b><i>руб.</i></span>`;
   else if (b.style === 'plain') inner = `<span class="pr-n">${n}</span><span class="pr-u">руб.</span>`;
   else inner = `<span class="pr-n">${n}</span><span class="pr-s">₽</span>`;
-  return `<div class="b-price"><span class="pr" data-fit="price" data-size="${b.size}" data-fill="${b.fill ? 1 : 0}" style="${bStyle(c, b)}">${inner}</span></div>`;
+  return `<div class="b-price"><span class="pr" data-fit="price" data-size="${b.size}" data-fill="${b.fill ? 1 : 0}" data-stretch="${b.stretch || 100}" style="${bStyle(c, b)}">${inner}</span></div>`;
 }
 function textBlock(c, b, text, cls, opts = {}) {
   if (!b.show || !String(text || '').trim()) return '';
@@ -580,9 +605,16 @@ function fitEl(el) {
 }
 function fitPrice(el) {
   const box = el.parentElement; let size = parseFloat(el.dataset.size) || 40, g = 0;
+  const maxK = (parseFloat(el.dataset.stretch) || 100) / 100;
+  el.style.transform = '';
   el.style.fontSize = size + 'pt';
   const bad = () => el.offsetWidth > box.clientWidth + 0.5 || el.offsetHeight > box.clientHeight + 0.5;
   while (bad() && size > 4 && g++ < 120) { size *= 0.97; el.style.fontSize = size + 'pt'; }
+  // цифры растягиваются вверх, пока есть свободное место (но не больше заданного максимума)
+  if (maxK > 1.01 && el.offsetHeight > 0) {
+    const k = Math.min(maxK, box.clientHeight / el.offsetHeight);
+    if (k > 1.02) el.style.transform = `scaleY(${k.toFixed(3)})`;
+  }
 }
 
 /* ---------------------------------------------------------------- предпросмотр */
@@ -692,9 +724,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalEl) c
 let sel = new Set();
 let rowLimit = 200;
 function tplName(id) { return S.tpl[id].name; }
+const secItems = t => S.items.filter(i => i.sec === t);
+// столбцы быстрого ввода зависят от раздела: для ценников — только № (он же штрихкод), цена, штук
+const SEC_COLS = { 'price-s': ['item', 'price', 'qty'], 'price-l': ['item', 'price', 'qty'], 'label': ['article', 'brand', 'composition', 'country', 'barcode', 'qty'] };
+const COL_META = {
+  item: { l: '№ (item) = штрихкод', ph: '3600', w: '150px', mode: 'text' }, price: { l: 'Цена, ₽', ph: '199', w: '120px', mode: 'decimal' }, qty: { l: 'Штук', ph: '10', w: '90px', type: 'number', mode: 'numeric' },
+  article: { l: 'Артикул / название', ph: 'Easy W3481' }, brand: { l: 'Бренд', ph: 'Vincent Raedissow' }, composition: { l: 'Состав', ph: 'Cotton 70% / PA 25%' },
+  country: { l: 'Страна', ph: 'RUS', w: '90px' }, barcode: { l: 'Штрихкод', ph: 'цифры или латиница', w: '170px' },
+};
 function filteredItems() {
   const u = S.ui, q = u.q.trim().toLowerCase(), t = u.tpl;
-  let a = S.items.filter(it => {
+  let a = secItems(t).filter(it => {
     if (q && !(`${it.item} ${it.name} ${it.barcode} ${it.brand} ${it.article} ${it.composition}`.toLowerCase().includes(q))) return false;
     const pr = !!it.printed[t];
     if (u.filter === 'new' && pr) return false;
@@ -708,58 +748,88 @@ function filteredItems() {
   return a;
 }
 function fmtDate(ts) { const d = new Date(ts); return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
+function colInput(c, val, attrs, cls) {
+  const m = COL_META[c];
+  return `<input class="inp ${cls || 'cell'}" ${attrs} data-f="${c}" ${m.type === 'number' ? 'type="number" min="1"' : `type="text" inputmode="${m.mode || 'text'}"`} autocomplete="off" placeholder="${esc(m.ph || '')}" value="${esc(val == null ? '' : val)}" style="${m.w ? `width:${m.w}` : 'width:100%'}">`;
+}
 function renderItemsTab() {
-  const u = S.ui;
+  const u = S.ui, cols = SEC_COLS[u.tpl];
   $('#tab-items').innerHTML = `
     <div class="bar">
-      <div class="seg" id="tplSeg">${TPL_IDS.map(id => `<button data-tpl="${id}" class="${u.tpl === id ? 'on' : ''}">${esc(S.tpl[id].name)}</button>`).join('')}</div>
-      <div class="search">${ICON.search}<input class="inp" id="q" placeholder="Поиск: номер, название, штрихкод…" value="${esc(u.q)}"></div>
+      <div class="seg" id="tplSeg">${TPL_IDS.map(id => `<button data-tpl="${id}" class="${u.tpl === id ? 'on' : ''}">${esc(S.tpl[id].name)} <span class="cnt">${secItems(id).length}</span></button>`).join('')}</div>
+      <div class="search" style="min-width:150px;max-width:240px">${ICON.search}<input class="inp" id="q" placeholder="Поиск…" value="${esc(u.q)}"></div>
       <select class="sel" id="flt" style="width:auto">
         <option value="all">Все позиции</option><option value="new">Не напечатанные</option><option value="done">Напечатанные</option><option value="err">С ошибкой штрихкода</option>
       </select>
       <div class="grow"></div>
       <button class="btn" id="bImport">${ICON.down} Импорт из таблицы</button>
-      <button class="btn pri" id="bAdd">${ICON.plus} Добавить</button>
+      <button class="btn" id="bAdd">${ICON.plus} Подробно</button>
     </div>
+    <div class="card quick"><div class="q-t">Быстрый ввод · ${esc(S.tpl[u.tpl].name)}</div>
+      <div class="q-row">${cols.map(c => `<div class="q-f" style="${COL_META[c].w ? '' : 'flex:1;min-width:150px'}"><label class="l">${COL_META[c].l}</label>${colInput(c, c === 'qty' ? (u.lastQty || 1) : '', `id="qa_${c}"`, 'qin')}</div>`).join('')}
+        <button class="btn pri" id="qAdd" title="Enter в последнем поле">${ICON.plus} Добавить</button></div>
+      <div class="hint" style="margin-top:6px">${u.tpl === 'label' ? 'Enter — к следующему полю, в последнем — добавить.' : 'Введите № (из него сам создаётся штрихкод), цену и количество. Enter переходит к следующему полю, в последнем — добавляет позицию.'}</div></div>
     <div id="selbar"></div>
     <div class="card"><div class="tbl-wrap" id="tblHost"></div></div>`;
   $('#flt').value = u.filter;
-  $('#tplSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; u.tpl = b.dataset.tpl; save(); renderItemsTab(); };
+  $('#tplSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; u.tpl = b.dataset.tpl; sel.clear(); save(); renderItemsTab(); };
   $('#q').oninput = e => { u.q = e.target.value; rowLimit = 200; renderItems(); };
   $('#flt').onchange = e => { u.filter = e.target.value; save(); renderItems(); };
   $('#bAdd').onclick = () => editItem(null);
   $('#bImport').onclick = openImport;
+  $('#qAdd').onclick = quickAdd;
+  cols.forEach((c, i) => { const inp = $('#qa_' + c); inp.onkeydown = e => { if (e.key !== 'Enter') return; e.preventDefault(); if (i < cols.length - 1) $('#qa_' + cols[i + 1]).focus(); else quickAdd(); }; if (c === 'qty') inp.onfocus = () => inp.select(); });
   renderItems();
+  setTimeout(() => { const f = $('#qa_' + cols[0]); if (f && !modalEl) f.focus(); }, 30);
+}
+function quickAdd() {
+  const t = S.ui.tpl, cols = SEC_COLS[t], v = {};
+  cols.forEach(c => { v[c] = ($('#qa_' + c).value || '').trim(); });
+  if (t === 'label') { if (!v.article && !v.barcode) { toast('Введите артикул или штрихкод'); $('#qa_article').focus(); return; } }
+  else if (!v.item) { toast('Введите № (item)'); $('#qa_item').focus(); return; }
+  v.price = cleanPrice(v.price);
+  const qty = Math.max(1, parseInt(v.qty, 10) || 1); v.qty = qty; S.ui.lastQty = qty;
+  const key = t === 'label' ? (v.barcode ? 'barcode' : 'article') : 'item';
+  const ex = S.items.find(i => i.sec === t && i[key] && i[key] === v[key]);
+  if (ex) { Object.assign(ex, v); delete ex.printed[t]; toast(`Обновлено: ${v[key]}`); }
+  else S.items.unshift(normItem(Object.assign({ id: uid(), sec: t, created: Date.now() }, v)));
+  save();
+  cols.forEach(c => { const el = $('#qa_' + c); el.value = c === 'qty' ? qty : ''; });
+  rowLimit = Math.max(rowLimit, 200);
+  renderItems(); $('#qa_' + cols[0]).focus();
+  const cnt = $('#tplSeg button.on .cnt'); if (cnt) cnt.textContent = secItems(t).length;
+}
+function printBtnState(btn, it, t) {
+  const p = it.printed[t];
+  btn.className = 'btn sm bprint ' + (p ? 'done' : 'pri');
+  btn.innerHTML = p ? `${ICON.check} Напечатано` : `${ICON.print} Печать`;
+  btn.title = p ? `Напечатано${p.n ? ' ' + p.n + ' шт' : ''} · ${fmtDate(p.at)}. Нажмите, чтобы напечатать ещё раз` : 'Напечатать указанное количество';
+  const rs = btn.closest('tr'); if (rs) { rs.classList.toggle('printed', !!p); const u = $('.bunmark', rs); if (u) u.classList.toggle('hide', !p); }
 }
 function renderItems() {
   const host = $('#tblHost'); if (!host) return;
-  const u = S.ui, list = filteredItems(), t = u.tpl;
-  // чистим выбор от удалённых
+  const u = S.ui, list = filteredItems(), t = u.tpl, cols = SEC_COLS[t];
   sel.forEach(id => { if (!S.items.some(i => i.id === id)) sel.delete(id); });
-  if (!S.items.length) {
-    host.innerHTML = `<div class="empty"><h3>Пока нет позиций</h3><p>Добавьте первую или вставьте список из Excel — номер, название, цена, штрихкод.</p>
-      <p style="margin-top:14px"><button class="btn pri" id="eAdd">${ICON.plus} Добавить позицию</button> <button class="btn" id="eImp">${ICON.down} Вставить из таблицы</button></p></div>`;
-    $('#eAdd').onclick = () => editItem(null); $('#eImp').onclick = openImport; renderSelBar(list); return;
+  if (!secItems(t).length) {
+    host.innerHTML = `<div class="empty"><h3>В этом разделе пока пусто</h3><p>Введите первую позицию в строке «Быстрый ввод» выше или вставьте список из Excel.</p>
+      <p style="margin-top:14px"><button class="btn" id="eImp">${ICON.down} Вставить из таблицы</button></p></div>`;
+    $('#eImp').onclick = openImport; renderSelBar(list); return;
   }
   if (!list.length) { host.innerHTML = '<div class="empty"><h3>Ничего не найдено</h3><p>Измените поиск или фильтр.</p></div>'; renderSelBar(list); return; }
   const arrow = k => u.sort === k ? (u.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  const sortKey = { item: 'item', price: 'price', article: 'name' };
   const allSel = list.length && list.every(i => sel.has(i.id));
   const shown = list.slice(0, rowLimit);
   host.innerHTML = `<table><thead><tr>
     <th style="width:34px"><input type="checkbox" id="selAll" ${allSel ? 'checked' : ''} style="accent-color:var(--acc)"></th>
-    <th class="srt" data-s="item">№ (item)${arrow('item')}</th><th class="srt" data-s="name">Название${arrow('name')}</th>
-    <th class="srt num" data-s="price">Цена${arrow('price')}</th><th>Штрихкод</th><th>Статус · ${esc(S.tpl[t].short)}</th><th></th></tr></thead><tbody>
+    ${cols.map(c => `<th class="${sortKey[c] ? 'srt' : ''}" ${sortKey[c] ? `data-s="${sortKey[c]}"` : ''}>${COL_META[c].l.replace(' = штрихкод', '')}${sortKey[c] ? arrow(sortKey[c]) : ''}</th>`).join('')}
+    <th></th></tr></thead><tbody>
     ${shown.map(it => {
-      const p = it.printed[t], err = bcError(it);
-      const sub = [it.brand, it.article && it.article !== it.name ? it.article : '', it.composition].filter(Boolean).join(' · ');
-      return `<tr class="${p ? 'printed' : ''}" data-id="${it.id}">
+      const err = bcError(it);
+      return `<tr data-id="${it.id}" class="${it.printed[t] ? 'printed' : ''}">
         <td><input type="checkbox" class="rowchk" ${sel.has(it.id) ? 'checked' : ''} style="accent-color:var(--acc)"></td>
-        <td class="itemno">${esc(it.item) || '—'}</td>
-        <td class="nm"><b>${esc(it.name || it.article || '—')}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</td>
-        <td class="num price">${esc(cleanPrice(it.price) || '—')}${cleanPrice(it.oldPrice) ? `<span class="old">${esc(cleanPrice(it.oldPrice))}</span>` : ''}</td>
-        <td>${err ? `<span class="bcwarn" title="${esc(err)}">⚠ ${esc(bcValue(it))}</span>` : `<span class="muted">${esc(bcValue(it))}</span>`}</td>
-        <td><button class="chip ${p ? 'ok' : ''} stbtn" title="${p ? 'Нажмите, чтобы снять отметку' : 'Нажмите, чтобы отметить напечатанным'}">${p ? `✓ ${p.n ? p.n + ' шт · ' : ''}${fmtDate(p.at)}` : 'не напечатано'}</button></td>
-        <td><div class="acts"><button class="btn sm pri bprint">${ICON.print} Печать</button><button class="btn sm ghost bedit" title="Изменить">${ICON.edit}</button><button class="btn sm ghost danger bdel" title="Удалить">${ICON.trash}</button></div></td></tr>`;
+        ${cols.map(c => `<td>${colInput(c, c === 'price' ? cleanPrice(it.price) : it[c], c === 'item' && err ? `title="${esc(err)}"` : '', c === 'item' && err ? 'cell bad' : 'cell')}${c === 'item' && err ? `<div class="bcwarn">⚠ ${esc(err)}</div>` : ''}${c === 'barcode' && err ? `<div class="bcwarn">⚠ ${esc(err)}</div>` : ''}</td>`).join('')}
+        <td><div class="acts"><button class="btn sm ghost bunmark hide" title="Снять отметку «напечатано»">${ICON.undo}</button><button class="btn sm pri bprint"></button><button class="btn sm ghost bedit" title="Подробно: название, старая цена, штрихкод и др.">${ICON.edit}</button><button class="btn sm ghost danger bdel" title="Удалить">${ICON.trash}</button></div></td></tr>`;
     }).join('')}</tbody></table>
     ${list.length > rowLimit ? `<div class="more"><button class="btn" id="moreRows">Показать ещё (${list.length - rowLimit})</button></div>` : ''}`;
   $('#selAll').onchange = e => { list.forEach(i => e.target.checked ? sel.add(i.id) : sel.delete(i.id)); renderItems(); };
@@ -767,22 +837,35 @@ function renderItems() {
   const mr = $('#moreRows'); if (mr) mr.onclick = () => { rowLimit += 300; renderItems(); };
   $$('tbody tr', host).forEach(tr => {
     const id = tr.dataset.id, it = S.items.find(x => x.id === id);
+    printBtnState($('.bprint', tr), it, t);
     $('.rowchk', tr).onchange = e => { e.target.checked ? sel.add(id) : sel.delete(id); renderSelBar(list); };
-    $('.bprint', tr).onclick = () => openPrint([it]);
+    // правка прямо в строке: сохраняем при уходе из поля; если изменилось то, что печатается, — отметка «напечатано» снимается
+    $$('input[data-f]', tr).forEach(inp => {
+      inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); const nx = inp.closest('td').nextElementSibling && $('input[data-f]', inp.closest('td').nextElementSibling); if (nx) nx.focus(); } };
+      inp.onfocus = () => inp.select();
+      inp.onchange = () => {
+        const f = inp.dataset.f; let val = inp.value.trim();
+        if (f === 'price') { val = cleanPrice(val); inp.value = val; }
+        if (f === 'qty') { val = Math.max(1, parseInt(val, 10) || 1); inp.value = val; }
+        if (String(it[f]) === String(val)) return;
+        it[f] = val;
+        if (f !== 'qty') delete it.printed[t];
+        save(); printBtnState($('.bprint', tr), it, t);
+        if (f === 'item' || f === 'barcode') renderItems();
+      };
+    });
+    $('.bprint', tr).onclick = () => { it.qty = Math.max(1, parseInt(it.qty, 10) || 1); doPrint([{ item: it, qty: it.qty }], t); };
+    $('.bunmark', tr).onclick = () => { delete it.printed[t]; save(); printBtnState($('.bprint', tr), it, t); renderSelBar(list); };
     $('.bedit', tr).onclick = () => editItem(it);
-    $('.bdel', tr).onclick = () => { if (confirm(`Удалить «${it.name || it.item}»?`)) { S.items = S.items.filter(x => x.id !== id); save(); renderItems(); toast('Позиция удалена'); } };
-    $('.stbtn', tr).onclick = () => {
-      if (it.printed[t]) { delete it.printed[t]; toast('Отметка снята'); } else { it.printed[t] = { n: 0, at: Date.now() }; toast('Отмечено напечатанным'); }
-      save(); renderItems();
-    };
+    $('.bdel', tr).onclick = () => { if (confirm(`Удалить «${it.item || it.article || it.name}»?`)) { S.items = S.items.filter(x => x.id !== id); save(); renderItems(); const cnt = $('#tplSeg button.on .cnt'); if (cnt) cnt.textContent = secItems(t).length; toast('Позиция удалена'); } };
   });
   renderSelBar(list);
 }
 function renderSelBar(list) {
   const el = $('#selbar'); if (!el) return;
   const n = sel.size, t = S.ui.tpl;
-  const newCount = S.items.filter(i => !i.printed[t]).length;
-  if (!n) { el.innerHTML = newCount && S.items.length ? `<div class="selbar" style="background:var(--card);border:1px solid var(--line);font-weight:500"><span class="muted">Не напечатано (${esc(S.tpl[t].short)}): <b style="color:var(--ink)">${newCount}</b></span><span style="flex:1"></span><button class="btn sm" id="pickNew">Выбрать все не напечатанные</button></div>` : ''; const pn = $('#pickNew'); if (pn) pn.onclick = () => { S.items.filter(i => !i.printed[t]).forEach(i => sel.add(i.id)); renderItems(); }; return; }
+  const newCount = secItems(t).filter(i => !i.printed[t]).length;
+  if (!n) { el.innerHTML = newCount ? `<div class="selbar" style="background:var(--card);border:1px solid var(--line);font-weight:500"><span class="muted">Не напечатано: <b style="color:var(--ink)">${newCount}</b></span><span style="flex:1"></span><button class="btn sm" id="pickNew">Выбрать все не напечатанные</button></div>` : ''; const pn = $('#pickNew'); if (pn) pn.onclick = () => { secItems(t).filter(i => !i.printed[t]).forEach(i => sel.add(i.id)); renderItems(); }; return; }
   el.innerHTML = `<div class="selbar"><span>Выбрано: ${n}</span><button class="btn pri sm" id="selPrint">${ICON.print} Печать выбранных</button>
     <button class="btn sm" id="selMark">Отметить напечатанными</button><button class="btn sm" id="selUnmark">Снять отметки</button>
     <button class="btn sm danger" id="selDel">Удалить</button><span style="flex:1"></span><button class="btn sm ghost" id="selClr">Сбросить выбор</button></div>`;
@@ -790,7 +873,7 @@ function renderSelBar(list) {
   $('#selPrint').onclick = () => openPrint(items());
   $('#selMark').onclick = () => { items().forEach(i => { if (!i.printed[t]) i.printed[t] = { n: 0, at: Date.now() }; }); save(); renderItems(); };
   $('#selUnmark').onclick = () => { items().forEach(i => { delete i.printed[t]; }); save(); renderItems(); };
-  $('#selDel').onclick = () => { if (confirm(`Удалить выбранные позиции (${n})?`)) { S.items = S.items.filter(i => !sel.has(i.id)); sel.clear(); save(); renderItems(); } };
+  $('#selDel').onclick = () => { if (confirm(`Удалить выбранные позиции (${n})?`)) { S.items = S.items.filter(i => !sel.has(i.id)); sel.clear(); save(); renderItemsTab(); } };
   $('#selClr').onclick = () => { sel.clear(); renderItems(); };
 }
 
@@ -801,25 +884,28 @@ const ITEM_FIELDS = [
 ];
 const LABEL_FIELDS = [['brand', 'Бренд'], ['composition', 'Состав'], ['article', 'Артикул / модель'], ['country', 'Страна (RUS…)']];
 function editItem(it) {
-  const isNew = !it; const d = Object.assign({}, it ? it : { item: '', name: '', price: '', oldPrice: '', barcode: '', brand: '', composition: '', article: '', country: '', qty: 1 });
+  const isNew = !it; const d = Object.assign({}, it ? it : { sec: S.ui.tpl, item: '', name: '', price: '', oldPrice: '', barcode: '', brand: '', composition: '', article: '', country: '', qty: 1 });
   const m = openModal(`<div class="mh"><h2>${isNew ? 'Новая позиция' : 'Позиция'}</h2><button class="x">×</button></div>
     <div class="mb"><div class="pgrid"><div>
+      <div class="fld" style="margin-bottom:12px"><label class="l">Раздел</label><select class="sel" data-k="sec">${TPL_IDS.map(id => `<option value="${id}" ${d.sec === id ? 'selected' : ''}>${esc(S.tpl[id].name)}</option>`).join('')}</select></div>
       <div class="fgrid">${ITEM_FIELDS.map(([k, l, t, h]) => `<div class="fld ${k === 'name' ? 'full' : ''}"><label class="l">${l}</label><input class="inp" data-k="${k}" type="${t === 'number' ? 'number' : 'text'}" ${t === 'number' ? 'min="1"' : ''} value="${esc(d[k])}" ${h ? `placeholder="${esc(h)}"` : ''}></div>`).join('')}</div>
       <h3 style="margin:18px 0 10px;font-size:14px">Для этикетки</h3>
       <div class="fgrid">${LABEL_FIELDS.map(([k, l]) => `<div class="fld ${k === 'composition' ? 'full' : ''}"><label class="l">${l}</label><input class="inp" data-k="${k}" value="${esc(d[k])}"></div>`).join('')}</div>
-    </div><div><div class="seg" id="pvSeg" style="margin-bottom:8px">${TPL_IDS.map(id => `<button data-t="${id}" class="${S.ui.tpl === id ? 'on' : ''}">${esc(S.tpl[id].short)}</button>`).join('')}</div>
+    </div><div><div class="seg" id="pvSeg" style="margin-bottom:8px">${TPL_IDS.map(id => `<button data-t="${id}" class="${(d.sec || S.ui.tpl) === id ? 'on' : ''}">${esc(S.tpl[id].short)}</button>`).join('')}</div>
       <div class="pv-stage" id="pvHost" style="min-height:200px;padding:14px"></div><div class="hint" id="pvErr"></div></div></div></div>
     <div class="mf"><button class="btn" id="mCancel">Отмена</button><button class="btn pri" id="mSave">Сохранить</button></div>`);
-  let ptpl = S.ui.tpl;
+  let ptpl = d.sec || S.ui.tpl;
   const read = () => { const o = Object.assign({}, d); $$('[data-k]', m).forEach(i => { o[i.dataset.k] = i.type === 'number' ? Math.max(1, parseInt(i.value, 10) || 1) : i.value.trim(); }); return o; };
   const pv = () => { const o = read(); const host = $('#pvHost', m); mountTag(host, ptpl, o, autoZoom(ptpl, 270, 260)); $('#pvErr', m).innerHTML = bcError(o) ? `<span class="bcwarn">⚠ ${esc(bcError(o))}</span>` : ''; };
-  $$('[data-k]', m).forEach(i => i.oninput = pv);
+  $$('[data-k]', m).forEach(i => { i.oninput = pv; });
+  $('[data-k="sec"]', m).onchange = e => { ptpl = e.target.value; $$('#pvSeg button', m).forEach(x => x.classList.toggle('on', x.dataset.t === ptpl)); pv(); };
   $('#pvSeg', m).onclick = e => { const b = e.target.closest('button'); if (!b) return; ptpl = b.dataset.t; $$('#pvSeg button', m).forEach(x => x.classList.toggle('on', x === b)); pv(); };
   $('.x', m).onclick = $('#mCancel', m).onclick = closeModal;
   $('#mSave', m).onclick = () => {
     const o = read(); o.price = cleanPrice(o.price); o.oldPrice = cleanPrice(o.oldPrice);
     if (!o.item && !o.name && !o.article) { toast('Заполните № или название'); return; }
     if (isNew) S.items.unshift(normItem(Object.assign(o, { id: uid(), created: Date.now(), printed: {} }))); else Object.assign(it, o);
+    if (o.sec && TPL_IDS.includes(o.sec) && o.sec !== S.ui.tpl) { S.ui.tpl = o.sec; save(); closeModal(); renderItemsTab(); toast('Позиция перенесена в раздел «' + S.tpl[o.sec].name + '»'); return; }
     save(); closeModal(); renderItems(); toast(isNew ? 'Позиция добавлена' : 'Сохранено');
   };
   pv(); setTimeout(() => $('[data-k="item"]', m).focus(), 30);
@@ -894,10 +980,10 @@ function openImport() {
       const o = {}; map.forEach((f, i) => { if (f && r[i] != null && String(r[i]).trim() !== '') o[f] = String(r[i]).trim(); });
       if (o.price) o.price = cleanPrice(o.price); if (o.oldPrice) o.oldPrice = cleanPrice(o.oldPrice); if (o.qty) o.qty = Math.max(1, parseInt(o.qty, 10) || 1);
       if (!o.item && !o.name && !o.article) return;
-      const ex = upd && o.item ? S.items.find(x => x.item === o.item) : null;
-      if (ex) { Object.assign(ex, o); updated++; } else { S.items.push(normItem(Object.assign({ id: uid(), created: Date.now() + added }, o))); added++; }
+      const sec = S.ui.tpl, ex = upd && o.item ? S.items.find(x => x.sec === sec && x.item === o.item) : null;
+      if (ex) { Object.assign(ex, o); updated++; } else { S.items.push(normItem(Object.assign({ id: uid(), created: Date.now() + added }, o, { sec }))); added++; }
     });
-    save(); closeModal(); renderItems(); toast(`Импорт: добавлено ${added}${updated ? `, обновлено ${updated}` : ''}`);
+    save(); closeModal(); renderItemsTab(); toast(`Импорт в «${S.tpl[S.ui.tpl].name}»: добавлено ${added}${updated ? `, обновлено ${updated}` : ''}`);
   };
 }
 
@@ -952,14 +1038,14 @@ const CTL = {
   show: ['check', 'Показывать'], text: ['text', 'Текст'], area: ['area', 'Текст'], size: ['num', 'Размер, pt', 2, 400, 0.5], weight: ['sel', 'Насыщенность', WT], ls: ['num', 'Разрядка (‰ em)', -10, 60, 1],
   align: ['sel', 'Выравнивание', AL], font: ['font', 'Шрифт'], h: ['num', 'Высота, мм', 1, 60, 0.5], wpct: ['num', 'Ширина, %', 20, 100, 1], hrt: ['check', 'Цифры под кодом'],
   type: ['sel', 'Тип кода', [['auto', 'Авто (EAN-13 / Code 128)'], ['code128', 'Code 128'], ['ean13', 'EAN-13']]],
-  style: ['sel', 'Вид цены', [['kop', '199⁰⁰ руб.'], ['sign', '249 ₽'], ['plain', '249 руб.']]], thousands: ['check', 'Пробел в тысячах'], fill: ['check', 'Как можно крупнее (по месту)'],
+  stretch: ['num', 'Растянуть цифры по высоте, % (максимум)', 100, 400, 5], style: ['sel', 'Вид цены', [['kop', '199⁰⁰ руб.'], ['sign', '249 ₽'], ['plain', '249 руб.']]], thousands: ['check', 'Пробел в тысячах'], fill: ['check', 'Как можно крупнее (по месту)'],
   prefix: ['text', 'Префикс'], lines: ['num', 'Макс. строк', 1, 8, 1], qr: ['check', 'Показывать QR'], url: ['text', 'Адрес для QR'], qrmm: ['num', 'Размер QR, мм', 8, 60, 0.5], tm: ['check', 'Знак ™'],
 };
 const BLOCK_UI = {
-  'price-s': [['caption', 'Надпись сверху', ['text', 'size', 'weight', 'ls', 'align', 'font']], ['old', 'Старая цена', ['size', 'weight']], ['price', 'Цена', ['size', 'weight', 'style', 'thousands', 'fill', 'font']],
+  'price-s': [['caption', 'Надпись сверху', ['text', 'size', 'weight', 'ls', 'align', 'font']], ['old', 'Старая цена', ['size', 'weight']], ['price', 'Цена', ['size', 'weight', 'style', 'stretch', 'thousands', 'fill', 'font']],
     ['name', 'Название товара', ['size', 'weight', 'lines', 'align', 'font']], ['barcode', 'Штрихкод', ['h', 'wpct', 'hrt', 'type']], ['itemline', 'Строка «item: …»', ['prefix', 'size', 'weight', 'ls', 'font']]],
   'price-l': [['headline', 'Заголовок', ['text', 'size', 'weight', 'ls', 'align', 'font']], ['promo', 'QR и реклама', ['qr', 'qrmm', 'url', 'area', 'size', 'weight', 'align', 'font']], ['caption', 'Надпись над ценой', ['text', 'size', 'weight', 'ls', 'align', 'font']],
-    ['old', 'Старая цена', ['size', 'weight']], ['price', 'Цена', ['size', 'weight', 'style', 'thousands', 'fill', 'font']], ['footer', 'Подпись под ценой', ['text', 'size', 'weight', 'ls', 'align', 'font']],
+    ['old', 'Старая цена', ['size', 'weight']], ['price', 'Цена', ['size', 'weight', 'style', 'stretch', 'thousands', 'fill', 'font']], ['footer', 'Подпись под ценой', ['text', 'size', 'weight', 'ls', 'align', 'font']],
     ['name', 'Название товара', ['size', 'weight', 'lines', 'align', 'font']], ['barcode', 'Штрихкод', ['h', 'wpct', 'hrt', 'type']], ['itemline', 'Строка «item: …»', ['prefix', 'size', 'weight', 'ls', 'font']]],
   'label': [['brand', 'Бренд', ['tm', 'size', 'weight', 'ls', 'align', 'font']], ['composition', 'Состав', ['lines', 'size', 'weight', 'align', 'font']], ['article', 'Артикул / название', ['size', 'weight', 'ls', 'align', 'font']],
     ['barcode', 'Штрихкод', ['h', 'wpct', 'hrt', 'type']], ['country', 'Страна', ['size', 'weight', 'ls', 'align', 'font']]],
@@ -979,7 +1065,7 @@ function setPath(o, p, v) { const ks = p.split('.'); const last = ks.pop(); cons
 let layTpl = 'price-s', layItem = '', layZoom = 0;
 function renderLayoutTab() {
   const host = $('#tab-layout'); const c = S.tpl[layTpl];
-  const sampleOpts = `<option value="">Образец</option>` + S.items.slice(0, 300).map(i => `<option value="${i.id}" ${layItem === i.id ? 'selected' : ''}>${esc((i.item ? '№' + i.item + ' · ' : '') + (i.name || i.article || ''))}</option>`).join('');
+  const sampleOpts = `<option value="">Образец</option>` + S.items.filter(i => i.sec === layTpl).slice(0, 300).map(i => `<option value="${i.id}" ${layItem === i.id ? 'selected' : ''}>${esc((i.item ? '№' + i.item + ' · ' : '') + (i.name || i.article || ''))}</option>`).join('');
   host.innerHTML = `<div class="lay"><div class="card lay-pv">
     <div class="seg" id="lySeg" style="display:flex;flex-wrap:wrap">${TPL_IDS.map(id => `<button data-t="${id}" class="${layTpl === id ? 'on' : ''}">${esc(S.tpl[id].name)}</button>`).join('')}</div>
     <div class="pv-stage" id="lyPv"></div>
@@ -1051,9 +1137,9 @@ function layoutPreview() {
   cancelAnimationFrame(pvRaf);
   pvRaf = requestAnimationFrame(() => {
     const host = $('#lyPv'); if (!host) return;
-    const it = (layItem && S.items.find(i => i.id === layItem)) || S.items[0] || DEMO;
+    const it = (layItem && S.items.find(i => i.id === layItem)) || S.items.find(i => i.sec === layTpl) || DEMO;
     const z = layZoom || autoZoom(layTpl, 380, 560);
-    mountTag(host, layTpl, layItem || !S.items.length ? it : DEMO, z);
+    mountTag(host, layTpl, it, z);
   });
 }
 function onLayInput(e) {
