@@ -211,6 +211,20 @@ td .bcwarn{margin:0 0 0 9px}
 .pill.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
 .pill.hide{display:none}
 
+/* ---------- маркировка ЧЗ ---------- */
+.chz-grid{display:grid;grid-template-columns:280px 1fr;gap:18px;align-items:start}
+.chz-list{overflow:hidden}
+.chz-b{padding:12px 16px;border-top:1px solid var(--line);cursor:pointer}
+.chz-b:hover{background:var(--acc-soft)}
+.chz-b.on{background:var(--acc-soft);box-shadow:inset 3px 0 0 var(--acc)}
+.chz-b .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{height:5px;border-radius:9px;background:var(--line);margin-top:7px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--ok)}
+.chz-stat{font-size:15px}
+.chz-stat b{font-size:20px}
+.tag.chz .b-sz{font-variant-numeric:tabular-nums}
+@media (max-width:980px){.chz-grid{grid-template-columns:1fr}}
+
 </style>
 <style id="pageStyle"></style>
 </head>
@@ -218,13 +232,14 @@ td .bcwarn{margin:0 0 0 9px}
 <header class="top"><div class="top-in">
   <div class="brand"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></i><div>Ценники и этикетки<small>KIVI Market</small></div></div>
   <nav class="nav">
-    <button data-tab="items">Позиции</button><button data-tab="layout">Макеты</button><button data-tab="print">Печать</button><button data-tab="data">Данные</button>
+    <button data-tab="items">Позиции</button><button data-tab="chz">Маркировка ЧЗ</button><button data-tab="layout">Макеты</button><button data-tab="print">Печать</button><button data-tab="data">Данные</button>
   </nav>
   <span class="sp"></span><button class="pill hide" id="fsPill"></button><span class="save-state" id="saveState"></span>
 </div></header>
 <main class="wrap">
   <div class="banner hide" id="banner">Браузер запретил хранение данных (так бывает, если вставить код как адрес «data:»). Сохраните программу как файл <b>pricetags.html</b> и откройте его двойным щелчком — тогда настройки и позиции будут запоминаться. Пока что используйте «Данные → Сохранить копию».</div>
   <section class="tab" id="tab-items"></section>
+  <section class="tab hide" id="tab-chz"></section>
   <section class="tab hide" id="tab-layout"></section>
   <section class="tab hide" id="tab-print"></section>
   <section class="tab hide" id="tab-data"></section>
@@ -340,6 +355,152 @@ var Barcode = (function () {
 })();
 if (typeof module !== 'undefined') module.exports = Barcode;
 
+/* ---------- DataMatrix ECC200 (квадратные символы до 52×52), режим GS1 (FNC1) ----------
+   Вход: строка; символ GS (0x1D) в ней — разделитель групп GS1, кодируется как FNC1 (codeword 232).
+   В режиме gs1 в начало добавляется FNC1 — так сканер выдаёт ]d2 и отдаёт GS между полями. */
+var DataMatrix = (function () {
+  // [размер, кодовых слов данных, слов коррекции, блоков, областей по горизонтали/вертикали, размер области данных]
+  var SIZES = [
+    [10, 3, 5, 1, 1, 8], [12, 5, 7, 1, 1, 10], [14, 8, 10, 1, 1, 12], [16, 12, 12, 1, 1, 14], [18, 18, 14, 1, 1, 16],
+    [20, 22, 18, 1, 1, 18], [22, 30, 20, 1, 1, 20], [24, 36, 24, 1, 1, 22], [26, 44, 28, 1, 1, 24],
+    [32, 62, 36, 1, 2, 14], [36, 86, 42, 1, 2, 16], [40, 114, 48, 1, 2, 18], [44, 144, 56, 1, 2, 20],
+    [48, 174, 68, 1, 2, 22], [52, 204, 84, 2, 2, 24],
+  ];
+
+  // GF(256), примитивный многочлен x^8+x^5+x^3+x^2+1 (0x12D)
+  var EXP = new Array(512), LOG = new Array(256);
+  (function () { var x = 1; for (var i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x12d; } for (i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; })();
+  function gmul(a, b) { return a && b ? EXP[LOG[a] + LOG[b]] : 0; }
+  function rsGen(n) { // (x - a^1)(x - a^2)...(x - a^n)
+    var g = [1];
+    for (var i = 1; i <= n; i++) {
+      var ng = new Array(g.length + 1).fill(0);
+      for (var j = 0; j < g.length; j++) { ng[j] ^= g[j]; ng[j + 1] ^= gmul(g[j], EXP[i]); }
+      g = ng;
+    }
+    return g; // старший коэффициент первый
+  }
+  function rsEncode(data, nEc) {
+    var g = rsGen(nEc), res = new Array(nEc).fill(0);
+    for (var i = 0; i < data.length; i++) {
+      var f = data[i] ^ res[0];
+      res.shift(); res.push(0);
+      if (f) for (var j = 0; j < nEc; j++) res[j] ^= gmul(g[j + 1], f);
+    }
+    return res;
+  }
+
+  // ASCII-кодирование: пары цифр → 130+n, GS → FNC1 (232), прочее → код+1
+  function encodeAscii(text, gs1) {
+    var cw = [];
+    if (gs1) cw.push(232);
+    for (var i = 0; i < text.length; i++) {
+      var c = text.charCodeAt(i);
+      if (c === 29) { cw.push(232); continue; }
+      if (c >= 48 && c <= 57 && i + 1 < text.length) {
+        var d = text.charCodeAt(i + 1);
+        if (d >= 48 && d <= 57) { cw.push(130 + (c - 48) * 10 + (d - 48)); i++; continue; }
+      }
+      if (c > 127) throw new Error('DataMatrix: символ вне ASCII (код ' + c + ')');
+      cw.push(c + 1);
+    }
+    return cw;
+  }
+
+  function pad(cw, total) {
+    var out = cw.slice();
+    if (out.length < total) out.push(129);
+    while (out.length < total) {
+      var pos = out.length + 1, r = ((149 * pos) % 253) + 1, v = 129 + r;
+      if (v > 254) v -= 254;
+      out.push(v);
+    }
+    return out;
+  }
+
+  // Размещение кодовых слов (Annex M ISO/IEC 16022)
+  function place(codewords, numrows, numcols) {
+    var bits = []; for (var i = 0; i < numrows * numcols; i++) bits.push(-1);
+    function has(c, r) { return bits[r * numcols + c] >= 0; }
+    function set(c, r, v) { bits[r * numcols + c] = v ? 1 : 0; }
+    function mod(row, col, pos, bit) {
+      if (row < 0) { row += numrows; col += 4 - ((numrows + 4) % 8); }
+      if (col < 0) { col += numcols; row += 4 - ((numcols + 4) % 8); }
+      set(col, row, (codewords[pos] & (1 << (8 - bit))) !== 0);
+    }
+    function utah(row, col, pos) {
+      mod(row - 2, col - 2, pos, 1); mod(row - 2, col - 1, pos, 2); mod(row - 1, col - 2, pos, 3); mod(row - 1, col - 1, pos, 4);
+      mod(row - 1, col, pos, 5); mod(row, col - 2, pos, 6); mod(row, col - 1, pos, 7); mod(row, col, pos, 8);
+    }
+    function corner1(pos) { mod(numrows - 1, 0, pos, 1); mod(numrows - 1, 1, pos, 2); mod(numrows - 1, 2, pos, 3); mod(0, numcols - 2, pos, 4); mod(0, numcols - 1, pos, 5); mod(1, numcols - 1, pos, 6); mod(2, numcols - 1, pos, 7); mod(3, numcols - 1, pos, 8); }
+    function corner2(pos) { mod(numrows - 3, 0, pos, 1); mod(numrows - 2, 0, pos, 2); mod(numrows - 1, 0, pos, 3); mod(0, numcols - 4, pos, 4); mod(0, numcols - 3, pos, 5); mod(0, numcols - 2, pos, 6); mod(0, numcols - 1, pos, 7); mod(1, numcols - 1, pos, 8); }
+    function corner3(pos) { mod(numrows - 3, 0, pos, 1); mod(numrows - 2, 0, pos, 2); mod(numrows - 1, 0, pos, 3); mod(0, numcols - 2, pos, 4); mod(0, numcols - 1, pos, 5); mod(1, numcols - 1, pos, 6); mod(2, numcols - 1, pos, 7); mod(3, numcols - 1, pos, 8); }
+    function corner4(pos) { mod(numrows - 1, 0, pos, 1); mod(numrows - 1, numcols - 1, pos, 2); mod(0, numcols - 3, pos, 3); mod(0, numcols - 2, pos, 4); mod(0, numcols - 1, pos, 5); mod(1, numcols - 3, pos, 6); mod(1, numcols - 2, pos, 7); mod(1, numcols - 1, pos, 8); }
+    var pos = 0, row = 4, col = 0;
+    do {
+      if (row === numrows && col === 0) corner1(pos++);
+      if (row === numrows - 2 && col === 0 && numcols % 4 !== 0) corner2(pos++);
+      if (row === numrows - 2 && col === 0 && numcols % 8 === 4) corner3(pos++);
+      if (row === numrows + 4 && col === 2 && numcols % 8 === 0) corner4(pos++);
+      do { if (row < numrows && col >= 0 && !has(col, row)) utah(row, col, pos++); row -= 2; col += 2; } while (row >= 0 && col < numcols);
+      row++; col += 3;
+      do { if (row >= 0 && col < numcols && !has(col, row)) utah(row, col, pos++); row += 2; col -= 2; } while (row < numrows && col >= 0);
+      row += 3; col++;
+    } while (row < numrows || col < numcols);
+    if (!has(numcols - 1, numrows - 1)) { set(numcols - 1, numrows - 1, true); set(numcols - 2, numrows - 2, true); }
+    return { get: function (c, r) { return bits[r * numcols + c] === 1; } };
+  }
+
+  // text → { size, matrix: массив строк из '0'/'1', codewords: число слов данных }
+  function encode(text, opts) {
+    opts = opts || {};
+    var gs1 = opts.gs1 !== false;
+    var data = encodeAscii(String(text), gs1), info = null;
+    for (var i = 0; i < SIZES.length; i++) if (SIZES[i][1] >= data.length) { info = SIZES[i]; break; }
+    if (!info) throw new Error('Код слишком длинный для DataMatrix до 52×52 (' + data.length + ' слов)');
+    var size = info[0], dcw = info[1], ecw = info[2], blocks = info[3], hr = info[4], dr = info[5];
+    var padded = pad(data, dcw), full;
+    if (blocks === 1) full = padded.concat(rsEncode(padded, ecw));
+    else { // чередование блоков (для 52×52 — два блока)
+      var parts = [], eccs = [], per = ecw / blocks;
+      for (var b = 0; b < blocks; b++) { var chunk = []; for (var k = b; k < dcw; k += blocks) chunk.push(padded[k]); parts.push(chunk); eccs.push(rsEncode(chunk, per)); }
+      full = padded.slice(); var eccOut = new Array(ecw);
+      for (b = 0; b < blocks; b++) for (var e = 0; e < per; e++) eccOut[e * blocks + b] = eccs[b][e];
+      full = full.concat(eccOut);
+    }
+    var n = dr * hr; // размер поля данных целиком (квадрат: hr областей по каждой стороне)
+    var pl = place(full, n, n);
+    var m = [];
+    for (var y = 0; y < size; y++) {
+      var line = '';
+      for (var x = 0; x < size; x++) {
+        var rx = x % (dr + 2), ry = y % (dr + 2), v;
+        if (rx === 0) v = 1;                       // левая сплошная линия
+        else if (ry === dr + 1) v = 1;             // нижняя сплошная линия
+        else if (ry === 0) v = rx % 2 === 0 ? 1 : 0; // верхний пунктир
+        else if (rx === dr + 1) v = ry % 2 === 1 ? 1 : 0; // правый пунктир
+        else v = pl.get(Math.floor(x / (dr + 2)) * dr + (rx - 1), Math.floor(y / (dr + 2)) * dr + (ry - 1)) ? 1 : 0;
+        line += v;
+      }
+      m.push(line);
+    }
+    return { size: size, matrix: m, dataCodewords: data.length, capacity: dcw };
+  }
+
+  // SVG: tight (без полей) — тихая зона добавляется вёрсткой. widthMm — итоговая сторона символа.
+  function svg(enc, sideMm) {
+    var n = enc.size, d = '';
+    for (var y = 0; y < n; y++) {
+      var x = 0, row = enc.matrix[y];
+      while (x < n) { if (row[x] === '1') { var j = x; while (j < n && row[j] === '1') j++; d += 'M' + x + ' ' + y + 'h' + (j - x) + 'v1h-' + (j - x) + 'z'; x = j; } else x++; }
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + n + ' ' + n + '" width="' + sideMm.toFixed(3) + 'mm" height="' + sideMm.toFixed(3) + 'mm" shape-rendering="crispEdges"><path d="' + d + '" fill="#000"/></svg>';
+  }
+
+  return { encode: encode, svg: svg, encodeAscii: encodeAscii, SIZES: SIZES };
+})();
+if (typeof module !== 'undefined') module.exports = DataMatrix;
+
 </script>
 <script>
 'use strict';
@@ -422,8 +583,18 @@ const DEFAULT_TPL = {
   },
 };
 const TPL_IDS = ['price-s', 'price-l', 'label'];
+DEFAULT_TPL['chz-40'] = {
+  name: 'ЧЗ 40×30', short: '40×30', kind: 'chz', w: 40, h: 30, pad: 1.5, gap: 1, font: 'arial', border: 0,
+  blocks: { dm: blk({ layout: 'row', dots: 0, quiet: 2, textMin: 11 }), name: blk({ size: 7, weight: 700, lines: 4, align: 'left' }), size: blk({ prefix: 'Разм.', size: 13, weight: 900, align: 'left' }) },
+};
+DEFAULT_TPL['chz-58'] = {
+  name: 'ЧЗ 58×40', short: '58×40', kind: 'chz', w: 58, h: 40, pad: 2, gap: 1.5, font: 'arial', border: 0,
+  blocks: { dm: blk({ layout: 'row', dots: 0, quiet: 2, textMin: 15 }), name: blk({ size: 9, weight: 700, lines: 4, align: 'left' }), size: blk({ prefix: 'Размер:', size: 15, weight: 900, align: 'left' }) },
+};
+const CHZ_IDS = ['chz-40', 'chz-58'];
+const ALL_TPL_IDS = TPL_IDS.concat(CHZ_IDS);
 const DEFAULT_PRINT = { mode: 'roll', rotate: 0, offX: 0, offY: 0, dpi: 203, paper: 'A4', landscape: false, margin: 8, gapX: 2, gapY: 2, outline: false, autoMark: true };
-const DEFAULT_UI = { tab: 'items', tpl: 'price-s', filter: 'all', sort: 'created', dir: 'desc', q: '', zoom: 0, lastQty: 1 };
+const DEFAULT_UI = { tab: 'items', tpl: 'price-s', filter: 'all', sort: 'created', dir: 'desc', q: '', zoom: 0, lastQty: 1, chzBatch: '', chzN: 10 };
 
 /* ---------------------------------------------------------------- состояние и сохранение */
 const LS_KEY = 'kv_tags_v1';
@@ -439,15 +610,16 @@ function deepMerge(base, over) {
   return out;
 }
 function freshState() {
-  const tpl = {}; TPL_IDS.forEach(id => { tpl[id] = clone(DEFAULT_TPL[id]); });
-  return { v: 1, items: [], tpl, print: clone(DEFAULT_PRINT), ui: clone(DEFAULT_UI), log: [], meta: { savedAt: 0, touched: false } };
+  const tpl = {}; ALL_TPL_IDS.forEach(id => { tpl[id] = clone(DEFAULT_TPL[id]); });
+  return { v: 1, items: [], tpl, print: clone(DEFAULT_PRINT), ui: clone(DEFAULT_UI), log: [], chz: { batches: [], names: {} }, meta: { savedAt: 0, touched: false } };
 }
 function normalizeState(raw) {
   const f = freshState();
   if (!raw || typeof raw !== 'object') return f;
   const s = f;
   if (Array.isArray(raw.items)) s.items = raw.items.filter(x => x && typeof x === 'object').map(normItem);
-  TPL_IDS.forEach(id => { if (raw.tpl && raw.tpl[id]) s.tpl[id] = deepMerge(DEFAULT_TPL[id], raw.tpl[id]); });
+  ALL_TPL_IDS.forEach(id => { if (raw.tpl && raw.tpl[id]) s.tpl[id] = deepMerge(DEFAULT_TPL[id], raw.tpl[id]); });
+  s.chz = normChz(raw.chz);
   if (raw.print) s.print = deepMerge(DEFAULT_PRINT, raw.print);
   if (raw.ui) s.ui = deepMerge(DEFAULT_UI, raw.ui);
   if (Array.isArray(raw.log)) s.log = raw.log.slice(-200);
@@ -568,6 +740,7 @@ function promoBlock(c, b) {
   return `<div class="promo-row">${qr}${txt}</div>`;
 }
 function tagHTML(tplId, it) {
+  if (S.tpl[tplId].kind === 'chz') return chzTagHTML(tplId, it);
   const c = S.tpl[tplId], B = c.blocks;
   let body = '';
   if (tplId === 'price-l') {
@@ -600,6 +773,11 @@ function fitAll(root) {
   const els = $$('[data-fit]', root);
   els.filter(e => e.dataset.fit !== 'price').forEach(fitEl);
   els.filter(e => e.dataset.fit === 'price').forEach(fitPrice);
+  // этикетки ЧЗ: если текст (название + размер) не помещается рядом с кодом по высоте — уменьшаем шрифты вместе
+  $$('.chz-text', root).forEach(box => {
+    const kids = $$('[data-fit]', box); let g = 0;
+    while (box.scrollHeight > box.clientHeight + 0.5 && g++ < 40) kids.forEach(k => { k.style.fontSize = (parseFloat(k.style.fontSize) * 0.95) + 'pt'; });
+  });
 }
 function fitEl(el) {
   const mode = el.dataset.fit; let size = parseFloat(el.dataset.size) || 8, g = 0;
@@ -608,7 +786,7 @@ function fitEl(el) {
     while (el.scrollWidth > el.clientWidth + 0.5 && size > 2.5 && g++ < 80) { size *= 0.96; el.style.fontSize = size + 'pt'; }
   } else if (mode.startsWith('lines:')) {
     const n = +mode.split(':')[1];
-    const over = () => { const lh = parseFloat(getComputedStyle(el).lineHeight) || size * 1.33; return el.scrollHeight > lh * n + 1; };
+    const over = () => { const lh = parseFloat(getComputedStyle(el).lineHeight) || size * 1.33; return el.scrollHeight > lh * n + 1 || el.scrollWidth > el.clientWidth + 0.5; };
     while (over() && size > 2.5 && g++ < 80) { size *= 0.96; el.style.fontSize = size + 'pt'; }
   }
 }
@@ -653,6 +831,10 @@ function buildPrint(lines, tplId) {
     parts.push({ html: stage.innerHTML, qty: l.qty });
   });
   stage.remove();
+  assemblePrint(parts, tplId);
+}
+function assemblePrint(parts, tplId) {
+  const c = S.tpl[tplId], P = S.print, root = $('#printRoot');
   const rot = P.rotate === 90, W = rot ? c.h : c.w, H = rot ? c.w : c.h;
   const wrapOne = html => rot
     ? `<div class="rot" style="left:${c.h}mm;width:${c.w}mm;height:${c.h}mm">${html}</div>` : html;
@@ -691,6 +873,7 @@ window.addEventListener('afterprint', () => {
   const pm = pendingMark; pendingMark = null;
   $('#printRoot').innerHTML = '';
   if (!pm) return;
+  if (pm.chz) { chzConfirmPrinted(pm.chz); return; }
   if (S.print.autoMark) { applyMarks(pm); }
   else toast(`Окно печати закрыто. Отметить ${pm.lines.length} поз. напечатанными?`, 'Отметить', () => applyMarks(pm), 12000);
 });
@@ -1049,8 +1232,11 @@ const CTL = {
   type: ['sel', 'Тип кода', [['auto', 'Авто (EAN-13 / Code 128)'], ['code128', 'Code 128'], ['ean13', 'EAN-13']]],
   stretch: ['num', 'Растянуть цифры по высоте, % (максимум)', 100, 400, 5], style: ['sel', 'Вид цены', [['kop', '199⁰⁰ руб.'], ['sign', '249 ₽'], ['plain', '249 руб.']]], thousands: ['check', 'Пробел в тысячах'], fill: ['check', 'Как можно крупнее (по месту)'],
   prefix: ['text', 'Префикс'], lines: ['num', 'Макс. строк', 1, 8, 1], qr: ['check', 'Показывать QR'], url: ['text', 'Адрес для QR'], qrmm: ['num', 'Размер QR, мм', 8, 60, 0.5], tm: ['check', 'Знак ™'],
+  layout: ['sel', 'Расположение', [['row', 'Код слева, текст справа'], ['column', 'Код сверху, текст снизу']]], dots: ['num', 'Точек принтера на модуль (0 — авто)', 0, 12, 1], quiet: ['num', 'Тихая зона вокруг кода, модулей', 1, 6, 1], textMin: ['num', 'Минимум места под текст, мм (для «код сверху» — около 7)', 4, 40, 0.5],
 };
 const BLOCK_UI = {
+  'chz-40': [['dm', 'Код DataMatrix', ['layout', 'dots', 'quiet', 'textMin']], ['name', 'Название', ['size', 'weight', 'lines', 'align', 'font']], ['size', 'Размер', ['prefix', 'size', 'weight', 'align', 'font']]],
+  'chz-58': [['dm', 'Код DataMatrix', ['layout', 'dots', 'quiet', 'textMin']], ['name', 'Название', ['size', 'weight', 'lines', 'align', 'font']], ['size', 'Размер', ['prefix', 'size', 'weight', 'align', 'font']]],
   'price-s': [['caption', 'Надпись сверху', ['text', 'size', 'weight', 'ls', 'align', 'font']], ['old', 'Старая цена', ['size', 'weight']], ['price', 'Цена', ['size', 'weight', 'style', 'stretch', 'thousands', 'fill', 'font']],
     ['name', 'Название товара', ['size', 'weight', 'lines', 'align', 'font']], ['barcode', 'Штрихкод', ['h', 'wpct', 'hrt', 'type']], ['itemline', 'Строка «item: …»', ['prefix', 'size', 'weight', 'ls', 'font']]],
   'price-l': [['headline', 'Заголовок', ['text', 'size', 'weight', 'ls', 'align', 'font']], ['promo', 'QR и реклама', ['qr', 'qrmm', 'url', 'area', 'size', 'weight', 'align', 'font']], ['caption', 'Надпись над ценой', ['text', 'size', 'weight', 'ls', 'align', 'font']],
@@ -1076,10 +1262,10 @@ function renderLayoutTab() {
   const host = $('#tab-layout'); const c = S.tpl[layTpl];
   const sampleOpts = `<option value="">Образец</option>` + S.items.filter(i => i.sec === layTpl).slice(0, 300).map(i => `<option value="${i.id}" ${layItem === i.id ? 'selected' : ''}>${esc((i.item ? '№' + i.item + ' · ' : '') + (i.name || i.article || ''))}</option>`).join('');
   host.innerHTML = `<div class="lay"><div class="card lay-pv">
-    <div class="seg" id="lySeg" style="display:flex;flex-wrap:wrap">${TPL_IDS.map(id => `<button data-t="${id}" class="${layTpl === id ? 'on' : ''}">${esc(S.tpl[id].name)}</button>`).join('')}</div>
+    <div class="seg" id="lySeg" style="display:flex;flex-wrap:wrap">${ALL_TPL_IDS.map(id => `<button data-t="${id}" class="${layTpl === id ? 'on' : ''}">${esc(S.tpl[id].name)}</button>`).join('')}</div>
     <div class="pv-stage" id="lyPv"></div>
     <div class="zoom"><span>Масштаб</span><input type="range" id="lyZoom" min="1" max="9" step="0.25" value="${layZoom || autoZoom(layTpl, 380, 560)}"><button class="btn sm ghost" id="lyFit">По окну</button></div>
-    <div class="row2" style="margin-top:10px"><select class="sel" id="lyItem" style="flex:1">${sampleOpts}</select></div>
+    ${layTpl.startsWith('chz') ? '' : `<div class="row2" style="margin-top:10px"><select class="sel" id="lyItem" style="flex:1">${sampleOpts}</select></div>`}
     <div class="hint" style="margin-top:10px">Предпросмотр показывает точный вид ценника. Изменения сохраняются автоматически и не забываются после закрытия.</div>
     <div class="row2" style="margin-top:10px"><button class="btn sm danger" id="lyReset">Сбросить этот макет к исходному</button></div></div>
     <div id="lyForm">
@@ -1102,13 +1288,13 @@ function renderLayoutTab() {
             ${b.qrimg ? `<img src="${b.qrimg}" alt="" style="height:44px;border:1px solid var(--line);border-radius:6px;background:#fff"><button class="btn sm ghost danger" id="qrDel">Убрать</button>` : '<span class="muted">картинка не загружена</span>'}
           </div><div class="hint" style="margin-top:6px">Подойдёт PNG/JPG/SVG с готовым QR (например, свой дизайнерский). Картинка запоминается в программе.</div></div>`;
         }
-        return `<div class="card grp ${b.show ? '' : 'blk-off'}" data-blk="${k}"><h3>${title}<label class="chk"><input type="checkbox" data-p="blocks.${k}.show" data-t="check" ${b.show ? 'checked' : ''}> Показывать</label></h3>
+        return `<div class="card grp ${b.show ? '' : 'blk-off'}" data-blk="${k}"><h3>${title}${k === 'dm' ? '' : `<label class="chk"><input type="checkbox" data-p="blocks.${k}.show" data-t="check" ${b.show ? 'checked' : ''}> Показывать</label>`}</h3>
           <div class="fgrid">${ctls.map(ck => { const fk = ck === 'area' ? 'text' : ck; return ctlHTML(`blocks.${k}.${fk}`, ck, b[fk], c.font); }).join('')}${extra}</div></div>`;
       }).join('')}
     </div></div>`;
   layoutPreview();
   $('#lySeg').onclick = e => { const b = e.target.closest('button'); if (!b) return; layTpl = b.dataset.t; layZoom = 0; renderLayoutTab(); };
-  $('#lyItem').onchange = e => { layItem = e.target.value; layoutPreview(); };
+  if ($('#lyItem')) $('#lyItem').onchange = e => { layItem = e.target.value; layoutPreview(); };
   $('#lyZoom').oninput = e => { layZoom = parseFloat(e.target.value); layoutPreview(); };
   $('#lyFit').onclick = () => { layZoom = 0; $('#lyZoom').value = autoZoom(layTpl, 380, 560); layoutPreview(); };
   $('#lyReset').onclick = () => { if (confirm('Вернуть этот макет к исходным настройкам?')) { S.tpl[layTpl] = clone(DEFAULT_TPL[layTpl]); save(); renderLayoutTab(); } };
@@ -1146,7 +1332,7 @@ function layoutPreview() {
   cancelAnimationFrame(pvRaf);
   pvRaf = requestAnimationFrame(() => {
     const host = $('#lyPv'); if (!host) return;
-    const it = (layItem && S.items.find(i => i.id === layItem)) || S.items.find(i => i.sec === layTpl) || DEMO;
+    const it = layTpl.startsWith('chz') ? chzSample(layTpl) : ((layItem && S.items.find(i => i.id === layItem)) || S.items.find(i => i.sec === layTpl) || DEMO);
     const z = layZoom || autoZoom(layTpl, 380, 560);
     mountTag(host, layTpl, it, z);
   });
@@ -1369,6 +1555,7 @@ function route(tab) {
   if (tab === 'layout') renderLayoutTab();
   if (tab === 'print') renderPrintTab();
   if (tab === 'data') renderDataTab();
+  if (tab === 'chz') renderChzTab();
   window.scrollTo(0, 0);
 }
 function init() {
@@ -1381,6 +1568,276 @@ function init() {
   persistNow();
   fsInit();
 }
+/* =====================================================================
+   Маркировка «Честный знак»: коды GS1 DataMatrix из файла, печать порциями,
+   учёт напечатанного (каждый код — только один раз).
+   ===================================================================== */
+const GS = '\x1d';
+
+function gtinOk(g) { if (!/^\d{14}$/.test(g)) return false; let t = 0; for (let i = 0; i < 13; i++) t += (+g[i]) * (i % 2 === 0 ? 3 : 1); return (10 - t % 10) % 10 === +g[13]; }
+
+/* ---------- разбор строки файла ----------
+   Серийный номер в кодах ЧЗ может содержать запятые, точки с запятой и кавычки, поэтому строку НЕЛЬЗЯ резать по разделителям CSV:
+   код выделяется по структуре — 01(GTIN)21(серия)91(ключ)92(подпись) или 01..21..93(подпись).
+   Хвосты фиксированной длины (ключ 4, подпись 44 / 4) считаются с конца строки. */
+function chzNormalizeGs(s) {
+  return s.replace(/^\]d2/i, '').replace(/<GS>|\{GS\}|\[GS\]|\(GS\)|\\x1d|\\u001d|␝|\^\]/gi, GS);
+}
+function chzStruct(s) {
+  s = s.replace(/\x1d+$/, '');
+  let m = /^01(\d{14})21([\s\S]+)\x1d?91([\s\S]{4})\x1d?92([\s\S]{44})$/.exec(s);
+  if (m && m[2].indexOf(GS) < 0 && m[3].indexOf(GS) < 0 && m[4].indexOf(GS) < 0) {
+    return { code: `01${m[1]}21${m[2]}${GS}91${m[3]}${GS}92${m[4]}`, gtin: m[1], serial: m[2], parts: [['91', m[3]], ['92', m[4]]], restored: !/\x1d/.test(s) };
+  }
+  m = /^01(\d{14})21([\s\S]+)\x1d?93([\s\S]{4})$/.exec(s);
+  if (m && m[2].indexOf(GS) < 0 && m[3].indexOf(GS) < 0) {
+    return { code: `01${m[1]}21${m[2]}${GS}93${m[3]}`, gtin: m[1], serial: m[2], parts: [['93', m[3]]], restored: !/\x1d/.test(s) };
+  }
+  return null;
+}
+function chzParse(raw) {
+  let s = String(raw).replace(/^﻿/, '').replace(/[\r\n]+$/, '');
+  if (/^".*"$/s.test(s)) s = s.slice(1, -1).replace(/""/g, '"');
+  s = chzNormalizeGs(s).replace(/^[\x1d\s]+/, '');
+  const tries = [s, s.replace(/[\t;, ]+$/, ''), s.replace(/[\t;, \x1d]+$/, '')];
+  for (const v of tries) { const r = chzStruct(v); if (r) { r.gtinOk = gtinOk(r.gtin); return r; } }
+  if (/\d[.,]\d+E\+\d+/i.test(s)) return { error: 'excel' };
+  return { error: 'format' };
+}
+// файл целиком → { ok:[{code,...}], dup:n, errors:[{line, reason, text}] }
+function chzParseFile(text, existing) {
+  const lines = String(text).replace(/^﻿/, '').split(/\r\n|\n|\r/);
+  const seen = new Set(existing || []), ok = [], errors = []; let dup = 0, restored = 0, withGs = 0, badGtin = 0, empty = 0;
+  lines.forEach((ln, i) => {
+    if (!ln.replace(/[\t;, ]/g, '').length) { empty++; return; }
+    const r = chzParse(ln);
+    if (r.error) { errors.push({ line: i + 1, reason: r.error, text: ln.slice(0, 70) }); return; }
+    if (seen.has(r.code)) { dup++; return; }
+    seen.add(r.code); ok.push(r); if (r.restored) restored++; else withGs++; if (!r.gtinOk) badGtin++;
+  });
+  return { ok, dup, errors, restored, withGs, badGtin, total: lines.length - empty };
+}
+function chzExplain(r) { return `(01) ${r.gtin} · (21) ${r.serial} · ${r.parts.map(p => `(${p[0]}) ${p[0] === '92' ? p[1].slice(0, 10) + '…' : p[1]}`).join(' · ')}`; }
+
+/* ---------- макет этикетки ---------- */
+function chzGeom(c, n) {
+  const b = c.blocks.dm, dot = 25.4 / S.print.dpi, q = Math.max(1, b.quiet || 2), total = n + 2 * q;
+  const textMin = b.textMin || 11;
+  const avail = b.layout === 'column' ? Math.min(c.w - 2 * c.pad, c.h - 2 * c.pad - textMin) : Math.min(c.h - 2 * c.pad, c.w - 2 * c.pad - textMin);
+  let mod = b.dots > 0 ? b.dots * dot : Math.floor(avail / total / dot) * dot;
+  if (mod < dot) mod = dot;
+  return { mod, n, box: total * mod, sym: n * mod, quiet: q * mod, dotsPerModule: Math.round(mod / dot) };
+}
+function chzDm(c, code) {
+  const e = DataMatrix.encode(code, { gs1: true });
+  const g = chzGeom(c, e.size);
+  return { svg: DataMatrix.svg(e, g.sym), geom: g, n: e.size };
+}
+function chzTagHTML(tplId, it, dm) {
+  const c = S.tpl[tplId], B = c.blocks, col = B.dm.layout === 'column';
+  let d = dm;
+  if (!d) { try { d = chzDm(c, it.code); } catch (e) { return `<div class="tag" style="width:${c.w}mm;height:${c.h}mm;padding:${c.pad}mm"><div class="bar-err">${esc(e.message)}</div></div>`; } }
+  const g = d.geom;
+  const box = `<div class="dmbox" style="width:${g.box}mm;height:${g.box}mm;padding:${g.quiet}mm;box-sizing:border-box;flex:none;background:#fff">${d.svg}</div>`;
+  const nameEl = B.name.show && it.name ? `<div class="blk t wrap2 b-name" data-fit="lines:${B.name.lines}" data-size="${B.name.size}" style="${bStyle(c, B.name, 'line-height:1.12;word-break:normal;overflow-wrap:normal;hyphens:none;')}">${esc(it.name)}</div>` : '';
+  const sizeEl = B.size.show && it.size ? `<div class="blk t b-sz" data-fit="w" data-size="${B.size.size}" style="${bStyle(c, B.size)}">${esc((B.size.prefix ? B.size.prefix + ' ' : '') + it.size)}</div>` : '';
+  const text = nameEl || sizeEl ? `<div class="chz-text" style="flex:1 1 0;min-width:0;min-height:0;width:100%;display:flex;flex-direction:column;justify-content:center;gap:${c.gap}mm;overflow:hidden">${nameEl}${sizeEl}</div>` : '';
+  const bd = c.border > 0 ? `border:${c.border}mm solid #000;` : '';
+  return `<div class="tag chz" style="width:${c.w}mm;height:${c.h}mm;padding:${c.pad}mm;gap:${c.gap}mm;${bd}flex-direction:${col ? 'column' : 'row'};align-items:center;font-family:${fontCss(c.font)}">${box}${text}</div>`;
+}
+const CHZ_DEMO = { code: '0104610761939752215K5QnebpYmulH' + GS + '91EE12' + GS + '92oplGhOogjWZQNs4jqM9EhCAU6wK6J1qVRfgqJ3d+qgQ=', name: 'Футболка женская', size: '44' };
+function chzSample(tplId) {
+  const b = (S.chz.batches.find(x => x.id === S.ui.chzBatch) || S.chz.batches[0]);
+  if (!b) return CHZ_DEMO;
+  return { code: b.codes[Math.max(0, b.p.indexOf('0'))] || b.codes[0], name: b.name || CHZ_DEMO.name, size: b.size || CHZ_DEMO.size };
+}
+
+/* ---------- печатная форма для кодов партии ---------- */
+function buildPrintChz(batch, idxs, tplId) {
+  const c = S.tpl[tplId], root = $('#printRoot');
+  root.innerHTML = '';
+  const stage = document.createElement('div'); root.appendChild(stage);
+  const byN = {}, parts = [];
+  idxs.forEach(i => {
+    const code = batch.codes[i], e = DataMatrix.encode(code, { gs1: true });
+    if (!byN[e.size]) {
+      const g = chzGeom(c, e.size);
+      stage.innerHTML = chzTagHTML(tplId, { name: batch.name, size: batch.size }, { svg: '@@DM@@', geom: g, n: e.size }); fitAll(stage);
+      byN[e.size] = { html: stage.innerHTML, g };
+    }
+    const t = byN[e.size];
+    parts.push({ html: t.html.replace('@@DM@@', DataMatrix.svg(e, t.g.sym)), qty: 1 });
+  });
+  stage.remove();
+  assemblePrint(parts, tplId);
+}
+function chzPrint(batch, idxs) {
+  if (!idxs.length) { toast('Нет кодов для печати'); return; }
+  const bad = idxs.filter(i => { try { DataMatrix.encode(batch.codes[i], { gs1: true }); return false; } catch (e) { return true; } });
+  if (bad.length) { toast(`Код №${bad[0] + 1} слишком длинный для DataMatrix`); return; }
+  closeModal();
+  buildPrintChz(batch, idxs, batch.tpl);
+  pendingMark = { chz: { batchId: batch.id, idx: idxs, tplId: batch.tpl }, total: idxs.length };
+  setTimeout(() => { try { window.print(); } catch (e) { toast('Не удалось открыть окно печати'); } }, 150);
+}
+function chzSetPrinted(batch, idxs, v) {
+  const a = batch.p.split(''); idxs.forEach(i => { a[i] = v ? '1' : '0'; }); batch.p = a.join('');
+  save();
+}
+// после закрытия окна печати спрашиваем явно: для ЧЗ нельзя «молча» считать код напечатанным или нет
+function chzConfirmPrinted(pm) {
+  const b = S.chz.batches.find(x => x.id === pm.batchId); if (!b) return;
+  const first = Math.min.apply(null, pm.idx) + 1, last = Math.max.apply(null, pm.idx) + 1;
+  const m = openModal(`<div class="mh"><h2>Коды напечатаны?</h2></div>
+    <div class="mb"><p>Партия «${esc(b.name || b.file)}», коды <b>№${first}–${last}</b> (${pm.idx.length} шт.).</p>
+      <p class="hint" style="margin-top:8px">Если этикетки действительно напечатаны, отметьте — эти коды больше не будут предложены к печати, и дублей не будет. Если печать отменили или принтер завис — выберите «Нет».</p></div>
+    <div class="mf"><button class="btn" id="no">Нет, не печаталось</button><button class="btn pri" id="yes">Да, напечатано</button></div>`, 'sm', () => {});
+  $('#yes', m).onclick = () => { chzSetPrinted(b, pm.idx, true); closeModal(); renderChzTab(); toast(`Отмечено напечатанными: ${pm.idx.length} шт.`); };
+  $('#no', m).onclick = () => { closeModal(); toast('Отметка не поставлена'); };
+  setTimeout(() => $('#yes', m) && $('#yes', m).focus(), 40);
+}
+
+/* ---------- состояние ---------- */
+function normChz(raw) {
+  const out = { batches: [], names: {} };
+  if (raw && raw.names && typeof raw.names === 'object') Object.keys(raw.names).forEach(g => { const n = raw.names[g]; if (n && typeof n === 'object') out.names[g] = { name: String(n.name || ''), size: String(n.size || '') }; });
+  if (!raw || !Array.isArray(raw.batches)) return out;
+  raw.batches.forEach(b => {
+    if (!b || !Array.isArray(b.codes)) return;
+    let p = typeof b.p === 'string' ? b.p : ''; while (p.length < b.codes.length) p += '0'; p = p.slice(0, b.codes.length);
+    out.batches.push({ id: b.id || uid(), file: b.file || '', name: b.name || '', size: b.size || '', tpl: CHZ_IDS.includes(b.tpl) ? b.tpl : 'chz-40', codes: b.codes, p, created: b.created || Date.now() });
+  });
+  return out;
+}
+
+/* ---------- вкладка «Маркировка ЧЗ» ---------- */
+let chzSelected = new Set(), chzPage = 0, chzQ = '';
+function chzCurrent() { return S.chz.batches.find(b => b.id === S.ui.chzBatch) || null; }
+function chzCounts(b) { let n = 0; for (let i = 0; i < b.p.length; i++) if (b.p[i] === '1') n++; return { done: n, total: b.codes.length, left: b.codes.length - n }; }
+function renderChzTab() {
+  const host = $('#tab-chz'); if (!host) return;
+  if (!S.chz.batches.length) {
+    host.innerHTML = `<div class="card empty" style="padding:50px 20px"><h3>Маркировка «Честный знак»</h3>
+      <p>Загрузите файл с кодами маркировки (CSV или TXT) — программа сделает из них этикетки с кодом DataMatrix нужного размера<br>и будет следить, чтобы каждый код был напечатан только один раз.</p>
+      <p style="margin-top:16px"><button class="btn pri" id="chzAdd">${ICON.down} Загрузить файл с кодами</button></p></div>`;
+    $('#chzAdd').onclick = openChzImport; return;
+  }
+  if (!chzCurrent()) S.ui.chzBatch = S.chz.batches[0].id;
+  const b = chzCurrent(), cn = chzCounts(b), c = S.tpl[b.tpl], next = Math.max(1, Math.min(+S.ui.chzN || 10, cn.left || 1));
+  host.innerHTML = `<div class="chz-grid">
+    <div class="card chz-list"><div style="padding:14px 16px;display:flex;align-items:center;gap:10px"><b style="flex:1">Партии кодов</b><button class="btn sm pri" id="chzAdd">${ICON.plus} Файл</button></div>
+      ${S.chz.batches.map(x => { const k = chzCounts(x); const pc = k.total ? Math.round(k.done / k.total * 100) : 0; return `<div class="chz-b ${x.id === b.id ? 'on' : ''}" data-id="${x.id}"><div class="t">${esc(x.name || x.file || 'Партия')}</div><div class="hint">${esc(x.size ? 'размер ' + x.size + ' · ' : '')}напечатано ${k.done} из ${k.total}</div><div class="prog"><i style="width:${pc}%"></i></div></div>`; }).join('')}</div>
+    <div>
+      <div class="card grp"><h3>Что печатаем</h3>
+        <div class="fgrid"><div class="fld"><label class="l">Название на этикетке</label><input class="inp" id="chzName" value="${esc(b.name)}" placeholder="Футболка женская"></div>
+          <div class="fld"><label class="l">Размер</label><input class="inp" id="chzSize" value="${esc(b.size)}" placeholder="44"></div>
+          <div class="fld"><label class="l">Этикетка</label><div class="seg" id="chzTpl">${CHZ_IDS.map(id => `<button data-t="${id}" class="${b.tpl === id ? 'on' : ''}">${esc(S.tpl[id].short)}</button>`).join('')}</div></div></div></div>
+      <div class="card grp" style="display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center">
+        <div class="pv-stage" id="chzPv" style="margin:0;min-width:230px"></div>
+        <div>
+          <div class="chz-stat"><b>${cn.done}</b> напечатано · <b>${cn.left}</b> осталось · всего ${cn.total}</div>
+          <div class="row2" style="margin:12px 0 6px"><span>Напечатать следующие</span><input class="inp qbig" id="chzN" type="number" min="1" max="${Math.max(1, cn.left)}" value="${next}" style="width:110px;font-size:22px;padding:8px"><span>шт.</span></div>
+          <div class="chips" style="margin-bottom:12px">${[1, 5, 10, 25, 50, 100].map(n => `<button class="btn sm chzq" data-n="${n}">${n}</button>`).join('')}</div>
+          <div class="row2"><button class="btn pri" id="chzGo" ${cn.left ? '' : 'disabled'}>${ICON.print} Печатать</button><span class="hint" id="chzRange"></span></div>
+          <div class="hint" style="margin-top:10px" id="chzInfo"></div>
+        </div></div>
+      <div class="card" style="margin-top:14px"><div class="bar" style="padding:12px 14px;margin:0"><b>Коды</b>
+        <div class="search" style="max-width:240px">${ICON.search}<input class="inp" id="chzQ" placeholder="Поиск по коду" value="${esc(chzQ)}"></div><span style="flex:1"></span>
+        <span class="hint" id="chzSelInfo"></span><button class="btn sm" id="chzPrintSel" disabled>Печать выбранных</button><button class="btn sm" id="chzUnmark" disabled>Снять отметку</button><button class="btn sm danger" id="chzDelBatch">Удалить партию</button></div>
+        <div class="tbl-wrap" style="max-height:420px"><table><thead><tr><th style="width:34px"><input type="checkbox" id="chzAll" style="accent-color:var(--acc)"></th><th>№</th><th>Код</th><th>Статус</th></tr></thead><tbody id="chzRows"></tbody></table></div><div class="more" id="chzPager"></div></div>
+    </div></div>`;
+  $('#chzAdd').onclick = openChzImport;
+  $$('.chz-b', host).forEach(el => el.onclick = () => { S.ui.chzBatch = el.dataset.id; chzSelected.clear(); chzPage = 0; saveQuiet(); renderChzTab(); });
+  $('#chzName').oninput = e => { b.name = e.target.value; chzRemember(b); save(); chzPreview(); };
+  $('#chzSize').oninput = e => { b.size = e.target.value; chzRemember(b); save(); chzPreview(); };
+  $('#chzTpl').onclick = e => { const x = e.target.closest('button'); if (!x) return; b.tpl = x.dataset.t; save(); renderChzTab(); };
+  const nIn = $('#chzN'); const upd = () => { const n = Math.max(1, Math.min(parseInt(nIn.value, 10) || 1, cn.left || 1)); S.ui.chzN = n; saveQuiet(); chzRange(b, n); };
+  nIn.oninput = upd; nIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#chzGo').click(); } };
+  $$('.chzq').forEach(x => x.onclick = () => { nIn.value = x.dataset.n; upd(); nIn.focus(); });
+  $('#chzGo').onclick = () => { const n = Math.max(1, parseInt(nIn.value, 10) || 1); chzPrint(b, nextIdx(b, n)); };
+  $('#chzQ').oninput = e => { chzQ = e.target.value.trim(); chzPage = 0; chzRows(b); };
+  $('#chzAll').onchange = e => { chzVisible(b).slice(chzPage * 100, chzPage * 100 + 100).forEach(i => e.target.checked ? chzSelected.add(i) : chzSelected.delete(i)); chzRows(b); };
+  $('#chzPrintSel').onclick = () => {
+    const idx = Array.from(chzSelected).sort((a, z) => a - z);
+    if (idx.some(i => b.p[i] === '1') && !confirm('Среди выбранных есть уже напечатанные коды. Печатать их повторно?')) return;
+    chzPrint(b, idx);
+  };
+  $('#chzUnmark').onclick = () => { const idx = Array.from(chzSelected); chzSetPrinted(b, idx, false); chzSelected.clear(); renderChzTab(); };
+  $('#chzDelBatch').onclick = () => { if (confirm(`Удалить партию «${b.name || b.file}» (${cn.total} кодов)? Данные об отметках тоже пропадут.`)) { S.chz.batches = S.chz.batches.filter(x => x.id !== b.id); S.ui.chzBatch = ''; save(); renderChzTab(); } };
+  chzPreview(); chzRange(b, next); chzRows(b);
+}
+function chzGtin(b) { const c = b.codes[0] || ''; return /^01\d{14}/.test(c) ? c.slice(2, 16) : ''; }
+function chzRemember(b) { const g = chzGtin(b); if (!g) return; S.chz.names = S.chz.names || {}; S.chz.names[g] = { name: b.name, size: b.size }; }
+function nextIdx(b, n) { const out = []; for (let i = 0; i < b.codes.length && out.length < n; i++) if (b.p[i] === '0') out.push(i); return out; }
+function chzRange(b, n) {
+  const idx = nextIdx(b, n), el = $('#chzRange'); if (!el) return;
+  el.textContent = idx.length ? `будут напечатаны коды №${idx[0] + 1}${idx.length > 1 ? '–' + (idx[idx.length - 1] + 1) : ''}` : 'все коды напечатаны';
+}
+function chzPreview() {
+  const b = chzCurrent(), host = $('#chzPv'); if (!b || !host) return;
+  const idx = b.p.indexOf('0'), code = b.codes[idx >= 0 ? idx : 0];
+  const c = S.tpl[b.tpl];
+  mountTag(host, b.tpl, { code, name: b.name, size: b.size }, autoZoom(b.tpl, 250, 250));
+  let info = '';
+  try { const e = DataMatrix.encode(code, { gs1: true }), g = chzGeom(c, e.size); info = `Код DataMatrix ${e.size}×${e.size} модулей · модуль ${(g.mod).toFixed(2)} мм (${g.dotsPerModule} точек принтера) · сам код ${(g.sym).toFixed(1)} мм`; } catch (e) { info = e.message; }
+  const el = $('#chzInfo'); if (el) el.textContent = info;
+}
+function chzVisible(b) {
+  const out = []; const q = chzQ.toLowerCase();
+  for (let i = 0; i < b.codes.length; i++) if (!q || b.codes[i].toLowerCase().includes(q)) out.push(i);
+  return out;
+}
+function chzRows(b) {
+  const vis = chzVisible(b), pages = Math.max(1, Math.ceil(vis.length / 100)); chzPage = Math.min(chzPage, pages - 1);
+  const slice = vis.slice(chzPage * 100, chzPage * 100 + 100), tb = $('#chzRows'); if (!tb) return;
+  tb.innerHTML = slice.map(i => { const c = b.codes[i].replace(/\x1d/g, '␝'); const done = b.p[i] === '1';
+    return `<tr data-i="${i}" class="${done ? 'printed' : ''}"><td><input type="checkbox" ${chzSelected.has(i) ? 'checked' : ''} style="accent-color:var(--acc)"></td><td class="itemno">${i + 1}</td><td style="font-family:ui-monospace,Consolas,monospace;font-size:12px">${esc(c.length > 44 ? c.slice(0, 26) + '…' + c.slice(-12) : c)}</td><td>${done ? '<span class="chip ok">✓ напечатан</span>' : '<span class="chip">не напечатан</span>'}</td></tr>`; }).join('');
+  $$('tr', tb).forEach(tr => { $('input', tr).onchange = e => { const i = +tr.dataset.i; e.target.checked ? chzSelected.add(i) : chzSelected.delete(i); chzSelInfo(); }; });
+  $('#chzPager').innerHTML = pages > 1 ? `<button class="btn sm" id="pgP" ${chzPage ? '' : 'disabled'}>←</button> <span class="muted">стр. ${chzPage + 1} из ${pages} · кодов ${vis.length}</span> <button class="btn sm" id="pgN" ${chzPage < pages - 1 ? '' : 'disabled'}>→</button>` : `<span class="muted">кодов: ${vis.length}</span>`;
+  const p = $('#pgP'), n = $('#pgN'); if (p) p.onclick = () => { chzPage--; chzRows(b); }; if (n) n.onclick = () => { chzPage++; chzRows(b); };
+  chzSelInfo();
+}
+function chzSelInfo() { const n = chzSelected.size; const a = $('#chzSelInfo'); if (!a) return; a.textContent = n ? `Выбрано: ${n}` : ''; $('#chzPrintSel').disabled = !n; $('#chzUnmark').disabled = !n; }
+
+/* ---------- загрузка файла ---------- */
+function openChzImport() {
+  const m = openModal(`<div class="mh"><h2>Загрузка кодов маркировки</h2><button class="x">×</button></div>
+    <div class="mb"><p class="hint" style="margin-bottom:10px">Выберите исходный файл с кодами (CSV/TXT), как вам его прислали. <b>Не пересохраняйте его через Excel</b> — Excel портит длинные коды (обрезает цифры). Можно и вставить коды из буфера, но надёжнее файл.</p>
+      <div class="row2"><input type="file" id="chzFile" accept=".csv,.txt,.tsv,text/plain,text/csv" class="hide"><button class="btn pri" id="chzPick">${ICON.down} Выбрать файл…</button><span class="muted" id="chzFn"></span></div>
+      <textarea class="txa" id="chzTxt" style="margin-top:10px;min-height:90px;font-family:ui-monospace,Consolas,monospace;font-size:12px" placeholder="…или вставьте коды сюда, по одному в строке"></textarea>
+      <div id="chzSum" style="margin-top:12px"></div>
+      <div class="fgrid" style="margin-top:12px"><div class="fld"><label class="l">Название партии</label><input class="inp" id="chzPName"></div><div class="fld"><label class="l">Название на этикетке</label><input class="inp" id="chzIName" placeholder="Футболка женская"></div><div class="fld"><label class="l">Размер</label><input class="inp" id="chzISize" placeholder="44"></div></div><div class="hint" id="chzKnown" style="margin-top:6px">Название и размер в код не входят — введите один раз, программа запомнит их для этого товара (по GTIN).</div></div>
+    <div class="mf"><span class="muted" id="chzCnt"></span><span class="sp"></span><button class="btn" id="mCancel">Отмена</button><button class="btn pri" id="chzDo" disabled>Добавить партию</button></div>`);
+  let parsed = null, fname = '';
+  const existing = new Set(); S.chz.batches.forEach(b => b.codes.forEach(c => existing.add(c)));
+  const run = () => {
+    const txt = $('#chzTxt', m).value; if (!txt.trim()) { parsed = null; $('#chzSum', m).innerHTML = ''; $('#chzDo', m).disabled = true; return; }
+    parsed = chzParseFile(txt, existing);
+    const p = parsed, ex = p.ok[0], dupAll = p.dup;
+    const exc = p.errors.filter(e => e.reason === 'excel').length, fmt = p.errors.length - exc;
+    $('#chzSum', m).innerHTML = `<div class="card" style="padding:12px 14px;box-shadow:none">
+      <div><b>Строк с кодами: ${p.total}</b> · корректных: <b style="color:var(--ok)">${p.ok.length}</b>${dupAll ? ` · повторов (пропущено): <b>${dupAll}</b>` : ''}${p.errors.length ? ` · с ошибкой: <b style="color:var(--bad)">${p.errors.length}</b>` : ''}</div>
+      ${ex ? `<div class="hint" style="margin-top:6px">Как прочитан первый код: ${esc(chzExplain(ex))}</div>` : ''}
+      ${p.ok.length ? `<div class="hint" style="margin-top:4px">Разделители групп (GS): были в ${p.withGs} кодах${p.restored ? `, восстановлены по структуре в ${p.restored}` : ''}.${p.badGtin ? ` <span class="bcwarn">GTIN с неверной контрольной цифрой: ${p.badGtin}</span>` : ''}</div>` : ''}
+      ${exc ? `<div class="hint" style="margin-top:6px;color:var(--bad)"><b>${exc}</b> строк испорчены Excel (цифры обрезаны, вид «1,04611E+17») — их восстановить нельзя. Возьмите исходный файл от поставщика.</div>` : ''}
+      ${fmt ? `<div class="hint" style="margin-top:6px;color:var(--bad)">Не распознан формат в ${fmt} строках, например строка ${p.errors.find(e => e.reason === 'format').line}: <code>${esc(p.errors.find(e => e.reason === 'format').text)}</code></div>` : ''}</div>`;
+    $('#chzDo', m).disabled = !p.ok.length; $('#chzCnt', m).textContent = p.ok.length ? `К добавлению: ${p.ok.length}` : '';
+    if (!$('#chzPName', m).value) $('#chzPName', m).value = fname.replace(/\.[^.]+$/, '');
+    const known = ex && S.chz.names && S.chz.names[ex.gtin];
+    if (known && !$('#chzIName', m).value && !$('#chzISize', m).value) { $('#chzIName', m).value = known.name; $('#chzISize', m).value = known.size; $('#chzKnown', m).textContent = 'Название и размер подставлены из прошлой загрузки этого товара (по GTIN).'; }
+  };
+  $('#chzPick', m).onclick = () => $('#chzFile', m).click();
+  $('#chzFile', m).onchange = e => { const f = e.target.files[0]; if (!f) return; fname = f.name; $('#chzFn', m).textContent = f.name; const r = new FileReader(); r.onload = () => { $('#chzTxt', m).value = r.result; run(); }; r.readAsText(f, 'utf-8'); };
+  $('#chzTxt', m).oninput = run;
+  $('.x', m).onclick = $('#mCancel', m).onclick = closeModal;
+  $('#chzDo', m).onclick = () => {
+    if (!parsed || !parsed.ok.length) return;
+    const b = { id: uid(), file: fname, name: $('#chzIName', m).value.trim(), size: $('#chzISize', m).value.trim(), tpl: 'chz-40', codes: parsed.ok.map(x => x.code), p: '0'.repeat(parsed.ok.length), created: Date.now() };
+    b.file = $('#chzPName', m).value.trim() || fname || 'Партия';
+    chzRemember(b); S.chz.batches.push(b); S.ui.chzBatch = b.id; chzSelected.clear(); chzPage = 0; save(); closeModal(); renderChzTab(); toast(`Добавлено кодов: ${b.codes.length}`);
+  };
+}
+
 document.addEventListener('DOMContentLoaded', init);
 
 </script>
